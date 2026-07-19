@@ -1,0 +1,6 @@
+{
+  "name": "Academy Portal",
+  "description": "An elegant educational portal supporting student and teacher authentication, course catalog, course creation, enrollment, and lesson tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

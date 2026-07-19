@@ -1,0 +1,57 @@
+export type UserRole = 'student' | 'teacher';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar?: string;
+  headline?: string;
+  bio?: string;
+  createdAt: string;
+}
+
+export interface Lesson {
+  id: string;
+  title: string;
+  duration: string;
+  type: 'video' | 'article' | 'quiz';
+  content?: string;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  level: 'დამწყები' | 'საშუალო' | 'პროფესიონალი';
+  duration: string;
+  image: string;
+  teacherId: string;
+  teacherName: string;
+  lessons: Lesson[];
+  enrolledCount: number;
+  rating: number;
+  price: 'უფასო' | string;
+  syllabus: string[];
+}
+
+export interface Enrollment {
+  id: string;
+  studentId: string;
+  courseId: string;
+  progress: number; // percentage, e.g. 0 to 100
+  completedLessons: string[]; // array of Lesson IDs
+  isCompleted: boolean;
+  enrolledAt: string;
+  completedAt?: string;
+}
+
+export interface CourseReview {
+  id: string;
+  courseId: string;
+  studentName: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
