@@ -87,24 +87,45 @@
     ]
   },
   "auth": {
-    "titleLogin": "Log In",
-    "titleRegister": "Register",
-    "subtitleLogin": "Log in to your academy cabinet",
-    "subtitleRegister": "Join the academy today",
+    "titleLogin": "Login",
+    "titleRegister": "Registration",
+    "subtitleLogin": "Enter your details to access the platform",
+    "subtitleRegister": "Fill out the form to create a new account",
     "whoAreYou": "Who are you?",
-    "fullName": "Full Name",
-    "email": "Email Address",
+    "student": "Student",
+    "teacher": "Teacher",
+    "fullName": "Full name",
+    "namePlaceholder": "Example: George Beridze",
+    "email": "Email",
     "password": "Password",
-    "submitLogin": "Log In",
+    "submitLogin": "Login",
     "submitRegister": "Register",
-    "switchToRegister": "Don't have an account? Create an account",
-    "switchToLogin": "Already have an account? Log In",
-    "fieldRequired": "Please fill out all fields",
-    "userNotFound": "User with this email not found. Please register.",
-    "emailTaken": "This email is already in use",
-    "placeholderName": "e.g. John Doe",
-    "placeholderEmail": "email@example.com",
-    "placeholderPassword": "••••••••"
+    "noAccount": "Don't have an account yet?",
+    "createAccount": "Create an account",
+    "hasAccount": "Already have an account?",
+    "loginLink": "Login",
+    "newTeacherHeadline": "New academy teacher",
+
+    "errors": {
+      "fieldRequired": "Please fill in all required fields",
+      "userNotFound": "User not found",
+      "registerFailed": "Failed to send the code",
+      "otpIncomplete": "Enter the full code from the email",
+      "otpInvalid": "Invalid verification code",
+      "otpSendFailed": "Failed to resend the code"
+    },
+
+    "titleOtp": "Email verification",
+    "subtitleOtp": "The code was sent to {{email}}",
+
+    "sending": "Sending...",
+    "submitContinue": "Continue",
+    "verifying": "Verifying...",
+    "submitVerify": "Verify and create account",
+
+    "resendIn": "Resend the code in {{s}} sec.",
+    "didntGetCode": "Didn't receive the code?",
+    "resend": "Send again"
   },
   "courseDetail": {
     "duration": "Duration",

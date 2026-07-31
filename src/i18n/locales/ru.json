@@ -87,24 +87,45 @@
     ]
   },
   "auth": {
-    "titleLogin": "Авторизация",
+    "titleLogin": "Вход в систему",
     "titleRegister": "Регистрация",
-    "subtitleLogin": "Войдите в личный кабинет академии",
-    "subtitleRegister": "Присоединяйтесь к академии сегодня",
+    "subtitleLogin": "Введите ваши данные для входа на платформу",
+    "subtitleRegister": "Заполните форму для создания нового аккаунта",
     "whoAreYou": "Кто вы?",
-    "fullName": "Имя и фамилия",
-    "email": "Эл. почта",
+    "student": "Студент",
+    "teacher": "Преподаватель",
+    "fullName": "Полное имя",
+    "namePlaceholder": "Например: Георгий Беридзе",
+    "email": "Электронная почта",
     "password": "Пароль",
     "submitLogin": "Войти",
-    "submitRegister": "Регистрация",
-    "switchToRegister": "Нет аккаунта? Создайте аккаунт",
-    "switchToLogin": "Уже есть аккаунт? Войти",
-    "fieldRequired": "Пожалуйста, заполните все поля",
-    "userNotFound": "Пользователь с этим email не найден. Пожалуйста, зарегистрируйтесь.",
-    "emailTaken": "Этот email уже используется",
-    "placeholderName": "напр. Георгий Беридзе",
-    "placeholderEmail": "email@example.com",
-    "placeholderPassword": "••••••••"
+    "submitRegister": "Зарегистрироваться",
+    "noAccount": "У вас ещё нет аккаунта?",
+    "createAccount": "Создать аккаунт",
+    "hasAccount": "Уже есть аккаунт?",
+    "loginLink": "Войти",
+    "newTeacherHeadline": "Новый преподаватель академии",
+
+    "errors": {
+      "fieldRequired": "Заполните все обязательные поля",
+      "userNotFound": "Пользователь не найден",
+      "registerFailed": "Не удалось отправить код",
+      "otpIncomplete": "Введите полный код из письма",
+      "otpInvalid": "Неверный код подтверждения",
+      "otpSendFailed": "Не удалось повторно отправить код"
+    },
+
+    "titleOtp": "Подтверждение электронной почты",
+    "subtitleOtp": "Код отправлен на {{email}}",
+
+    "sending": "Отправка...",
+    "submitContinue": "Продолжить",
+    "verifying": "Проверка...",
+    "submitVerify": "Подтвердить и создать аккаунт",
+
+    "resendIn": "Повторно отправить код через {{s}} сек.",
+    "didntGetCode": "Не получили код?",
+    "resend": "Отправить снова"
   },
   "courseDetail": {
     "duration": "Длительность",
@@ -536,5 +557,4 @@
       }
     }
   }
-
 }
