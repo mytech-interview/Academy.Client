@@ -1,0 +1,537 @@
+{
+  "home": {
+    "featured": {
+      "badge": "Featured Programs",
+      "title": "Popular Courses",
+      "description": "Learn the most in-demand skills with top compensations. Start from scratch and become a professional.",
+      "button": "View All Courses"
+    }
+  },
+  "footer": {
+  "about": "About Us",
+  "offers": "Special Offers",
+  "contact": "Contact"
+},
+  "navbar": {
+    "home": "Home",
+    "courses": "Courses",
+    "about": "About Us",
+    "offers": "Special Offers",
+    "contact": "Contact",
+    "login": "Log In",
+    "register": "Register",
+    "logout": "Log Out",
+    "student": "Student",
+    "teacher": "Teacher",
+    "dashboard": "Dashboard"
+  },
+  "stats": {
+    "title": "Why is our IT academy the best?",
+    "subtitle": "The academy is an international educational center that offers practical, world-class professional education in information technology for people aged 9 to 55.",
+    "aboutBadge": "About Us",
+    "videoTour": "Play Video Tour",
+    "labelCountry": "Countries",
+    "labelBranch": "Branches",
+    "labelStudent": "Active Students",
+    "labelLecturer": "Practical Lecturers",
+    "labelAlumni": "Successful Alumni"
+  },
+  "projects": {
+    "badge": "Student Creativity",
+    "title": "Featured Projects",
+    "subtitle": "Explore real digital products and artworks created by our students during their studies.",
+    "categoryLabel": "Category",
+    "authorLabel": "Author:",
+    "inWorkshop": "This project was created within the practical workshops of GeoAlpha academy.",
+    "openBtn": "Open Project",
+    "viewBtn": "View"
+  },
+  "videoLectures": {
+    "badge": "Gift From Us",
+    "title": "Free Video Lectures",
+    "subtitle": "Get initial knowledge completely free. Watch interesting informational sessions and workshops by our lead mentors.",
+    "mentor": "Mentor",
+    "leadBy": "The lecture is led by our guest specialist",
+    "durationLabel": "Min",
+    "lectures": [
+      {
+        "id": "lec-1",
+        "title": "JavaScript / React Basics – Giorgi Arshavadze",
+        "lecturer": "Giorgi Arshavadze",
+        "duration": "45 min",
+        "category": "Web Development",
+        "thumbnail": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800",
+        "youtubeId": "SqcY0GlETPk",
+        "description": "Learn the essentials of React: components, props, state, and standard hooks to help you build interactive apps."
+      },
+      {
+        "id": "lec-2",
+        "title": "Python in Everyday Life",
+        "lecturer": "Mariam Beridze",
+        "duration": "35 min",
+        "category": "Programming",
+        "thumbnail": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800",
+        "youtubeId": "m7XmfeZzWl8",
+        "description": "Understand how Python can be utilized to automate routine daily tasks and process data efficiently."
+      },
+      {
+        "id": "lec-3",
+        "title": "Figma Utilities for High-Speed Workflows",
+        "lecturer": "Giorgi Kalandadze",
+        "duration": "30 min",
+        "category": "Design",
+        "thumbnail": "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=800",
+        "youtubeId": "F3XQ68SOnE4",
+        "description": "Professional tips to double your design speed in Figma: Auto-layout, component structures, and variants."
+      }
+    ]
+  },
+  "auth": {
+    "titleLogin": "Log In",
+    "titleRegister": "Register",
+    "subtitleLogin": "Log in to your academy cabinet",
+    "subtitleRegister": "Join the academy today",
+    "whoAreYou": "Who are you?",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "password": "Password",
+    "submitLogin": "Log In",
+    "submitRegister": "Register",
+    "switchToRegister": "Don't have an account? Create an account",
+    "switchToLogin": "Already have an account? Log In",
+    "fieldRequired": "Please fill out all fields",
+    "userNotFound": "User with this email not found. Please register.",
+    "emailTaken": "This email is already in use",
+    "placeholderName": "e.g. John Doe",
+    "placeholderEmail": "email@example.com",
+    "placeholderPassword": "••••••••"
+  },
+  "courseDetail": {
+    "duration": "Duration",
+    "difficulty": "Level",
+    "lessons": "Lessons",
+    "rating": "Rating",
+    "aboutTitle": "About the Course",
+    "syllabusTitle": "Syllabus (Curriculum)",
+    "teacherTitle": "Instructor",
+    "reviewsTitle": "Student Reviews",
+    "priceLabel": "Price",
+    "teacherHeadline": "Academy Mentor",
+    "teacherBio": "An experienced industry practitioner leading this interactive course.",
+    "isTeacherLabel": "You are the instructor of this course",
+    "startButton": "Start Learning",
+    "enrollButton": "Enroll in Course",
+    "closeForm": "Close Form",
+    "loginEnroll": "Log In & Enroll",
+    "registerEnroll": "Register & Enroll",
+    "createAccount": "Create an account",
+    "haveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "nameField": "Full Name",
+    "emailField": "Email",
+    "passwordField": "Password"
+  },
+  "dashboardStudent": {
+    "welcomeBadge": "Student Cabinet",
+    "welcomeText": "We are glad you are continuing your studies. Today is a great day to get new knowledge!",
+    "activeCourses": "Active Courses",
+    "completed": "Completed",
+    "progress": "Average Progress",
+    "classroomWorkspace": "Classroom Workspace",
+    "selectCourseMessage": "Select a course from the list below to view educational materials.",
+    "syllabus": "Syllabus",
+    "syllabusSubtitle": "Go through the course steps and get your certificate",
+    "stepCompleted": "Completed",
+    "stepCompleteBtn": "Mark as Completed",
+    "writeReviewTitle": "Leave a Review",
+    "writeReviewSubtitle": "Share your feedback with others",
+    "reviewPlaceholder": "Write your review here...",
+    "reviewSubmitBtn": "Submit Review",
+    "reviewSuccess": "Review submitted successfully!",
+    "noCoursesYet": "You are not enrolled in any courses yet. Choose your course from the main page.",
+    "goToCoursesBtn": "Course Catalog",
+    "currentProgress": "Current Progress:",
+    "enterClassroomBtn": "Enter Classroom",
+    "selectLessonInstruction": "Please select a lecture from the left sidebar to see physical classroom details",
+    "attendanceLabel": "Classroom Attendance Check",
+    "invalidCode": "Incorrect code. Please verify with the board.",
+    "attendanceConfirmed": "Attendance verified successfully!",
+    "demoHint": "Demo Hint:",
+    "nextLecture": "Next Lecture",
+    "leaveClassroom": "← Leave Classroom",
+    "overallProgress": "Overall Progress",
+    "lessonsList": "Lecture Meetings & Attendance",
+    "auditoriumLecture": "On-site Lecture",
+    "progressLabel": "Progress",
+    "certificateButton": "Certificate",
+    "profileEditTitle": "Edit Personal Details",
+    "profileEditSub": "Update your profile so information is accurate on certificates and attendance log",
+    "fullName": "Full Name *",
+    "phone": "Phone Number *",
+    "headline": "Headline / Status",
+    "bio": "About Me",
+    "avatarLabel": "Select Avatar",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile updated successfully!",
+    "chooseAvatar": "Choose ready avatar",
+    "uploadPhoto": "Or upload your own",
+    "selectPhoto": "Select Photo"
+  },
+  "dashboardTeacher": {
+    "cabinetBadge": "Teacher Cabinet",
+    "welcomeText": "Manage your physical courses, schedule classroom meetings, and organize timetables.",
+    "newCourse": "New Course",
+    "createdCourses": "Created Courses",
+    "totalStudents": "Total Students",
+    "avgRating": "Average Rating",
+    "courseBuilderTitle": "Create Classroom Course",
+    "courseBuilderSubtitle": "Fill in the lecture schedule, specify the physical classrooms, and publish to the catalog",
+    "courseAddedSuccess": "Course successfully added to the catalog!",
+    "courseTitle": "Course Title *",
+    "courseTitlePlaceholder": "e.g. On-site Full-Stack Development",
+    "categoryLabel": "Category *",
+    "difficultyLabel": "Difficulty",
+    "durationLabel": "Study Hours",
+    "durationPlaceholder": "e.g. 16 hours",
+    "priceLabel": "Price",
+    "freeOption": "Free",
+    "paidOption": "Paid",
+    "imageUrlLabel": "Image URL (Optional)",
+    "courseDescLabel": "Course Description *",
+    "courseDescPlaceholder": "Briefly describe what students will learn during this on-site course...",
+    "syllabusLabel": "Syllabus items (comma-separated)",
+    "syllabusPlaceholder": "e.g. Introduction, Components, State Management",
+    "lessonsTitle": "Lecture Meetings Scheduling",
+    "addLesson": "+ Add Meeting",
+    "lessonTitlePlaceholder": "Lecture Topic",
+    "lessonDurationPlaceholder": "Duration (e.g. 2 hours)",
+    "lessonContentPlaceholder": "Lecture content or classroom assignment",
+    "cancel": "Cancel",
+    "publish": "Publish",
+    "myCourses": "My Created Courses",
+    "noCoursesYet": "You haven't created any courses yet",
+    "createFirstCourse": "Create your first course now →",
+    "studentsTable": "Students",
+    "lessonsTable": "Lectures",
+    "ratingTable": "Rating",
+    "pricePrefix": "Price:",
+    "durationPrefix": "Duration:",
+    "profileEditTitle": "Edit Lecturer Profile",
+    "profileEditSub": "Update your profile details displayed to students in the catalog",
+    "fullName": "Full Name *",
+    "phone": "Phone Number *",
+    "headline": "Professional Headline / Specialization *",
+    "bio": "Biography / Experience",
+    "avatarLabel": "Select Photo",
+    "saveChanges": "Save Changes",
+    "profileUpdated": "Profile successfully updated!",
+    "classroomLabel": "Classroom / Auditorium *",
+    "chooseAvatar": "Choose ready avatar",
+    "uploadPhoto": "Or upload your own",
+    "selectPhoto": "Select Photo"
+  },
+  "coursesPage": {
+    "searchPlaceholder": "Search for courses...",
+    "filterLabel": "Category:",
+    "noResults": "No courses found matching the search criteria",
+    "noResultsHint": "Try changing your search query or selecting another category."
+  },
+  "components": {
+    "closeButton": "Close",
+    "upload": "Upload",
+    "selectPhoto": "Select Photo",
+    "saveChanges": "Save Changes"
+  },
+  "alerts": {
+    "teacherCannotEnroll": "Teachers cannot register for courses as students.",
+    "alreadyEnrolled": "You are already registered for this course!"
+  },
+  "contact": {
+    "badge": "Get In Touch",
+    "title": "Contact Information",
+    "subtitle": "Get in touch with us via email, phone, or by visiting our branches. We are always happy to assist you!",
+    "branchLabel": "Branch {{number}}",
+    "mainOffice": "Tbilisi (Head Office)",
+    "kutaisiOffice": "Kutaisi Branch",
+    "batumiOffice": "Batumi Branch",
+    "hoursValue": "Monday - Saturday, 10:00 - 20:00",
+    "tbilisiAddress": "24 Al. Kazbegi Ave, Tbilisi",
+    "kutaisiAddress": "12 Rustaveli Ave, Kutaisi",
+    "batumiAddress": "45 Memed Abashidze Ave, Batumi"
+  },
+  "catalog": {
+    "badge": "Course Catalog",
+    "title": "Discover Your Course",
+    "subtitle": "Choose your desired path and start learning today.",
+    "searchPlaceholder": "Search courses...",
+    "filterLabel": "Categories:",
+    "notFoundTitle": "No courses found matching the search criteria",
+    "notFoundSubtitle": "Try changing your search query or selecting another category."
+  },
+  "dashboard": {
+    "unauthorized": {
+      "title": "Cabinet is only accessible for authorized members",
+      "subtitle": "Please log in or create a new account to manage your learning process.",
+      "button": "Log In / Register"
+    }
+  },
+  "about": {
+    "missionBadge": "Academy Mission",
+    "title": "Innovation in Education",
+    "subtitle": "Our academy is where your technological future begins. We offer fully practice-oriented learning programs.",
+    "storyTitle": "Our Story",
+    "storyText": "The academy was founded with the mission to build a premium IT education ecosystem in Georgia. Our students learn through real industry business cases and cooperate with senior mentors. Today we are one of the fastest growing tech communities.",
+    "pillarsBadge": "Academy Values",
+    "pillarsTitle": "How We Teach At GeoAlpha?",
+    "pillarsSubtitle": "Our educational model is focused on real results and career advancement for every student.",
+    "mentorsBadge": "Professional Mentors",
+    "teamTitle": "Our Leading Mentors",
+    "teamSubtitle": "Meet the industry practitioners who will guide you through the tech landscape.",
+    "pillars": {
+      "pillar1": {
+        "title": "Practice-Oriented Learning",
+        "text": "No dry theory! Throughout the course, students work on real-world industrial cases and build their own digital products."
+      },
+      "pillar2": {
+        "title": "Career & Placement Center",
+        "text": "The academy career center actively cooperates with partner companies, helping students write resumes and prepare for job interviews."
+      },
+      "pillar3": {
+        "title": "Mentor Support",
+        "text": "Individual feedback after every assignment. Our active practitioners are ready to guide you through any complex tech concept."
+      },
+      "pillar4": {
+        "title": "Internships & Workshops",
+        "text": "Top performing students receive real internship opportunities and work on internal production software development."
+      }
+    }
+  },
+  "consultation": {
+    "badge": "Free Consultation",
+    "title": "Have Questions?",
+    "desc": "Leave your contact details and our academy advisor will contact you shortly to help you choose the right direction.",
+    "live": "Advisors are online",
+    "avgTime": "Average response: 15 mins",
+    "formTitle": "Request a Call",
+    "formDesc": "Fill out the simple form and receive professional advice",
+    "labelName": "Your Name",
+    "labelPhone": "Phone Number",
+    "labelEmail": "Email Address (Optional)",
+    "placeholderName": "George Beridze",
+    "placeholderPhone": "+995 599 12 34 56",
+    "btnSubmit": "Request Call",
+    "successTitle": "Request Received!",
+    "successDesc": "Thank you for your interest. Our representative will contact you on the specified number within 15 minutes.",
+    "btnNew": "New Request",
+    "notSpecified": "Not specified"
+  },
+  "courseCard": {
+    "lessons_one": "{{count}} Lesson",
+    "lessons_other": "{{count}} Lessons",
+    "priceLabel": "Price",
+    "btnDetails": "Details",
+    "roleAuthor": "Author",
+    "statusActive": "Enrolled",
+    "btnEnroll": "Enroll"
+  },
+  "hello": "Hello, {name}! 👋",
+  "defaultPhone": "+995 599 123 456",
+  "defaultHeadline": "Student at the Academy",
+  "defaultBio": "Motivated student learning tech skills.",
+  "studyTab": "Study Room",
+  "profileTab": "Personal Data",
+  "leaveClassroom": "← Leave Classroom",
+  "overallProgress": "Overall Progress",
+  "lessonsList": "Lecture Meetings & Attendance",
+  "physicalLec": "On-site Lecture",
+  "activeCoursesTitle": "My Active Courses",
+  "noCoursesYet": "You are not enrolled in any courses yet. Choose your course from the main page.",
+  "noCoursesSubtitle": "Go to the course catalog, select your desired direction and start learning today!",
+  "progressLabel": "Progress",
+  "certificateBtn": "Certificate",
+  "lessonsLeft": "{n} lectures left",
+  "startStudy": "Enter Classroom",
+  "continueStudy": "Continue Classroom",
+  "certTitle": "Certificate of Completion",
+  "certSub": "This certificate is awarded to:",
+  "certCompleted": "Has successfully completed the academy classroom course:",
+  "certDate": "Date",
+  "certSignature": "Academy Signature",
+  "certPrintBtn": "Print / Save as PDF",
+  "profEditTitle": "Edit Personal Details",
+  "profEditSub": "Update your profile so information is accurate on certificates and attendance log",
+  "fullNameLabel": "Full Name *",
+  "emailLabel": "Email *",
+  "phoneLabel": "Phone Number *",
+  "headlineLabel": "Headline / Status",
+  "bioLabel": "About Me",
+  "avatarSelectLabel": "Select Avatar",
+  "avatarPresetSubtitle": "Choose ready avatar",
+  "avatarUploadSubtitle": "Or upload your own",
+  "selectPhotoBtn": "Select Photo",
+  "saveChangesBtn": "Save Changes",
+  "profileSavedSuccess": "Profile updated successfully!",
+  "selectLesson": "Please select a lecture from the left sidebar to see physical classroom details",
+  "auditoriumNumber": "Auditorium #204",
+  "scheduleFormat": "Schedule: Mon & Thu, 19:00 - 21:00 (Duration: {duration})",
+  "lectureTopicsHeader": "Lecture Topics & Task",
+  "defaultLessonContent": "In this lesson, you will learn about interesting aspects and main directions of the course. Take notes of important terms and practice in your editor.",
+  "auditoriumTaskHint": "💡 Classroom Task: Prepare a sketch of a practical project and write the initial code to demonstrate on the projector in the next session.",
+  "hero": {
+    "badge": "Modern Education at GeoAlpha",
+    "title": "Master the Profession of the Future",
+    "subtitle": "Get top-tier education from practicing lecturers. Study at your own pace and launch your tech career today.",
+    "browse": "Browse Courses",
+    "register": "Register Now",
+    "student": "Students",
+    "course": "Courses",
+    "offerBadge": "Special Offer",
+    "offerTitle": "Summer Promo",
+    "offerDesc": "-20% on all new programs",
+    "t1": "Lifetime access to study materials",
+    "t2": "Innovative syllabus and mentorship",
+    "t3": "Real-world practical assignments",
+    "t4": "Official certificate upon completion"
+  },
+  "specialOffers": {
+  "badge": "Special Opportunities",
+  "title": "Promotions & Discounts",
+  "subtitle": "Take advantage of bundle packages, active scholarships, and seasonal offers. Launch your career under the best terms!",
+  "urgency": "Offer ends in:",
+  "days": "Days",
+  "hours": "Hours",
+  "minutes": "Min",
+  "seconds": "Sec",
+  "copyCode": "Copy Code",
+  "copied": "Copied!",
+  "getConsult": "Consultation",
+  "enrollBtn": "Browse Courses",
+  "featuresTitle": "Included in bundle:",
+  "activeBadge": "Active",
+  "limitedBadge": "Limited Time",
+  "promoCode": "Promo Code",
+
+  "offers": [
+    {
+      "badge": "30% Off",
+      "title": "Full-Stack Combo Bundle",
+      "subtitle": "Learn web programming (React & Node.js) and UI/UX Design together.",
+      "oldPrice": "2500 ₾",
+      "price": "1750 ₾",
+      "code": "ALPHASTACK30",
+      "features": [
+        "Full Web Programming course",
+        "UI/UX Design basics course",
+        "3 real portfolio projects",
+        "Career support with partners",
+        "Unlimited access to materials"
+      ]
+    },
+    {
+      "badge": "Discount Voucher",
+      "title": "Seasonal AI & Python Intensive",
+      "subtitle": "Start programming with Python and master artificial intelligence tools.",
+      "oldPrice": "1200 ₾",
+      "price": "890 ₾",
+      "code": "AIPYTHON25",
+      "features": [
+        "Python Programming Fundamentals",
+        "Working with OpenAI & Google Gemini APIs",
+        "Building chatbots & automations",
+        "Personal mentor support",
+        "Certificate upon project defense"
+      ]
+    },
+    {
+      "badge": "Student Gift",
+      "title": "Refer-A-Friend Reward",
+      "subtitle": "Invite a friend to the academy and both get a 150 GEL gift voucher for any course.",
+      "price": "150 ₾ + 150 ₾",
+      "code": "REFERFRIEND",
+      "features": [
+        "150 GEL discount for you",
+        "150 GEL discount for your friend",
+        "Activates upon friend's enrollment",
+        "Can be combined with other promos",
+        "Unlimited number of invitations"
+      ]
+    }
+  ],
+
+  "footer": [
+    {
+      "title": "Bonus materials",
+      "desc": "Workshop recordings"
+    },
+    {
+      "title": "Flexible Schedule",
+      "desc": "Evening classes"
+    },
+    {
+      "title": "0% Financing",
+      "desc": "Internal bank installments"
+    }
+  ]
+},
+"faq": {
+  "badge": "Frequently Asked Questions",
+  "title": "Answers to Your Questions",
+  "desc": "Explore answers to the questions most commonly asked by our prospective students.",
+
+  "items": [
+    {
+      "question": "What kind of credential is issued upon graduation – a diploma or a certificate? Is it accredited?",
+      "answer": "Upon successful completion of the course, graduates receive an international diploma from the IT Academy. We also help students prepare for and obtain industry-standard vendor certifications recognized by leading tech giants worldwide."
+    },
+    {
+      "question": "Can I find a job during or after my studies, and do you assist with job placement?",
+      "answer": "Yes, our primary goal is student employment. The academy maintains close ties with leading local and international tech firms. Top graduates automatically receive interview invitations, and our Career Center assists with CV design and portfolio building."
+    },
+    {
+      "question": "What basic skills should a prospective student have to start learning?",
+      "answer": "Most of our courses are designed from scratch for complete beginners; no prior technical background is needed. Basic computer literacy (managing files, web navigation) and strong motivation are all that is required."
+    },
+    {
+      "question": "Can I visit the academy campus?",
+      "answer": "Of course! We are always happy to host visitors. You can schedule a free consultation beforehand or simply stop by during working hours to tour our labs and talk to program coordinators."
+    },
+    {
+      "question": "What qualifications and experience do the instructors have?",
+      "answer": "All our instructors are active, practicing professionals in leading technology companies (Leavingstone, EPAM, etc.). They have at least 5+ years of real-world experience and have completed dedicated pedagogical training."
+    },
+    {
+      "question": "Is it possible to change the lecture schedule?",
+      "answer": "The lecture schedules are fixed per group. However, if your work or academic schedule changes, our administration will do its best to find and offer you an alternative group with suitable hours."
+    },
+    {
+      "question": "Is online learning available?",
+      "answer": "Yes, we offer hybrid and fully online learning formats. Online classes take place in real-time (live stream), allowing you to ask questions directly and join discussions. All recorded sessions are saved in your student cabinet."
+    }
+  ]
+},
+  "gallery": {
+    "badge": "Our Campus",
+    "title": "Academy Gallery",
+    "desc": "Explore our creative laboratories, cozy co-working spaces, and student campus life.",
+    "location": "Location",
+
+    "photos": {
+      "photo1": {
+        "title": "Modern Lecture Rooms",
+        "description": "Academy students study in spaces equipped with modern technology and individual workstations."
+      },
+      "photo2": {
+        "title": "Co-working & Recreation Areas",
+        "description": "A cozy creative environment for brainstorming, team projects, and relaxing between lectures."
+      },
+      "photo3": {
+        "title": "Hands-on Workshops",
+        "description": "Students are actively involved in solving real development problems and sharing experience."
+      },
+      "photo4": {
+        "title": "Annual Hackathons",
+        "description": "Students create real-world applications during internal and external hackathons."
+      }
+    }
+  }
+}

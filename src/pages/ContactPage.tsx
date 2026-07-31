@@ -1,5 +1,6 @@
 import React from 'react';
 import { Phone, MapPin, Mail, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import ConsultationForm from '../components/ConsultationForm';
 import FAQSection from '../components/FAQSection';
@@ -9,49 +10,28 @@ interface ContactPageProps {
   lang: Language;
 }
 
-const contactContent = {
-  ka: {
-    title: 'საკონტაქტო ინფორმაცია',
-    subtitle: 'მოგვწერეთ, დაგვირეკეთ ან გვეწვიეთ ჩვენს აკადემიურ სივრცეებში. ჩვენ ყოველთვის მზად ვართ გიპასუხოთ!',
-    mainOffice: 'თბილისი (სათაო ოფისი)',
-    kutaisiOffice: 'ქუთაისი ფილიალი',
-    batumiOffice: 'ბათუმის ფილიალი',
-    hoursValue: 'ორშაბათი - შაბათი, 10:00 - 20:00',
-    tbilisiAddress: 'ალ. ყაზბეგის გამზირი 24, თბილისი',
-    kutaisiAddress: 'რუსთაველის გამზირი 12, ქუთაისი',
-    batumiAddress: 'მემედ აბაშიძის გამზირი 45, ბათუმი',
-  },
-  en: {
-    title: 'Contact Information',
-    subtitle: 'Get in touch with us via email, phone, or by visiting our branches. We are always happy to assist you!',
-    mainOffice: 'Tbilisi (Head Office)',
-    kutaisiOffice: 'Kutaisi Branch',
-    batumiOffice: 'Batumi Branch',
-    hoursValue: 'Monday - Saturday, 10:00 - 20:00',
-    tbilisiAddress: '24 Al. Kazbegi Ave, Tbilisi',
-    kutaisiAddress: '12 Rustaveli Ave, Kutaisi',
-    batumiAddress: '45 Memed Abashidze Ave, Batumi',
-  },
-  ru: {
-    title: 'Контактная информация',
-    subtitle: 'Свяжитесь с нами по электронной почте, телефону или посетите наши филиалы. Мы всегда рады помочь!',
-    mainOffice: 'Тбилиси (Главный офис)',
-    kutaisiOffice: 'Кутаисский филиал',
-    batumiOffice: 'Батумский филиал',
-    hoursValue: 'Понедельник - Суббота, 10:00 - 20:00',
-    tbilisiAddress: 'Тбилиси, пр. Ал. Казбеги 24',
-    kutaisiAddress: 'Кутаиси, пр. Руставели 12',
-    batumiAddress: 'Батуми, пр. Мемеда Абашидзе 45',
-  },
-};
-
 export default function ContactPage({ lang }: ContactPageProps) {
-  const contactLabels = contactContent[lang];
+  const { t } = useTranslation();
 
   const branches = [
-    { title: contactLabels.mainOffice, addr: contactLabels.tbilisiAddress, phone: '+995 322 199 200', email: 'info@geoalfa.edu.ge' },
-    { title: contactLabels.kutaisiOffice, addr: contactLabels.kutaisiAddress, phone: '+995 431 223 344', email: 'kutaisi@geoalfa.edu.ge' },
-    { title: contactLabels.batumiOffice, addr: contactLabels.batumiAddress, phone: '+995 422 554 433', email: 'batumi@geoalfa.edu.ge' },
+    {
+      title: t('contact.mainOffice'),
+      addr: t('contact.tbilisiAddress'),
+      phone: '+995 322 199 200',
+      email: 'info@geoalfa.edu.ge',
+    },
+    {
+      title: t('contact.kutaisiOffice'),
+      addr: t('contact.kutaisiAddress'),
+      phone: '+995 431 223 344',
+      email: 'kutaisi@geoalfa.edu.ge',
+    },
+    {
+      title: t('contact.batumiOffice'),
+      addr: t('contact.batumiAddress'),
+      phone: '+995 422 554 433',
+      email: 'batumi@geoalfa.edu.ge',
+    },
   ];
 
   return (
@@ -63,13 +43,13 @@ export default function ContactPage({ lang }: ContactPageProps) {
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-widest text-rose-700 border border-rose-100">
               <Phone className="h-3.5 w-3.5" />
-              {lang === 'ka' ? 'კავშირი' : lang === 'ru' ? 'Контакты' : 'Get In Touch'}
+              {t('contact.badge')}
             </span>
             <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight leading-none font-display">
-              {contactLabels.title}
+              {t('contact.title')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 font-light max-w-2xl mx-auto leading-relaxed">
-              {contactLabels.subtitle}
+              {t('contact.subtitle')}
             </p>
           </div>
 
@@ -78,7 +58,7 @@ export default function ContactPage({ lang }: ContactPageProps) {
               <div key={bi} className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 space-y-4 hover:border-indigo-200 transition">
                 <div className="space-y-1">
                   <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest font-mono block">
-                    Branch {bi + 1}
+                    {t('contact.branchLabel', { number: bi + 1 })}
                   </span>
                   <h3 className="font-extrabold text-slate-900 text-sm">{branch.title}</h3>
                 </div>
@@ -98,7 +78,7 @@ export default function ContactPage({ lang }: ContactPageProps) {
                   </div>
                   <div className="flex gap-2 border-t border-slate-200/50 pt-2.5 mt-2.5">
                     <Clock className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                    <span>{contactLabels.hoursValue}</span>
+                    <span>{t('contact.hoursValue')}</span>
                   </div>
                 </div>
               </div>

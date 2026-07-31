@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import { User, Course, Enrollment } from './types';
+import i18n from './i18n';
+import { User, Course, Enrollment, Language } from './types';
+import { getTranslatedCourse, translateCategory } from './lib/courseTranslations';
 import { mockCourses, mockTeachers } from './data/mockData';
 
 import Navbar from './components/Navbar';
@@ -17,11 +20,11 @@ import OffersPage from './pages/OffersPage';
 import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
 
-import { Language, getTranslatedCourse, translateCategory } from './lib/translations';
-
 type ActiveTabType = 'home' | 'courses' | 'about' | 'offers' | 'contact' | 'dashboard';
 
 export default function App() {
+  const { t } = useTranslation();
+
   // --- Persistent State Hooks ---
   const [lang, setLang] = useState<Language>(() => {
     const saved = localStorage.getItem('academy_lang');
@@ -112,26 +115,14 @@ export default function App() {
     }
 
     if (activeUser.role === 'teacher') {
-      alert(
-        lang === 'ka'
-          ? 'მასწავლებლებს არ შეუძლიათ კურსებზე დარეგისტრირება მოსწავლის სტატუსით.'
-          : lang === 'ru'
-          ? 'Преподаватели не могут регистрироваться на курсы в статусе студента.'
-          : 'Teachers cannot register for courses as students.'
-      );
+      alert(t('alerts.teacherCannotEnroll'));
       return;
     }
 
     const exists = enrollments.some((e) => e.studentId === activeUser.id && e.courseId === courseId);
 
     if (exists) {
-      alert(
-        lang === 'ka'
-          ? 'თქვენ უკვე დარეგისტრირებული ხართ ამ კურსზე!'
-          : lang === 'ru'
-          ? 'Вы уже зарегистрированы на этот курс!'
-          : 'You are already registered for this course!'
-      );
+      alert(t('alerts.alreadyEnrolled'));
       return;
     }
 
@@ -153,11 +144,7 @@ export default function App() {
 
     const targetCourse = courses.find((c) => c.id === courseId);
     setEnrollSuccessMessage(
-      lang === 'ka'
-        ? `თქვენ წარმატებით დარეგისტრირდით კურსზე: "${targetCourse?.title}"!`
-        : lang === 'ru'
-        ? `Вы успешно зарегистрировались на курс: "${targetCourse?.title}"!`
-        : `You have successfully registered for the course: "${targetCourse?.title}"!`
+      t('alerts.enrollSuccess', { course: targetCourse?.title })
     );
     setTimeout(() => setEnrollSuccessMessage(null), 4000);
 
@@ -215,6 +202,10 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
+  useEffect(() => {
+    i18n.changeLanguage(lang);
+  }, [lang]);
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans text-slate-900 antialiased">
       <Navbar
@@ -234,7 +225,7 @@ export default function App() {
         >
           <CheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
           <div className="text-left">
-            <span className="text-xs font-bold text-emerald-800 block">გილოცავთ!</span>
+            <span className="text-xs font-bold text-emerald-800 block">{t('alerts.congratulations')}</span>
             <span className="text-xs text-emerald-600 block mt-0.5">{enrollSuccessMessage}</span>
           </div>
         </div>
@@ -303,13 +294,13 @@ export default function App() {
           </div>
           <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-500">
             <button onClick={() => goToTab('about')} className="hover:text-slate-800 transition">
-              {lang === 'ka' ? 'აკადემიის შესახებ' : lang === 'ru' ? 'Об академии' : 'About Academy'}
+              {t('footer.about')}
             </button>
             <button onClick={() => goToTab('offers')} className="hover:text-slate-800 transition">
-              {lang === 'ka' ? 'აქციები' : lang === 'ru' ? 'Специальные акции' : 'Special Offers'}
+              {t('footer.offers')}
             </button>
             <button onClick={() => goToTab('contact')} className="hover:text-slate-800 transition">
-              {lang === 'ka' ? 'კონტაქტი' : lang === 'ru' ? 'Контакты' : 'Contact'}
+              {t('footer.contact')}
             </button>
           </div>
         </div>

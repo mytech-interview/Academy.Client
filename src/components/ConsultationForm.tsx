@@ -1,95 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, CheckCircle, MessageSquare, Send, User, Mail, Calendar } from 'lucide-react';
-import { Language } from '../lib/translations';
+import { Phone, CheckCircle, MessageSquare, Send, User, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-interface ConsultationFormProps {
-  lang: Language;
-}
+export default function ConsultationForm() {
+  const { t } = useTranslation();
 
-export default function ConsultationForm({ lang }: ConsultationFormProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
-
-  const t = {
-    ka: {
-      badge: 'უფასო კონსულტაცია',
-      title: 'გაქვს შეკითხვები?',
-      desc: 'დაგვიტოვე შენი საკონტაქტო მონაცემები და ჩვენი აკადემიის მრჩეველი დაგიკავშირდება უმოკლეს დროში, რათა დაგეხმაროს სწორი მიმართულების შერჩევაში.',
-      live: 'ოპერატორები ხაზზე არიან',
-      avgTime: 'საშუალო პასუხის დრო: 15 წუთი',
-      formTitle: 'მოითხოვე კონსულტაცია',
-      formDesc: 'შეავსეთ მარტივი ფორმა და მიიღეთ პროფესიონალური რჩევები',
-      labelName: 'თქვენი სახელი',
-      labelPhone: 'ტელეფონის ნომერი',
-      labelEmail: 'ელ-ფოსტა (არასავალდებულო)',
-      placeholderName: 'გიორგი ბერიძე',
-      placeholderPhone: '599 12 34 56',
-      btnSubmit: 'მოითხოვე ზარი',
-      successTitle: 'მოთხოვნა მიღებულია!',
-      successDesc: 'გმადლობთ დაინტერესებისთვის. ჩვენი წარმომადგენელი უახლოეს 15 წუთში დაგიკავშირდებათ მითითებულ ნომერზე.',
-      btnNew: 'ახალი მოთხოვნა',
-      notSpecified: 'არ არის მითითებული'
-    },
-    en: {
-      badge: 'Free Consultation',
-      title: 'Have Questions?',
-      desc: 'Leave your contact details and our academy advisor will contact you shortly to help you choose the right direction.',
-      live: 'Advisors are online',
-      avgTime: 'Average response: 15 mins',
-      formTitle: 'Request a Call',
-      formDesc: 'Fill out the simple form and receive professional advice',
-      labelName: 'Your Name',
-      labelPhone: 'Phone Number',
-      labelEmail: 'Email Address (Optional)',
-      placeholderName: 'George Beridze',
-      placeholderPhone: '+995 599 12 34 56',
-      btnSubmit: 'Request Call',
-      successTitle: 'Request Received!',
-      successDesc: 'Thank you for your interest. Our representative will contact you on the specified number within 15 minutes.',
-      btnNew: 'New Request',
-      notSpecified: 'Not specified'
-    },
-    ru: {
-      badge: 'Бесплатная консультация',
-      title: 'Есть вопросы?',
-      desc: 'Оставьте свои контактные данные, и академический консультант свяжется с вами в ближайшее время, чтобы помочь с выбором.',
-      live: 'Консультанты онлайн',
-      avgTime: 'Среднее время ответа: 15 мин',
-      formTitle: 'Заказать консультацию',
-      formDesc: 'Заполните простую форму и получите профессиональные советы',
-      labelName: 'Ваше имя',
-      labelPhone: 'Номер телефона',
-      labelEmail: 'Электронная почта (опционально)',
-      placeholderName: 'Георгий Беридзе',
-      placeholderPhone: '599 12 34 56',
-      btnSubmit: 'Заказать звонок',
-      successTitle: 'Заявка принята!',
-      successDesc: 'Спасибо за интерес. Наш представитель свяжется с вами по указанному номеру в течение 15 минут.',
-      btnNew: 'Новый запрос',
-      notSpecified: 'Не указано'
-    }
-  }[lang] || {
-    badge: 'უფასო კონსულტაცია',
-    title: 'გაქვს შეკითხვები?',
-    desc: 'დაგვიტოვე შენი საკონტაქტო მონაცემები და ჩვენი აკადემიის მრჩეველი დაგიკავშირდება უმოკლეს დროში, რათა დაგეხმაროს სწორი მიმართულების შერჩევაში.',
-    live: 'ოპერატორები ხაზზე არიან',
-    avgTime: 'საშუალო პასუხის დრო: 15 წუთი',
-    formTitle: 'მოითხოვე კონსულტაცია',
-    formDesc: 'შეავსეთ მარტივი ფორმა და მიიღეთ პროფესიონალური რჩევები',
-    labelName: 'თქვენი სახელი',
-    labelPhone: 'ტელეფონის ნომერი',
-    labelEmail: 'ელ-ფოსტა (არასავალდებულო)',
-    placeholderName: 'გიორგი ბერიძე',
-    placeholderPhone: '599 12 34 56',
-    btnSubmit: 'მოითხოვე ზარი',
-    successTitle: 'მოთხოვნა მიღებულია!',
-    successDesc: 'გმადლობთ დაინტერესებისთვის. ჩვენი წარმომადგენელი უახლოეს 15 წუთში დაგიკავშირდებათ მითითებულ ნომერზე.',
-    btnNew: 'ახალი მოთხოვნა',
-    notSpecified: 'არ არის მითითებული'
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +22,7 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
       id: `inquiry-${Date.now()}`,
       name,
       phone,
-      email: email || t.notSpecified,
+      email: email || t('consultation.notSpecified'),
       date: new Date().toISOString()
     });
     localStorage.setItem('academy_consultation_inquiries', JSON.stringify(list));
@@ -137,13 +57,13 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-indigo-300">
                 <MessageSquare className="h-3.5 w-3.5" />
-                <span>{t.badge}</span>
+                <span>{t('consultation.badge')}</span>
               </div>
               <h3 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight leading-snug">
-                {t.title}
+                {t('consultation.title')}
               </h3>
               <p className="text-sm text-indigo-100/80 font-light leading-relaxed max-w-sm">
-                {t.desc}
+                {t('consultation.desc')}
               </p>
             </div>
 
@@ -154,8 +74,8 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </div>
               <div className="text-left">
-                <span className="text-xs font-bold block leading-none text-emerald-300">{t.live}</span>
-                <span className="text-[10px] text-indigo-200 block mt-1">{t.avgTime}</span>
+                <span className="text-xs font-bold block leading-none text-emerald-300">{t('consultation.live')}</span>
+                <span className="text-[10px] text-indigo-200 block mt-1">{t('consultation.avgTime')}</span>
               </div>
             </div>
           </div>
@@ -172,13 +92,13 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
                   onSubmit={handleSubmit}
                   className="space-y-4 text-left"
                 >
-                  <h4 className="text-base font-extrabold text-slate-900 leading-none mb-1">{t.formTitle}</h4>
-                  <p className="text-xs text-slate-500 mb-4 font-light">{t.formDesc}</p>
+                  <h4 className="text-base font-extrabold text-slate-900 leading-none mb-1">{t('consultation.formTitle')}</h4>
+                  <p className="text-xs text-slate-500 mb-4 font-light">{t('consultation.formDesc')}</p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Name */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.labelName}</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('consultation.labelName')}</label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                           <User className="h-4 w-4" />
@@ -188,7 +108,7 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
                           required
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder={t.placeholderName}
+                          placeholder={t('consultation.placeholderName')}
                           className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition bg-slate-50"
                         />
                       </div>
@@ -196,7 +116,7 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
 
                     {/* Phone */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.labelPhone}</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('consultation.labelPhone')}</label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                           <Phone className="h-4 w-4" />
@@ -206,7 +126,7 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
                           required
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder={t.placeholderPhone}
+                          placeholder={t('consultation.placeholderPhone')}
                           className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition bg-slate-50"
                         />
                       </div>
@@ -215,7 +135,7 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
 
                   {/* Email */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.labelEmail}</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('consultation.labelEmail')}</label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                         <Mail className="h-4 w-4" />
@@ -237,7 +157,7 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
                     className="w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-indigo-700 transition active:scale-[0.98] shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 mt-4 cursor-pointer"
                   >
                     <Send className="h-3.5 w-3.5" />
-                    {t.btnSubmit}
+                    {t('consultation.btnSubmit')}
                   </motion.button>
                 </motion.form>
               ) : (
@@ -252,16 +172,16 @@ export default function ConsultationForm({ lang }: ConsultationFormProps) {
                     <CheckCircle className="h-10 w-10 stroke-[2.5]" />
                   </div>
                   <div className="space-y-1.5 max-w-sm">
-                    <h4 className="text-lg font-black text-slate-950">{t.successTitle}</h4>
+                    <h4 className="text-lg font-black text-slate-950">{t('consultation.successTitle')}</h4>
                     <p className="text-xs text-slate-500 font-light leading-relaxed">
-                      {t.successDesc}
+                      {t('consultation.successDesc')}
                     </p>
                   </div>
                   <button
                     onClick={() => setSubmitted(false)}
                     className="rounded-xl border border-slate-200 px-5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
                   >
-                    {t.btnNew}
+                    {t('consultation.btnNew')}
                   </button>
                 </motion.div>
               )}

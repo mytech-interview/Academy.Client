@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, Mail, Lock, User as UserIcon, GraduationCap, Briefcase, Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { UserRole, User } from '../types';
-import { Language, translations } from '../lib/translations';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,7 +10,6 @@ interface AuthModalProps {
   onSuccess: (user: User) => void;
   registeredUsers: User[];
   onRegisterUser: (newUser: User & { password?: string }) => void;
-  lang: Language;
 }
 
 export default function AuthModal({
@@ -19,8 +18,9 @@ export default function AuthModal({
   onSuccess,
   registeredUsers,
   onRegisterUser,
-  lang
 }: AuthModalProps) {
+  const { t } = useTranslation();
+
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<UserRole>('student');
   const [name, setName] = useState('');
@@ -29,8 +29,6 @@ export default function AuthModal({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const t = translations[lang];
-
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,7 +36,7 @@ export default function AuthModal({
     setError('');
 
     if (!email || !password || (!isLogin && !name)) {
-      setError(t.authFieldRequired || 'Please fill out all fields');
+      setError(t('auth.errors.fieldRequired'));
       return;
     }
 
@@ -48,13 +46,7 @@ export default function AuthModal({
         (u) => u.email.toLowerCase() === email.toLowerCase()
       );
       if (!existingUser) {
-        setError(
-          lang === 'ka'
-            ? 'ამ იმეილით მომხმარებელი ვერ მოიძებნა. გთხოვთ დარეგისტრირდეთ.'
-            : lang === 'ru'
-            ? 'Пользователь с этим email не найден. Пожалуйста, зарегистрируйтесь.'
-            : 'User with this email not found. Please register.'
-        );
+        setError(t('auth.errors.userNotFound'));
         return;
       }
       
@@ -67,13 +59,7 @@ export default function AuthModal({
         (u) => u.email.toLowerCase() === email.toLowerCase()
       );
       if (emailExists) {
-        setError(
-          lang === 'ka'
-            ? 'ეს ელ-ფოსტა უკვე გამოყენებულია'
-            : lang === 'ru'
-            ? 'Этот email уже используется'
-            : 'This email is already in use'
-        );
+        setError(t('auth.errors.emailInUse'));
         return;
       }
 
@@ -86,11 +72,7 @@ export default function AuthModal({
           ? `https://images.unsplash.com/photo-${role === 'teacher' ? '1573496359142-b8d87734a5a2' : '1534528741775-53994a69daeb'}?w=150`
           : undefined,
         headline: role === 'teacher' 
-          ? (lang === 'ka' 
-              ? 'აკადემიის ახალი მასწავლებელი' 
-              : lang === 'ru' 
-              ? 'Новый преподаватель академии' 
-              : 'New teacher of the academy')
+          ? t('auth.newTeacherHeadline')
           : undefined,
         createdAt: new Date().toISOString()
       };
@@ -138,10 +120,10 @@ export default function AuthModal({
             <GraduationCap className="h-6 w-6" />
           </div>
           <h2 id="auth-modal-title" className="text-2xl font-black text-slate-900 tracking-tight font-sans">
-            {isLogin ? t.authTitleLogin : t.authTitleRegister}
+            {isLogin ? t('auth.titleLogin') : t('auth.titleRegister')}
           </h2>
           <p className="mt-2 text-xs text-slate-500 font-medium tracking-wide">
-            {isLogin ? t.authSubtitleLogin : t.authSubtitleRegister}
+            {isLogin ? t('auth.subtitleLogin') : t('auth.subtitleRegister')}
           </p>
         </div>
 
@@ -165,7 +147,7 @@ export default function AuthModal({
           {!isLogin && (
             <div className="space-y-2.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">
-                {t.authWhoAreYou}
+                {t('auth.whoAreYou')}
               </label>
               <div id="role-selector-container" className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
                 <button
@@ -179,7 +161,7 @@ export default function AuthModal({
                   }`}
                 >
                   <GraduationCap className="h-4 w-4" />
-                  {t.student}
+                  {t('auth.student')}
                 </button>
                 <button
                   type="button"
@@ -192,7 +174,7 @@ export default function AuthModal({
                   }`}
                 >
                   <Briefcase className="h-4 w-4" />
-                  {t.teacher}
+                  {t('auth.teacher')}
                 </button>
               </div>
             </div>
@@ -202,7 +184,7 @@ export default function AuthModal({
           {!isLogin && (
             <div className="space-y-1.5">
               <label htmlFor="auth-name" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">
-                {t.authFullName}
+                {t('auth.fullName')}
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -211,7 +193,7 @@ export default function AuthModal({
                 <input
                   type="text"
                   id="auth-name"
-                  placeholder={lang === 'ka' ? 'მაგ: გიორგი ბერიძე' : lang === 'ru' ? 'напр: Георгий Беридзе' : 'e.g. John Doe'}
+                  placeholder={t('auth.namePlaceholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 text-xs transition duration-200 font-medium"
@@ -224,7 +206,7 @@ export default function AuthModal({
           {/* Email Field */}
           <div className="space-y-1.5">
             <label htmlFor="auth-email" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">
-              {t.authEmail}
+              {t('auth.email')}
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
@@ -246,7 +228,7 @@ export default function AuthModal({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label htmlFor="auth-password" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">
-                {t.authPassword}
+                {t('auth.password')}
               </label>
             </div>
             <div className="relative">
@@ -278,7 +260,7 @@ export default function AuthModal({
             id="btn-auth-submit"
             className="w-full rounded-2xl bg-indigo-600 py-3.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-indigo-100 uppercase tracking-widest cursor-pointer mt-2"
           >
-            {isLogin ? t.authSubmitLogin : t.authSubmitRegister}
+            {isLogin ? t('auth.submitLogin') : t('auth.submitRegister')}
           </button>
         </form>
 
@@ -286,11 +268,7 @@ export default function AuthModal({
         <div className="mt-8 text-center text-xs text-slate-500 border-t border-slate-100 pt-5">
           {isLogin ? (
             <p className="font-medium">
-              {lang === 'ka' 
-                ? 'ჯერ არ გაქვთ ანგარიში? ' 
-                : lang === 'ru' 
-                ? 'Нет аккаунта? ' 
-                : "Don't have an account? "}
+              {t('auth.noAccount')}{' '}
               <button
                 type="button"
                 id="btn-switch-to-register"
@@ -300,20 +278,12 @@ export default function AuthModal({
                 }}
                 className="font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
               >
-                {lang === 'ka' 
-                  ? 'შექმენით ანგარიში' 
-                  : lang === 'ru' 
-                  ? 'Создать аккаунт' 
-                  : 'Create an account'}
+                {t('auth.createAccount')}
               </button>
             </p>
           ) : (
             <p className="font-medium">
-              {lang === 'ka' 
-                ? 'უკვე გაქვთ ანგარიში? ' 
-                : lang === 'ru' 
-                ? 'Уже есть аккаунт? ' 
-                : 'Already have an account? '}
+              {t('auth.hasAccount')}{' '}
               <button
                 type="button"
                 id="btn-switch-to-login"
@@ -323,7 +293,7 @@ export default function AuthModal({
                 }}
                 className="font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
               >
-                {t.login}
+                {t('auth.loginLink')}
               </button>
             </p>
           )}
