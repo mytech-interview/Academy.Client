@@ -1,7 +1,7 @@
 import React from 'react';
-import { Star, Clock, BookOpen, User as UserIcon } from 'lucide-react';
+import { Star, User as UserIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Course } from '../types';
-import { Language } from '../lib/translations';
 
 interface CourseCardProps {
   key?: string | number;
@@ -11,7 +11,6 @@ interface CourseCardProps {
   onEnroll: (e: React.MouseEvent) => void;
   isLoggedIn: boolean;
   userRole: string | undefined;
-  lang: Language;
 }
 
 export default function CourseCard({
@@ -20,46 +19,12 @@ export default function CourseCard({
   onSelect,
   onEnroll,
   isLoggedIn,
-  userRole,
-  lang
+  userRole
 }: CourseCardProps) {
-  const t = {
-    ka: {
-      lessons: `${course.lessons.length} ლექცია`,
-      priceLabel: 'ღირებულება',
-      btnDetails: 'დეტალები',
-      roleAuthor: 'ავტორი',
-      statusActive: 'აქტიურია',
-      btnEnroll: 'რეგისტრაცია'
-    },
-    en: {
-      lessons: `${course.lessons.length} Lessons`,
-      priceLabel: 'Price',
-      btnDetails: 'Details',
-      roleAuthor: 'Author',
-      statusActive: 'Enrolled',
-      btnEnroll: 'Enroll'
-    },
-    ru: {
-      lessons: `${course.lessons.length} лекций`,
-      priceLabel: 'Стоимость',
-      btnDetails: 'Детали',
-      roleAuthor: 'Автор',
-      statusActive: 'Активен',
-      btnEnroll: 'Записаться'
-    }
-  }[lang] || {
-    lessons: `${course.lessons.length} ლექცია`,
-    priceLabel: 'ღირებულება',
-    btnDetails: 'დეტალები',
-    roleAuthor: 'ავტორი',
-    statusActive: 'აქტიურია',
-    btnEnroll: 'რეგისტრაცია'
-  };
+  const { t } = useTranslation();
 
   // Map category to aesthetic color schemes
   const getCategoryColor = (cat: string) => {
-    // English/Russian or Georgian categorizations might happen, check normalized
     const lower = cat.toLowerCase();
     if (lower.includes('პროგრამირება') || lower.includes('programming') || lower.includes('программирование')) {
       return 'bg-emerald-50 text-emerald-700 border-emerald-100';
@@ -67,7 +32,7 @@ export default function CourseCard({
     if (lower.includes('დიზაინი') || lower.includes('design') || lower.includes('дизайн')) {
       return 'bg-pink-50 text-pink-700 border-pink-100';
     }
-    if (lower.includes('ბიზნესი') || lower.includes('business') || lower.includes('маркетинг') || lower.includes('marketing')) {
+    if (lower.includes('ბიზნესი') || lower.includes('business') || lower.includes('მარკეტინგი') || lower.includes('маркетинг') || lower.includes('marketing')) {
       return 'bg-sky-50 text-sky-700 border-sky-100';
     }
     return 'bg-slate-50 text-slate-700 border-slate-100';
@@ -100,7 +65,7 @@ export default function CourseCard({
       {/* Main Metadata & Body */}
       <div className="flex flex-1 flex-col pt-4 pb-2 px-1 text-left">
         <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold text-indigo-600 uppercase tracking-widest mb-1.5">
-          <span>{t.lessons}</span>
+          <span>{t('courseCard.lessons', { count: course.lessons.length })}</span>
           <span>•</span>
           <span>{course.duration}</span>
         </div>
@@ -131,7 +96,7 @@ export default function CourseCard({
         {/* Actions Row */}
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100/80 pt-4">
           <div>
-            <span className="block text-[9px] uppercase font-bold tracking-widest text-slate-400">{t.priceLabel}</span>
+            <span className="block text-[9px] uppercase font-bold tracking-widest text-slate-400">{t('courseCard.priceLabel')}</span>
             <span className={`text-base font-black ${course.price === 'უფასო' || course.price === 'Free' || course.price === 'Бесплатно' ? 'text-emerald-600' : 'text-slate-950'}`}>
               {course.price}
             </span>
@@ -146,13 +111,13 @@ export default function CourseCard({
               id={`btn-course-details-${course.id}`}
               className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 bg-white hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              {t.btnDetails}
+              {t('courseCard.btnDetails')}
             </button>
 
             {/* Dynamic Interactive Action Buttons */}
             {isLoggedIn && userRole === 'teacher' ? (
               <span className="text-xs font-semibold text-slate-400 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                {t.roleAuthor}
+                {t('courseCard.roleAuthor')}
               </span>
             ) : isEnrolled ? (
               <button
@@ -163,7 +128,7 @@ export default function CourseCard({
                 id={`btn-course-active-${course.id}`}
                 className="rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-150 px-3 py-2 text-xs font-bold hover:bg-emerald-100 transition-colors cursor-pointer"
               >
-                {t.statusActive}
+                {t('courseCard.statusActive')}
               </button>
             ) : (
               <button
@@ -171,7 +136,7 @@ export default function CourseCard({
                 id={`btn-course-enroll-${course.id}`}
                 className="rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer"
               >
-                {t.btnEnroll}
+                {t('courseCard.btnEnroll')}
               </button>
             )}
           </div>
