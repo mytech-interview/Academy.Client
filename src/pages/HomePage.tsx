@@ -2,16 +2,18 @@ import React from "react";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { User, Course, Enrollment } from "../types";
+import { User, Course, Enrollment, ActiveSession } from "../types";
 import Hero from "../components/Hero";
 import CourseCard from "../components/CourseCard";
 import ProjectsSection from "../components/ProjectsSection";
 import VideoLectures from "../components/VideoLectures";
+import ActiveSessionsSection from "../components/ActiveSessionsSection";
 
 interface HomePageProps {
   activeUser: User | null;
   translatedCourses: Course[];
   enrollments: Enrollment[];
+  activeSessions: ActiveSession[];
   onBrowseCourses: () => void;
   onOpenAuth: () => void;
   onSelectCourse: (course: Course) => void;
@@ -23,6 +25,7 @@ export default function HomePage({
   activeUser,
   translatedCourses,
   enrollments,
+  activeSessions,
   onBrowseCourses,
   onOpenAuth,
   onSelectCourse,
@@ -78,17 +81,18 @@ export default function HomePage({
             );
           })}
         </div>
-                <div className="flex justify-center pt-2">
+        <div className="flex justify-center pt-2">
           <button
             onClick={onViewAllCourses}
             className="group flex items-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-lg shadow-indigo-600/10"
           >
             <span>{t("home.featured.button")}</span>
-
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
       </section>
+
+      <ActiveSessionsSection sessions={activeSessions} />
 
       <ProjectsSection />
 

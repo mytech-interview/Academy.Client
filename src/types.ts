@@ -90,3 +90,22 @@ export interface HomeWorkSubmission {
   grade?: string;
   feedback?: string;
 }
+
+export interface ActiveSession {
+  sessionId: number;
+  courseId: number;
+  courseCategoryId: number;
+  categoryName: string;
+  courseEntryLevelId: number;
+  levelName: string;
+  title: string;
+  courseDescription: string;
+  durationWeeks: number;
+  amountOfLessons: number;
+  maxStudents: number;
+  enrolledCount: number;
+  teacherName: string;
+  averageRating: number | null;
+  reviewCount: number;
+  price: number;
+}
