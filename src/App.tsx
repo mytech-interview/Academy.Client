@@ -1,347 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'motion/react';
-import { CheckCircle } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import './i18n';
+import { AppProvider, useApp } from './context/AppContext';
+import AppLayout from './layouts/AppLayout';
 
-import i18n from './i18n';
-import { User, Course, Enrollment, Language } from './types';
-import { getTranslatedCourse, translateCategory } from './lib/courseTranslations';
-import { mockCourses, mockTeachers } from './data/mockData';
-
-import Navbar from './components/Navbar';
-import BrandLogo from './components/BrandLogo';
-import CourseDetailModal from './components/CourseDetailModal';
-import AuthModal from './components/AuthModal';
-
+// Pages
 import HomePage from './pages/HomePage';
 import CoursesPage from './pages/CoursesPage';
 import AboutPage from './pages/AboutPage';
 import OffersPage from './pages/OffersPage';
 import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
+import TeacherDashboardPage from './pages/TeacherDashboardPage';
 
-type ActiveTabType = 'home' | 'courses' | 'about' | 'offers' | 'contact' | 'dashboard';
+// Auth pages (no Navbar/Footer)
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import OtpPage from './pages/OtpPage';
 
-export default function App() {
-  const { t } = useTranslation();
+import { translateCategory } from './lib/translations';
+import { mockCategories } from './data/mockData';
+import { useState } from 'react';
+import { Course } from './types';
 
-  // --- Persistent State Hooks ---
-  const [lang, setLang] = useState<Language>(() => {
-    const saved = localStorage.getItem('academy_lang');
-    return (saved as Language) || 'ka';
-  });
+function RequireAuth({ children, teacherOnly = false }: { children: React.ReactNode; teacherOnly?: boolean }) {
+  const { activeUser } = useApp();
+  if (!activeUser) return <Navigate to="/login" replace />;
+  if (teacherOnly && activeUser.role !== 'teacher') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
 
-  const [activeUser, setActiveUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('academy_active_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+function AppRoutes() {
+  const { lang, activeUser, courses, enrollments, registeredUsers, handleUpdateProfile, handleAddCourse, handleUpdateEnrollment, translatedCourses, handleEnrollInCourse } = useApp();
 
-  const [courses, setCourses] = useState<Course[]>(() => {
-    const saved = localStorage.getItem('academy_courses');
-    return saved ? JSON.parse(saved) : mockCourses;
-  });
-
-  const [enrollments, setEnrollments] = useState<Enrollment[]>(() => {
-    const saved = localStorage.getItem('academy_enrollments');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [registeredUsers, setRegisteredUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('academy_registered_users');
-    return saved ? JSON.parse(saved) : [...mockTeachers];
-  });
-
-  // --- UI Layout & Modal Hooks ---
-  const [activeTab, setActiveTab] = useState<ActiveTabType>('home');
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ყველა');
-  const [enrollSuccessMessage, setEnrollSuccessMessage] = useState<string | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
-  // --- Synced Local Storage Updates ---
-  useEffect(() => {
-    localStorage.setItem('academy_lang', lang);
-  }, [lang]);
-
-  useEffect(() => {
-    if (activeUser) {
-      localStorage.setItem('academy_active_user', JSON.stringify(activeUser));
-    } else {
-      localStorage.removeItem('academy_active_user');
-    }
-  }, [activeUser]);
-
-  useEffect(() => {
-    localStorage.setItem('academy_courses', JSON.stringify(courses));
-  }, [courses]);
-
-  useEffect(() => {
-    localStorage.setItem('academy_enrollments', JSON.stringify(enrollments));
-  }, [enrollments]);
-
-  useEffect(() => {
-    localStorage.setItem('academy_registered_users', JSON.stringify(registeredUsers));
-  }, [registeredUsers]);
-
-  // --- Navigation helper ---
-  const goToTab = (tab: ActiveTabType) => {
-    setActiveTab(tab);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  };
-
-  // --- Auth Event Handlers ---
-  const handleLoginSuccess = (user: User) => {
-    setActiveUser(user);
-    setIsAuthModalOpen(false);
-    setActiveTab('dashboard');
-  };
-
-  const handleRegisterUser = (newUser: User) => {
-    setRegisteredUsers((prev) => [...prev, newUser]);
-  };
-
-  const handleLogout = () => {
-    setActiveUser(null);
-    setActiveTab('home');
-    setSelectedCourse(null);
-  };
-
-  // --- Course Enrollment Handlers ---
-  const handleEnrollInCourse = (courseId: string) => {
-    if (!activeUser) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    if (activeUser.role === 'teacher') {
-      alert(t('alerts.teacherCannotEnroll'));
-      return;
-    }
-
-    const exists = enrollments.some((e) => e.studentId === activeUser.id && e.courseId === courseId);
-
-    if (exists) {
-      alert(t('alerts.alreadyEnrolled'));
-      return;
-    }
-
-    const newEnrollment: Enrollment = {
-      id: `enrollment-${Date.now()}`,
-      studentId: activeUser.id,
-      courseId,
-      progress: 0,
-      completedLessons: [],
-      isCompleted: false,
-      enrolledAt: new Date().toISOString(),
-    };
-
-    setEnrollments((prev) => [...prev, newEnrollment]);
-
-    setCourses((prevCourses) =>
-      prevCourses.map((c) => (c.id === courseId ? { ...c, enrolledCount: c.enrolledCount + 1 } : c))
-    );
-
-    const targetCourse = courses.find((c) => c.id === courseId);
-    setEnrollSuccessMessage(
-      t('alerts.enrollSuccess', { course: targetCourse?.title })
-    );
-    setTimeout(() => setEnrollSuccessMessage(null), 4000);
-
-    setActiveTab('dashboard');
-    setSelectedCourse(null);
-  };
-
-  // --- Lesson Progression Handlers ---
-  const handleUpdateEnrollment = (
-    enrollmentId: string,
-    completedLessonIds: string[],
-    progress: number,
-    isCompleted: boolean
-  ) => {
-    setEnrollments((prev) =>
-      prev.map((e) =>
-        e.id === enrollmentId
-          ? {
-              ...e,
-              completedLessons: completedLessonIds,
-              progress,
-              isCompleted,
-              completedAt: isCompleted ? new Date().toISOString() : e.completedAt,
-            }
-          : e
-      )
-    );
-  };
-
-  // --- Profile Modification Handler ---
-  const handleUpdateProfile = (updatedFields: Partial<User>) => {
-    if (!activeUser) return;
-    const updatedUser = { ...activeUser, ...updatedFields };
-    setActiveUser(updatedUser);
-    setRegisteredUsers((prev) => prev.map((u) => (u.id === activeUser.id ? updatedUser : u)));
-  };
-
-  // --- Instructor Course Creation Handler ---
-  const handleAddCourse = (newCourse: Course) => {
-    setCourses((prev) => [newCourse, ...prev]);
-  };
-
-  // --- Catalog Filters & Query Searches ---
-  const translatedCourses = courses.map((c) => getTranslatedCourse(c, lang));
-
-  const filteredCourses = translatedCourses.filter((course) => {
-    const matchesCategory =
-      selectedCategory === 'ყველა' ||
-      course.category === translateCategory(selectedCategory, lang) ||
-      course.category === selectedCategory;
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.teacherName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+  const filteredCourses = translatedCourses.filter((c) => {
+    const matchCat = selectedCategory === 'ყველა' || c.category === translateCategory(selectedCategory, lang) || c.category === selectedCategory;
+    const matchSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCat && matchSearch;
   });
 
-  useEffect(() => {
-    i18n.changeLanguage(lang);
-  }, [lang]);
-
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans text-slate-900 antialiased">
-      <Navbar
-        user={activeUser}
-        onLogout={handleLogout}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
-        onTabChange={goToTab}
-        activeTab={activeTab}
-        lang={lang}
-        onLangChange={setLang}
-      />
+    <Routes>
+      {/* ── Standalone auth pages (no layout) ── */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/otp" element={<OtpPage />} />
 
-      {enrollSuccessMessage && (
-        <div
-          id="enroll-success-banner"
-          className="fixed top-20 right-4 z-50 max-w-md rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-xl flex items-center gap-3 animate-bounce"
-        >
-          <CheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
-          <div className="text-left">
-            <span className="text-xs font-bold text-emerald-800 block">{t('alerts.congratulations')}</span>
-            <span className="text-xs text-emerald-600 block mt-0.5">{enrollSuccessMessage}</span>
-          </div>
-        </div>
-      )}
+      {/* ── Main layout ── */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<HomePage activeUser={activeUser} translatedCourses={translatedCourses} enrollments={enrollments} onBrowseCourses={() => window.location.assign('/courses')} onOpenAuth={() => window.location.assign('/login')} onSelectCourse={setSelectedCourse} onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))} onViewAllCourses={() => window.location.assign('/courses')} />} />
 
-      <main className="flex-1">
-        {activeTab === 'home' && (
-          <HomePage
-            lang={lang}
-            activeUser={activeUser}
-            translatedCourses={translatedCourses}
-            enrollments={enrollments}
-            onBrowseCourses={() => goToTab('courses')}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onSelectCourse={setSelectedCourse}
-            onEnroll={handleEnrollInCourse}
-            onViewAllCourses={() => goToTab('courses')}
-          />
-        )}
+        <Route path="/courses" element={<CoursesPage lang={lang} activeUser={activeUser} enrollments={enrollments} filteredCourses={filteredCourses} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} selectedCategory={selectedCategory} onSelectedCategoryChange={setSelectedCategory} onSelectCourse={setSelectedCourse} onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))} />} />
 
-        {activeTab === 'courses' && (
-          <CoursesPage
-            lang={lang}
-            activeUser={activeUser}
-            enrollments={enrollments}
-            filteredCourses={filteredCourses}
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            selectedCategory={selectedCategory}
-            onSelectedCategoryChange={setSelectedCategory}
-            onSelectCourse={setSelectedCourse}
-            onEnroll={handleEnrollInCourse}
-          />
-        )}
+        <Route path="/about" element={<AboutPage lang={lang} />} />
+        <Route path="/offers" element={<OffersPage lang={lang} onSelectCoursesTab={() => window.location.assign('/courses')} onOpenConsultation={() => window.location.assign('/contact')} />} />
+        <Route path="/contact" element={<ContactPage lang={lang} />} />
 
-        {activeTab === 'about' && <AboutPage lang={lang} />}
+        <Route path="/dashboard" element={<RequireAuth><DashboardPage lang={lang} activeUser={activeUser} courses={courses} enrollments={enrollments} onAddCourse={handleAddCourse} onUpdateProfile={handleUpdateProfile} onUpdateEnrollment={handleUpdateEnrollment} onOpenAuth={() => window.location.assign('/login')} /></RequireAuth>} />
 
-        {activeTab === 'offers' && (
-          <OffersPage
-            lang={lang}
-            onSelectCoursesTab={() => goToTab('courses')}
-            onOpenConsultation={() => goToTab('contact')}
-          />
-        )}
+        <Route path="/teacher-sessions" element={<RequireAuth teacherOnly><TeacherDashboardPage lang={lang} activeUser={activeUser} courses={courses} enrollments={enrollments} registeredUsers={registeredUsers} onUpdateProfile={handleUpdateProfile} onOpenAuth={() => window.location.assign('/login')} /></RequireAuth>} />
 
-        {activeTab === 'contact' && <ContactPage lang={lang} />}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
 
-        {activeTab === 'dashboard' && (
-          <DashboardPage
-            lang={lang}
-            activeUser={activeUser}
-            courses={courses}
-            enrollments={enrollments}
-            onAddCourse={handleAddCourse}
-            onUpdateProfile={handleUpdateProfile}
-            onUpdateEnrollment={handleUpdateEnrollment}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-          />
-        )}
-      </main>
-
-      <footer className="border-t border-slate-100 bg-white py-10 text-slate-400 text-xs sm:text-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div className="text-left leading-tight flex items-center gap-2.5">
-            <BrandLogo size="sm" onTabChange={() => goToTab('home')} lang={lang} />
-          </div>
-          <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-500">
-            <button onClick={() => goToTab('about')} className="hover:text-slate-800 transition">
-              {t('footer.about')}
-            </button>
-            <button onClick={() => goToTab('offers')} className="hover:text-slate-800 transition">
-              {t('footer.offers')}
-            </button>
-            <button onClick={() => goToTab('contact')} className="hover:text-slate-800 transition">
-              {t('footer.contact')}
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      <AnimatePresence>
-        {selectedCourse && (
-          <CourseDetailModal
-            course={selectedCourse}
-            isOpen={selectedCourse !== null}
-            onClose={() => setSelectedCourse(null)}
-            isEnrolled={
-              activeUser
-                ? enrollments.some((e) => e.studentId === activeUser.id && e.courseId === selectedCourse.id)
-                : false
-            }
-            onEnroll={() => handleEnrollInCourse(selectedCourse.id)}
-            onStartStudy={() => {
-              setSelectedCourse(null);
-              setActiveTab('dashboard');
-            }}
-            isLoggedIn={activeUser !== null}
-            userRole={activeUser?.role}
-            lang={lang}
-            registeredUsers={registeredUsers}
-            onRegisterUser={handleRegisterUser}
-            onLoginSuccess={(user) => setActiveUser(user)}
-          />
-        )}
-
-        {isAuthModalOpen && (
-          <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-            onSuccess={handleLoginSuccess}
-            registeredUsers={registeredUsers}
-            onRegisterUser={handleRegisterUser}
-            lang={lang}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+export default function App() {
+  return (
+    <AppProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AppProvider>
   );
 }

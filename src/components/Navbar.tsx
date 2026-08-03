@@ -28,6 +28,7 @@ interface NavbarProps {
       | "offers"
       | "contact"
       | "dashboard"
+      | "teacher-sessions"
   ) => void;
 
   activeTab:
@@ -36,7 +37,8 @@ interface NavbarProps {
     | "about"
     | "offers"
     | "contact"
-    | "dashboard";
+    | "dashboard"
+    | "teacher-sessions";
 
   lang: "ka" | "en" | "ru";
   onLangChange: (lang: "ka" | "en" | "ru") => void;
@@ -258,6 +260,26 @@ activeTab==="contact"
 
 </button>
 
+{user?.role === "teacher" && (
+<button
+onClick={()=>onTabChange("teacher-sessions")}
+className={`
+flex items-center gap-1.5 
+px-3 py-2 rounded-xl 
+text-xs font-bold transition
+${
+activeTab==="teacher-sessions"
+?
+"bg-indigo-50 text-indigo-600"
+:
+"text-slate-600 hover:text-slate-950 hover:bg-slate-50"
+}
+`}
+>
+<BookOpen className="h-4 w-4"/>
+{lang === "ka" ? "სესიები" : lang === "ru" ? "Сессии" : "Sessions"}
+</button>
+)}
 
 </nav>
 
@@ -611,7 +633,12 @@ icon:Tag
 id:"contact",
 text:t("navbar.contact"),
 icon:PhoneCall
-}
+},
+...(user?.role === "teacher" ? [{
+id:"teacher-sessions",
+text: lang === "ka" ? "სესიები" : lang === "ru" ? "Сессии" : "Sessions",
+icon:BookOpen
+}] : [])
 
 ].map((item)=>{
 

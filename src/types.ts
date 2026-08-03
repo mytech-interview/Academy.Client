@@ -56,3 +56,37 @@ export interface CourseReview {
   comment: string;
   date: string;
 }
+
+export interface Session {
+  id: string;
+  courseId: string;
+  title: string;
+  teacherId: string;
+  teacherName: string;
+  startDate: string;
+  schedule: string;
+  room?: string;
+  maxStudents: number;
+  enrolledStudentIds: string[];
+}
+
+export interface HomeWork {
+  id: string;
+  sessionId: string;
+  courseId: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  assignedByTeacherId: string;
+}
+
+export interface HomeWorkSubmission {
+  id: string;
+  homeworkId: string;
+  studentId: string;
+  studentName: string;
+  content: string;
+  submittedAt: string;
+  grade?: string;
+  feedback?: string;
+}
