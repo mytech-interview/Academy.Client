@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Course, Enrollment } from '../types';
 import { Language } from '../lib/translations';
 import { mockCourses, mockTeachers, mockStudents } from '../data/mockData';
@@ -126,8 +126,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       otpMode, setOtpMode, otpPendingUser, setOtpPendingUser,
       otpEmail, setOtpEmail, otpPassword, setOtpPassword,
       otpRole, setOtpRole, otpName, setOtpName,
-      otpFirstName, setOtpFirstName, otpLastName, setOtpLastName,
-      otpTelephone, setOtpTelephone,
     }}>
       {children}
     </AppContext.Provider>

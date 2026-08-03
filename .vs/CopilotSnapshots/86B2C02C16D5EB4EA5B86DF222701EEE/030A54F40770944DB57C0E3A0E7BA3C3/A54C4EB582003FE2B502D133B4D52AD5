@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ShieldCheck, ArrowLeft, RefreshCw } from 'lucide-react';
@@ -167,6 +167,26 @@ export default function OtpPage() {
               <p className="mt-2 text-xs text-slate-500 font-medium">
                 {lang === 'ka' ? `კოდი გაიგზავნა: ` : lang === 'ru' ? `Код отправлен на: ` : `Code sent to: `}
                 <strong className="text-slate-700">{otpEmail}</strong>
+              </p>
+            </div>
+
+            {/* Mock OTP hint */}
+            <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200/60 p-4 text-center">
+              <p className="text-xs font-bold text-amber-700 mb-2">
+                🧪 {lang === 'ka' ? 'Mock OTP კოდი:' : lang === 'ru' ? 'Mock OTP код:' : 'Mock OTP code:'}
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                {MOCK_OTP_CODE.split('').map((d, i) => (
+                  <span
+                    key={i}
+                    className="h-9 w-8 flex items-center justify-center rounded-xl bg-amber-100 border border-amber-300 text-base font-black text-amber-800 font-mono"
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-amber-600 mt-2 font-medium">
+                {lang === 'ka' ? 'ჩაწერეთ ქვემოთ ან ჩასვით Ctrl+V' : lang === 'ru' ? 'Введите ниже или вставьте Ctrl+V' : 'Type below or paste with Ctrl+V'}
               </p>
             </div>
 

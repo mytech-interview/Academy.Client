@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Course, Enrollment } from '../types';
 import { Language } from '../lib/translations';
 import { mockCourses, mockTeachers, mockStudents } from '../data/mockData';
@@ -26,17 +26,14 @@ interface AppContextValue {
   handleUpdateEnrollment: (id: string, lessons: string[], progress: number, completed: boolean) => void;
   enrollSuccessMessage: string | null;
   // OTP flow state
-  otpMode: 'login' | 'register';
+  otpMode: 'login' | 'register';          // ← NEW: which flow triggered OTP
   setOtpMode: (v: 'login' | 'register') => void;
-  otpPendingUser: User | null;
+  otpPendingUser: User | null;             // ← NEW: the existing user being logged in
   setOtpPendingUser: (u: User | null) => void;
   otpEmail: string; setOtpEmail: (v: string) => void;
   otpPassword: string; setOtpPassword: (v: string) => void;
   otpRole: 'student' | 'teacher'; setOtpRole: (v: 'student' | 'teacher') => void;
   otpName: string; setOtpName: (v: string) => void;
-  otpFirstName: string; setOtpFirstName: (v: string) => void;
-  otpLastName: string; setOtpLastName: (v: string) => void;
-  otpTelephone: string; setOtpTelephone: (v: string) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -74,9 +71,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [otpPassword, setOtpPassword] = useState('');
   const [otpRole, setOtpRole] = useState<'student' | 'teacher'>('student');
   const [otpName, setOtpName] = useState('');
-  const [otpFirstName, setOtpFirstName] = useState('');
-  const [otpLastName, setOtpLastName] = useState('');
-  const [otpTelephone, setOtpTelephone] = useState('');
 
   useEffect(() => { localStorage.setItem('academy_lang', lang); }, [lang]);
   useEffect(() => {
@@ -126,8 +120,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       otpMode, setOtpMode, otpPendingUser, setOtpPendingUser,
       otpEmail, setOtpEmail, otpPassword, setOtpPassword,
       otpRole, setOtpRole, otpName, setOtpName,
-      otpFirstName, setOtpFirstName, otpLastName, setOtpLastName,
-      otpTelephone, setOtpTelephone,
     }}>
       {children}
     </AppContext.Provider>

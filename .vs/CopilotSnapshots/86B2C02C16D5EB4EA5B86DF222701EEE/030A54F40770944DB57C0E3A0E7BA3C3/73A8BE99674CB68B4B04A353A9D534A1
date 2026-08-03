@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Mail, Lock, Eye, EyeOff, GraduationCap } from 'lucide-react';
@@ -68,6 +68,23 @@ export default function LoginPage() {
               </div>
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t('auth.titleLogin')}</h1>
               <p className="mt-2 text-xs text-slate-500 font-medium">{t('auth.subtitleLogin')}</p>
+            </div>
+
+            {/* Demo hint */}
+            <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200/60 p-4 text-xs text-amber-800">
+              <p className="font-bold mb-1.5">
+                🧪 {lang === 'ka' ? 'ტესტის ანგარიშები:' : lang === 'ru' ? 'Тестовые аккаунты:' : 'Demo accounts:'}
+              </p>
+              <div className="space-y-1 font-mono text-[11px]">
+                <p>👩‍🏫 <strong>m.beridze@academy.ge</strong> — {lang === 'ka' ? 'მასწავლებელი' : 'Teacher'}</p>
+                <p>🎓 <strong>demo.student@academy.ge</strong> — {lang === 'ka' ? 'სტუდენტი' : 'Student'}</p>
+                <p className="text-amber-600 mt-1">
+                  {lang === 'ka' ? 'პაროლი: ნებისმიერი' : lang === 'ru' ? 'Пароль: любой' : 'Password: anything'}
+                </p>
+                <p className="text-amber-700 font-bold mt-1.5">
+                  🔐 OTP: <span className="font-mono tracking-widest">{MOCK_OTP_CODE}</span>
+                </p>
+              </div>
             </div>
 
             {/* Error */}

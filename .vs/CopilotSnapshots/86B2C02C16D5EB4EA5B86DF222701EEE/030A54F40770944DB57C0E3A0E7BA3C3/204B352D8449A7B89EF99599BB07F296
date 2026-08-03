@@ -1,0 +1,25 @@
+﻿import { createOtp, validateOtp, registerUser, CreateOtpRequest, ValidateOtpRequest, RegisterUserRequest } from "./authApi";
+
+// --- LOGIN FLOW ---
+
+export async function loginSendOtp(email: string, password: string) {
+  return createOtp({ email, password });
+}
+
+export async function loginVerifyOtp(email: string, otpNumber: string) {
+  return validateOtp({ email, otpNumber });
+}
+
+// --- REGISTRATION FLOW ---
+
+export async function registerSendOtp(email: string, password: string) {
+  return createOtp({ email, password });
+}
+
+export async function registerVerifyOtp(email: string, otpNumber: string) {
+  return validateOtp({ email, otpNumber });
+}
+
+export async function completeRegistration(payload: RegisterUserRequest) {
+  return registerUser(payload);
+}
