@@ -76,21 +76,39 @@ export default function OtpPage() {
       const result = await validateOtp({ email: otpEmail, otpNumber: code });
 
       if (otpMode === 'login') {
-        // LOGIN flow: build user from API response
         const auth = (result as any)?.authResponse;
+
+        // Map roleId from API to role string
+        const roleMap: Record<number, 'student' | 'teacher' | 'admin'> = {
+          1: 'student',
+          2: 'teacher',
+          3: 'admin',
+        };
+        const resolvedRole = roleMap[auth?.roleId] ?? 'student';
+
         const loggedInUser: User = otpPendingUser ?? {
           id: auth?.userGuid ?? `user-${Date.now()}`,
           email: auth?.email ?? otpEmail,
           name: `${auth?.firstName ?? ''} ${auth?.lastName ?? ''}`.trim() || otpEmail,
-          role: otpRole,
+          role: resolvedRole,
           avatar: undefined,
           createdAt: new Date().toISOString(),
         };
+
         if ((result as any)?.token) {
           localStorage.setItem('academy_token', (result as any).token);
         }
+
         handleLoginSuccess(loggedInUser);
-        navigate(loggedInUser.role === 'teacher' ? '/teacher-sessions' : '/dashboard', { replace: true });
+
+        // Navigate based on role
+        if (resolvedRole === 'admin') {
+          navigate('/admin-dashboard', { replace: true });
+        } else if (resolvedRole === 'teacher') {
+          navigate('/teacher-sessions', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       } else {
         // ── REGISTER flow: call registerUser API then create local user ─────
         await registerUser({

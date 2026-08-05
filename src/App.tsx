@@ -12,6 +12,7 @@ import OffersPage from './pages/OffersPage';
 import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 // Auth pages (no Navbar/Footer)
 import LoginPage from './pages/LoginPage';
@@ -23,10 +24,19 @@ import { mockCategories } from './data/mockData';
 import { useState } from 'react';
 import { Course } from './types';
 
-function RequireAuth({ children, teacherOnly = false }: { children: React.ReactNode; teacherOnly?: boolean }) {
+function RequireAuth({
+  children,
+  teacherOnly = false,
+  adminOnly = false,
+}: {
+  children: React.ReactNode;
+  teacherOnly?: boolean;
+  adminOnly?: boolean;
+}) {
   const { activeUser } = useApp();
   if (!activeUser) return <Navigate to="/login" replace />;
   if (teacherOnly && activeUser.role !== 'teacher') return <Navigate to="/dashboard" replace />;
+  if (adminOnly && activeUser.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -90,6 +100,15 @@ function AppRoutes() {
         <Route path="/dashboard" element={<RequireAuth><DashboardPage lang={lang} activeUser={activeUser} courses={courses} enrollments={enrollments} onAddCourse={handleAddCourse} onUpdateProfile={handleUpdateProfile} onUpdateEnrollment={handleUpdateEnrollment} onOpenAuth={() => window.location.assign('/login')} /></RequireAuth>} />
 
         <Route path="/teacher-sessions" element={<RequireAuth teacherOnly><TeacherDashboardPage lang={lang} activeUser={activeUser} courses={courses} enrollments={enrollments} registeredUsers={registeredUsers} onUpdateProfile={handleUpdateProfile} onOpenAuth={() => window.location.assign('/login')} /></RequireAuth>} />
+
+        <Route
+          path="/admin-dashboard"
+          element={
+            <RequireAuth adminOnly>
+              <AdminDashboardPage />
+            </RequireAuth>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
