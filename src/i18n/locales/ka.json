@@ -15,6 +15,9 @@
   "btnJoin": "ჩარიცხვა"
 }
   },
+ "course": {
+    "durationWeeks": "{{count}} კვირა"
+  },
   "footer": {
   "about": "ჩვენ შესახებ",
   "offers": "სპეციალური შეთავაზებები",

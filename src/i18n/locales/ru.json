@@ -2,7 +2,7 @@
    "home": {
     "featured": {
       "badge": "Рекомендуемые программы",
-      "title": "урсы",
+      "title": "Курсы",
       "description": "Изучайте самые востребованные профессии с высокой оплатой. Начните с нуля и станьте профессионалом.",
       "button": "Посмотреть все курсы"
     },
@@ -14,6 +14,12 @@
   "spotsLeft": "мест осталось",
   "btnJoin": "Записаться"
 }
+  },
+  "course": {
+    "durationWeeks_one": "{{count}} неделя",
+    "durationWeeks_few": "{{count}} недели",
+    "durationWeeks_many": "{{count}} недель",
+    "durationWeeks_other": "{{count}} нед."
   },
   "footer": {
   "about": "О нас",

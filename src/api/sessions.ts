@@ -19,7 +19,7 @@ export async function getHomeActiveSessions(
   });
 
   if (!response.ok) {
-    throw new Error('Не удалось получить активные сессии');
+    throw new Error('');
   }
 
   const text = await response.text();
@@ -28,8 +28,9 @@ export async function getHomeActiveSessions(
     : { activeSessions: [], errMsg: null, errorCode: null, err: 0 };
 
   if (data.err !== 0) {
-    throw new Error(data.errMsg ?? 'Не удалось получить активные сессии');
+    throw new Error(data.errMsg ?? '');
   }
 
-  return data.activeSessions;
+  // Safely fallback to an empty array if activeSessions is null/undefined
+  return data.activeSessions || [];
 }
