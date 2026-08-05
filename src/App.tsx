@@ -31,7 +31,19 @@ function RequireAuth({ children, teacherOnly = false }: { children: React.ReactN
 }
 
 function AppRoutes() {
-  const { lang, activeUser, courses, enrollments, registeredUsers, handleUpdateProfile, handleAddCourse, handleUpdateEnrollment, translatedCourses, handleEnrollInCourse } = useApp();
+  const {
+    lang,
+    activeUser,
+    courses,
+    enrollments,
+    activeSessions,
+    registeredUsers,
+    handleUpdateProfile,
+    handleAddCourse,
+    handleUpdateEnrollment,
+    translatedCourses,
+    handleEnrollInCourse,
+  } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ყველა');
@@ -52,7 +64,22 @@ function AppRoutes() {
 
       {/* ── Main layout ── */}
       <Route element={<AppLayout />}>
-        <Route path="/" element={<HomePage activeUser={activeUser} translatedCourses={translatedCourses} enrollments={enrollments} onBrowseCourses={() => window.location.assign('/courses')} onOpenAuth={() => window.location.assign('/login')} onSelectCourse={setSelectedCourse} onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))} onViewAllCourses={() => window.location.assign('/courses')} />} />
+        <Route
+          path="/"
+          element={
+            <HomePage
+              activeUser={activeUser}
+              translatedCourses={translatedCourses}
+              enrollments={enrollments}
+              activeSessions={activeSessions}
+              onBrowseCourses={() => window.location.assign('/courses')}
+              onOpenAuth={() => window.location.assign('/login')}
+              onSelectCourse={setSelectedCourse}
+              onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))}
+              onViewAllCourses={() => window.location.assign('/courses')}
+            />
+          }
+        />
 
         <Route path="/courses" element={<CoursesPage lang={lang} activeUser={activeUser} enrollments={enrollments} filteredCourses={filteredCourses} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} selectedCategory={selectedCategory} onSelectedCategoryChange={setSelectedCategory} onSelectCourse={setSelectedCourse} onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))} />} />
 

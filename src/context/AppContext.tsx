@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Course, Enrollment } from '../types';
+import { User, Course, Enrollment, ActiveSession } from '../types';
 import { Language } from '../lib/translations';
 import { mockCourses, mockTeachers, mockStudents } from '../data/mockData';
 import { getTranslatedCourse } from '../lib/courseTranslations';
+import { getHomeActiveSessions } from '../api/sessions';
 import i18n from '../i18n';
 
 interface AppContextValue {
@@ -15,6 +16,8 @@ interface AppContextValue {
   enrollments: Enrollment[];
   setEnrollments: React.Dispatch<React.SetStateAction<Enrollment[]>>;
   translatedCourses: Course[];
+  activeSessions: ActiveSession[];
+  setActiveSessions: React.Dispatch<React.SetStateAction<ActiveSession[]>>;
   lang: Language;
   setLang: (l: Language) => void;
   handleLoginSuccess: (user: User) => void;
@@ -66,6 +69,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return s ? JSON.parse(s) : [...mockTeachers, ...mockStudents];
   });
   const [enrollSuccessMessage, setEnrollSuccessMessage] = useState<string | null>(null);
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
 
   // OTP flow
   const [otpMode, setOtpMode] = useState<'login' | 'register'>('login');
@@ -87,6 +91,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { localStorage.setItem('academy_enrollments', JSON.stringify(enrollments)); }, [enrollments]);
   useEffect(() => { localStorage.setItem('academy_registered_users', JSON.stringify(registeredUsers)); }, [registeredUsers]);
   useEffect(() => { i18n.changeLanguage(lang); }, [lang]);
+
+useEffect(() => {
+  getHomeActiveSessions(1) 
+    .then(setActiveSessions)
+    .catch((err) => console.error('Ошибка загрузки активных сессий:', err));
+}, []);
 
   const translatedCourses = courses.map((c) => getTranslatedCourse(c, lang));
   const setLang = (l: Language) => setLangState(l);
@@ -120,6 +130,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       activeUser, setActiveUser, registeredUsers, setRegisteredUsers,
       courses, setCourses, enrollments, setEnrollments, translatedCourses,
+      activeSessions, setActiveSessions,
       lang, setLang, handleLoginSuccess, handleLogout, handleRegisterUser,
       handleUpdateProfile, handleAddCourse, handleEnrollInCourse, handleUpdateEnrollment,
       enrollSuccessMessage,

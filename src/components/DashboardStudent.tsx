@@ -1,26 +1,25 @@
 import React, { useState } from 'react';
-import { 
-  BookOpen, 
-  Award, 
-  CheckCircle2, 
-  ChevronRight, 
-  Sparkles, 
-  Clock, 
-  Check, 
-  User as UserIcon, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Smartphone, 
-  Lock, 
-  Camera, 
-  Edit3, 
-  HelpCircle,
+import {
+  BookOpen,
+  Award,
+  CheckCircle2,
+  ChevronRight,
+  Sparkles,
+  Clock,
+  Check,
+  User as UserIcon,
+  Mail,
+  Phone,
+  MapPin,
+  Smartphone,
+  Lock,
+  Camera,
+  Edit3,
   FileText
 } from 'lucide-react';
-import { Course, Enrollment, Lesson, User } from '../types';
-import { Language, translations, getTranslatedCourse } from '../lib/translations';
+import { useTranslation } from 'react-i18next';
+import { Course, Enrollment, User } from '../types';
+import { Language, getTranslatedCourse } from '../lib/translations';
 
 interface DashboardStudentProps {
   student: User;
@@ -46,11 +45,11 @@ export default function DashboardStudent({
   onUpdateProfile,
   lang
 }: DashboardStudentProps) {
-  const t = translations[lang];
-  
+  const { t } = useTranslation();
+
   // Tab control
   const [activeSubTab, setActiveSubTab] = useState<'study' | 'profile'>('study');
-  
+
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [attendanceCodeInput, setAttendanceCodeInput] = useState('');
@@ -62,8 +61,8 @@ export default function DashboardStudent({
   const [profName, setProfName] = useState(student.name);
   const [profEmail, setProfEmail] = useState(student.email);
   const [profPhone, setProfPhone] = useState((student as any).phone || '+995 599 123 456');
-  const [profHeadline, setProfHeadline] = useState(student.headline || 'სტუდენტი აკადემიაში');
-  const [profBio, setProfBio] = useState(student.bio || 'მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.');
+  const [profHeadline, setProfHeadline] = useState(student.headline || t('studentDashboard.defaultHeadline', 'სტუდენტი აკადემიაში'));
+  const [profBio, setProfBio] = useState(student.bio || t('studentDashboard.defaultBio', 'მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.'));
   const [profAvatar, setProfAvatar] = useState(student.avatar || AVATAR_PRESETS[0]);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
@@ -94,8 +93,8 @@ export default function DashboardStudent({
 
   // Lessons for active course
   const activeLessons = activeCourse?.lessons || [];
-  const currentLessonIndex = activeLessonId 
-    ? activeLessons.findIndex(l => l.id === activeLessonId) 
+  const currentLessonIndex = activeLessonId
+    ? activeLessons.findIndex(l => l.id === activeLessonId)
     : 0;
   const currentLesson = activeLessons[currentLessonIndex] || activeLessons[0];
 
@@ -126,7 +125,7 @@ export default function DashboardStudent({
     if (attendanceCodeInput.trim() === currentExpectedCode) {
       setAttendanceError(false);
       setAttendanceSuccess(true);
-      
+
       // Mark as completed
       let updatedCompleted = [...activeEnrollment.completedLessons];
       if (!updatedCompleted.includes(currentLesson.id)) {
@@ -168,63 +167,6 @@ export default function DashboardStudent({
     }
   };
 
-  const helloTexts = {
-    ka: `გამარჯობა, ${student.name}! 👋`,
-    en: `Hello, ${student.name}! 👋`,
-    ru: `Привет, ${student.name}! 👋`
-  };
-
-  const localT = {
-    studyTab: { ka: 'სასწავლო კაბინეტი', en: 'Study Room', ru: 'Учебный кабинет' },
-    profileTab: { ka: 'პირადი მონაცემები', en: 'Personal Data', ru: 'Личные данные' },
-    leaveClassroom: { ka: '← კურსებიდან გამოსვლა', en: '← Leave Classroom', ru: '← Выйти из учебного класса' },
-    overallProgress: { ka: 'სრული პროგრესი', en: 'Overall Progress', ru: 'Общий прогресс' },
-    lessonsList: { ka: 'სალექციო შეხვედრები & დასწრება', en: 'Lecture Meetings & Attendance', ru: 'Лекционные занятия и посещаемость' },
-    physicalLec: { ka: 'აუდიტორიული ლექცია', en: 'On-site Lecture', ru: 'Офлайн лекция в классе' },
-    activeCoursesTitle: { ka: 'ჩემი აქტიური კურსები', en: 'My Active Courses', ru: 'Мои активные курсы' },
-    noCoursesYet: {
-      ka: 'თქვენ ჯერ არ ხართ დარეგისტრირებული არცერთ კურსზე. აირჩიეთ სასურველი კურსი მთავარი გვერდიდან.',
-      en: 'You are not enrolled in any courses yet. Choose your course from the main page.',
-      ru: 'Вы еще не записаны ни на один курс. Выберите подходящий на главной странице.'
-    },
-    noCoursesSubtitle: {
-      ka: 'გადადით კურსების კატალოგში, შეარჩიეთ თქვენთვის სასურველი მიმართულება და დაიწყეთ სწავლა დღესვე!',
-      en: 'Go to the course catalog, select your desired direction and start learning today!',
-      ru: 'Перейдите в каталог курсов, выберите интересующее направление и начните обучение уже сегодня!'
-    },
-    progressLabel: { ka: 'პროგრესი', en: 'Progress', ru: 'Прогресс' },
-    certificateBtn: { ka: 'სერტიფიკატი', en: 'Certificate', ru: 'Сертификат' },
-    lessonsLeft: {
-      ka: (n: number) => `დარჩა ${n} შეხვედრა`,
-      en: (n: number) => `${n} lectures left`,
-      ru: (n: number) => `Осталось ${n} занятий`
-    },
-    startStudy: { ka: 'აუდიტორიაში შესვლა', en: 'Enter Classroom', ru: 'Войти в учебный класс' },
-    continueStudy: { ka: 'სწავლის გაგრძელება', en: 'Continue Classroom', ru: 'Продолжить обучение' },
-    certTitle: { ka: 'სწავლის დასრულების სერტიფიკატი', en: 'Certificate of Completion', ru: 'Сертификат об окончании обучения' },
-    certSub: { ka: 'ეს სერტიფიკატი ეძლევა სტუდენტს:', en: 'This certificate is awarded to:', ru: 'Настоящий сертификат выдается студенту:' },
-    certCompleted: { ka: 'წარმატებით დაასრულა აკადემიის აუდიტორიული სასწავლო კურსი:', en: 'Has successfully completed the academy classroom course:', ru: 'Успешно окончил(а) офлайн-курс академии:' },
-    certDate: { ka: 'თარიღი', en: 'Date', ru: 'Дата' },
-    certSignature: { ka: 'აკადემიის ხელმოწერა', en: 'Academy Signature', ru: 'Подпись академии' },
-    certPrintBtn: { ka: 'ბეჭდვა / PDF შენახვა', en: 'Print / Save as PDF', ru: 'Печать / Сохранить как PDF' },
-    
-    // Profile labels
-    profEditTitle: { ka: 'პირადი მონაცემების რედაქტირება', en: 'Edit Personal Details', ru: 'Редактировать личные данные' },
-    profEditSub: { ka: 'განაახლეთ თქვენი პროფილი, რათა ინფორმაცია სწორად აისახოს სერტიფიკატებსა და ჟურნალში', en: 'Update your profile so information is accurate on certificates and attendance log', ru: 'Обновите свой профиль, чтобы информация верно отображалась в сертификатах и журнале' },
-    fullNameLabel: { ka: 'სახელი და გვარი *', en: 'Full Name *', ru: 'Имя и фамилия *' },
-    phoneLabel: { ka: 'ტელეფონის ნომერი *', en: 'Phone Number *', ru: 'Номер телефона *' },
-    headlineLabel: { ka: 'პროფესია / სტატუსი', en: 'Headline / Status', ru: 'Профессия / Статус' },
-    bioLabel: { ka: 'ჩემ შესახებ', en: 'About Me', ru: 'О себе' },
-    avatarSelectLabel: { ka: 'აირჩიეთ ავატარი', en: 'Select Avatar', ru: 'Выберите аватар' },
-    saveChangesBtn: { ka: 'ცვლილებების შენახვა', en: 'Save Changes', ru: 'Сохранить изменения' },
-    profileSavedSuccess: { ka: 'პროფილი წარმატებით განახლდა!', en: 'Profile updated successfully!', ru: 'Профиль успешно обновлен!' },
-    selectLesson: {
-      ka: 'გთხოვთ, მარცხენა მენიუდან აირჩიოთ სასურველი ლექცია დეტალების სანახავად',
-      en: 'Please select a lecture from the left sidebar to see physical classroom details',
-      ru: 'Пожалуйста, выберите лекцию в левом меню для просмотра деталей аудитории'
-    }
-  };
-
   return (
     <div id="student-dashboard" className="space-y-8 py-4 text-left">
       {/* Welcome Banner */}
@@ -236,12 +178,12 @@ export default function DashboardStudent({
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 z-10 relative">
           <div className="space-y-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">{t.studentWelcomeBadge}</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">{t('studentWelcomeBadge')}</span>
             <h2 id="welcome-student-title" className="text-2xl font-black tracking-tight sm:text-3xl">
-              {helloTexts[lang]}
+              {t('studentDashboard.greeting', { name: student.name })}
             </h2>
             <p className="text-sm text-indigo-100/90 font-light leading-relaxed">
-              {t.studentWelcomeText}
+              {t('studentWelcomeText')}
             </p>
           </div>
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm shrink-0">
@@ -258,7 +200,7 @@ export default function DashboardStudent({
             activeSubTab === 'study' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
           }`}
         >
-          {localT.studyTab[lang]}
+          {t('studentDashboard.studyTab')}
           {activeSubTab === 'study' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
           )}
@@ -269,7 +211,7 @@ export default function DashboardStudent({
             activeSubTab === 'profile' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
           }`}
         >
-          {localT.profileTab[lang]}
+          {t('studentDashboard.profileTab')}
           {activeSubTab === 'profile' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full" />
           )}
@@ -280,19 +222,19 @@ export default function DashboardStudent({
         /* PROFILE EDITOR TAB */
         <div className="rounded-[2.5rem] border border-slate-200 bg-white p-6 sm:p-10 shadow-sm animate-fade-in text-left">
           <div className="border-b border-slate-100 pb-4 mb-6">
-            <h3 className="text-lg font-black text-slate-950 tracking-tight">{localT.profEditTitle[lang]}</h3>
-            <p className="text-xs text-slate-400 mt-1">{localT.profEditSub[lang]}</p>
+            <h3 className="text-lg font-black text-slate-950 tracking-tight">{t('studentDashboard.profEditTitle')}</h3>
+            <p className="text-xs text-slate-400 mt-1">{t('studentDashboard.profEditSub')}</p>
           </div>
 
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             {/* Avatar Preset selector */}
             <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-700 block">{localT.avatarSelectLabel[lang]}</label>
+              <label className="text-xs font-bold text-slate-700 block">{t('studentDashboard.avatarSelectLabel')}</label>
               <div className="flex flex-wrap items-center gap-6 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
                 <div className="relative group shrink-0">
-                  <img 
-                    src={profAvatar} 
-                    alt="Current Avatar" 
+                  <img
+                    src={profAvatar}
+                    alt="Current Avatar"
                     className="h-16 w-16 rounded-2xl object-cover ring-2 ring-indigo-600/30 shadow-md"
                   />
                   <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
@@ -301,7 +243,7 @@ export default function DashboardStudent({
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">{lang === 'ka' ? 'აირჩიეთ მზა ავატარი' : lang === 'ru' ? 'Выберите готовый аватар' : 'Choose ready avatar'}</span>
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">{t('studentDashboard.chooseReadyAvatar')}</span>
                   <div className="flex gap-2">
                     {AVATAR_PRESETS.map((preset, idx) => (
                       <button
@@ -321,7 +263,7 @@ export default function DashboardStudent({
                 <div className="h-10 w-[1px] bg-slate-200 hidden sm:block"></div>
 
                 <div className="space-y-2">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">{lang === 'ka' ? 'ან ატვირთეთ საკუთარი ფოტო' : lang === 'ru' ? 'Или загрузите свое фото' : 'Or upload your own'}</span>
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">{t('studentDashboard.uploadOwnPhoto')}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -345,7 +287,7 @@ export default function DashboardStudent({
                     className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer transition shadow-sm active:scale-[0.98]"
                   >
                     <Camera className="h-3.5 w-3.5 text-slate-500" />
-                    <span>{lang === 'ka' ? 'ფოტოს არჩევა' : lang === 'ru' ? 'Выбрать файл' : 'Select Photo'}</span>
+                    <span>{t('studentDashboard.selectPhotoBtn')}</span>
                   </label>
                 </div>
               </div>
@@ -354,7 +296,7 @@ export default function DashboardStudent({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Full Name */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">{localT.fullNameLabel[lang]}</label>
+                <label className="text-xs font-bold text-slate-700">{t('studentDashboard.fullNameLabel')}</label>
                 <div className="relative">
                   <UserIcon className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
@@ -369,7 +311,7 @@ export default function DashboardStudent({
 
               {/* Email (Readonly mock-up of auth state) */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">ელ-ფოსტა *</label>
+                <label className="text-xs font-bold text-slate-700">{t('studentDashboard.emailLabel')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
@@ -384,7 +326,7 @@ export default function DashboardStudent({
 
               {/* Phone */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">{localT.phoneLabel[lang]}</label>
+                <label className="text-xs font-bold text-slate-700">{t('studentDashboard.phoneLabel')}</label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
@@ -399,7 +341,7 @@ export default function DashboardStudent({
 
               {/* Headline */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">{localT.headlineLabel[lang]}</label>
+                <label className="text-xs font-bold text-slate-700">{t('studentDashboard.headlineLabel')}</label>
                 <div className="relative">
                   <Edit3 className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
@@ -414,7 +356,7 @@ export default function DashboardStudent({
 
             {/* Bio */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">{localT.bioLabel[lang]}</label>
+              <label className="text-xs font-bold text-slate-700">{t('studentDashboard.bioLabel')}</label>
               <textarea
                 value={profBio}
                 onChange={(e) => setProfBio(e.target.value)}
@@ -427,7 +369,7 @@ export default function DashboardStudent({
             {profileSuccess && (
               <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                {localT.profileSavedSuccess[lang]}
+                {t('studentDashboard.profileSavedSuccess')}
               </div>
             )}
 
@@ -437,7 +379,7 @@ export default function DashboardStudent({
                 type="submit"
                 className="rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white hover:bg-indigo-700 transition active:scale-[0.98] shadow-md cursor-pointer"
               >
-                {localT.saveChangesBtn[lang]}
+                {t('studentDashboard.saveChangesBtn')}
               </button>
             </div>
           </form>
@@ -452,7 +394,7 @@ export default function DashboardStudent({
                 <BookOpen className="h-6 w-6" />
               </div>
               <div>
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.studentStatActive}</span>
+                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t('studentStatActive')}</span>
                 <span id="stat-active-courses" className="block text-2xl font-black text-slate-900 font-display">{totalEnrolled}</span>
               </div>
             </div>
@@ -462,7 +404,7 @@ export default function DashboardStudent({
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <div>
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.studentStatCompleted}</span>
+                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t('studentStatCompleted')}</span>
                 <span id="stat-completed-courses" className="block text-2xl font-black text-slate-900 font-display">{totalCompleted}</span>
               </div>
             </div>
@@ -472,7 +414,7 @@ export default function DashboardStudent({
                 <Award className="h-6 w-6" />
               </div>
               <div>
-                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.studentStatProgress}</span>
+                <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t('studentStatProgress')}</span>
                 <span id="stat-avg-progress" className="block text-2xl font-black text-slate-900 font-display">{avgProgress}%</span>
               </div>
             </div>
@@ -489,17 +431,17 @@ export default function DashboardStudent({
                     onClick={() => setActiveCourseId(null)}
                     className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
                   >
-                    {localT.leaveClassroom[lang]}
+                    {t('studentDashboard.leaveClassroom')}
                   </button>
                   <h3 className="text-base font-extrabold text-slate-950 font-sans tracking-tight leading-tight">
                     {activeCourse.title}
                   </h3>
                 </div>
-                
+
                 {/* Progress status */}
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <span className="text-xs font-bold text-slate-500 block">{localT.overallProgress[lang]}</span>
+                    <span className="text-xs font-bold text-slate-500 block">{t('studentDashboard.overallProgress')}</span>
                     <span className="text-sm font-extrabold text-indigo-600 block">{activeEnrollment.progress}%</span>
                   </div>
                   <div className="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
@@ -514,12 +456,12 @@ export default function DashboardStudent({
               <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[500px]">
                 {/* Syllabus Navigation Left Sidebar */}
                 <div className="lg:col-span-4 border-r border-slate-100 p-4 bg-slate-50/30 overflow-y-auto max-h-[500px]">
-                  <span className="block text-xs uppercase font-bold tracking-wider text-slate-400 mb-3">{localT.lessonsList[lang]}</span>
+                  <span className="block text-xs uppercase font-bold tracking-wider text-slate-400 mb-3">{t('studentDashboard.lessonsList')}</span>
                   <div className="space-y-1.5">
                     {activeLessons.map((lesson, idx) => {
                       const isCompleted = activeEnrollment.completedLessons.includes(lesson.id);
                       const isActive = lesson.id === activeLessonId;
-                      
+
                       return (
                         <button
                           key={lesson.id}
@@ -550,7 +492,7 @@ export default function DashboardStudent({
                               {lesson.title}
                             </span>
                             <span className="text-[10px] font-mono font-medium text-slate-400 block pt-0.5">
-                              {lesson.duration} • {localT.physicalLec[lang]}
+                              {lesson.duration} • {t('studentDashboard.physicalLec')}
                             </span>
                           </div>
                         </button>
@@ -567,18 +509,14 @@ export default function DashboardStudent({
                       <div className="border-b border-slate-100 pb-4">
                         <div className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-100/50 px-2 py-1 text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider font-mono">
                           <MapPin className="h-3 w-3" />
-                          {lang === 'ka' ? 'აუდიტორია #204' : lang === 'ru' ? 'Аудитория №204' : 'Auditorium #204'}
+                          {t('studentDashboard.auditoriumBadge')}
                         </div>
                         <h4 className="mt-2 text-lg font-black text-slate-950 leading-tight font-sans">
                           {currentLesson.title}
                         </h4>
                         <span className="text-xs text-slate-400 mt-1 block flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5 inline text-slate-300" />
-                          {lang === 'ka' 
-                            ? `განრიგი: ორშაბათი და ხუთშაბათი, 19:00 - 21:00 (ხანგრძლივობა: ${currentLesson.duration})`
-                            : lang === 'ru'
-                            ? `Расписание: Пн и Чт, 19:00 - 21:00 (длительность: ${currentLesson.duration})`
-                            : `Schedule: Mon & Thu, 19:00 - 21:00 (Duration: ${currentLesson.duration})`}
+                          {t('studentDashboard.scheduleInfo', { duration: currentLesson.duration })}
                         </span>
                       </div>
 
@@ -587,23 +525,13 @@ export default function DashboardStudent({
                         <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 sm:p-5 text-xs text-slate-600 leading-relaxed space-y-3">
                           <h5 className="font-extrabold text-slate-950 text-sm flex items-center gap-1.5">
                             <FileText className="h-4 w-4 text-slate-400" />
-                            {lang === 'ka' ? 'სალექციო თემატიკა & დავალება' : lang === 'ru' ? 'Тематика лекции и задание' : 'Lecture Topics & Task'}
+                            {t('studentDashboard.lectureTopicsHeader')}
                           </h5>
                           <p className="font-light">
-                            {currentLesson.content || (
-                              lang === 'ka' 
-                                ? 'ამ გაკვეთილში გაეცნობით საინტერესო ასპექტებს და კურსის ძირითად მიმართულებებს. ჩანიშნეთ მნიშვნელოვანი ტერმინები და გაიმეორეთ პრაქტიკული სავარჯიშოები კოდის რედაქტორში.'
-                                : lang === 'ru'
-                                ? 'В этом уроке вы узнаете об интересных аспектах и основных направлениях курса. Записывайте важные термины и тренируйтесь в редакторе.'
-                                : 'In this lesson, you will learn about interesting aspects and main directions of the course. Take notes of important terms and practice in your editor.'
-                            )}
+                            {currentLesson.content || t('studentDashboard.defaultLessonContent')}
                           </p>
                           <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50 text-indigo-800 font-medium">
-                            💡 {lang === 'ka' 
-                                  ? 'აუდიტორიული დავალება: მოამზადეთ პრაქტიკული პროექტის სკეტჩი და დაწერეთ საწყისი კოდი შემდგომ შეხვედრაზე პროექტორზე საჩვენებლად.' 
-                                  : lang === 'ru'
-                                  ? 'Задание в аудитории: подготовьте эскиз практического проекта для демонстрации на проекторе на следующем занятии.'
-                                  : 'On-site assignment: Prepare a practical project sketch for projector demonstration in the next class.'}
+                            💡 {t('studentDashboard.onSiteAssignment')}
                           </div>
                         </div>
 
@@ -611,31 +539,23 @@ export default function DashboardStudent({
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
                           <h5 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                             <Smartphone className="h-4.5 w-4.5 text-indigo-600" />
-                            {lang === 'ka' ? 'აუდიტორიაში დასწრების რეგისტრაცია' : lang === 'ru' ? 'Регистрация присутствия в классе' : 'Physical Classroom Attendance Check'}
+                            {t('studentDashboard.attendanceCheckHeader')}
                           </h5>
 
                           {activeEnrollment.completedLessons.includes(currentLesson.id) ? (
                             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-800 text-xs font-bold space-y-1">
                               <div className="flex items-center gap-1.5">
                                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                {lang === 'ka' ? 'დასწრება დადასტურებულია ✓' : lang === 'ru' ? 'Присутствие подтверждено ✓' : 'Attendance Confirmed ✓'}
+                                {t('studentDashboard.attendanceConfirmedTitle')}
                               </div>
                               <p className="text-[10px] font-normal text-emerald-600/90 pl-6">
-                                {lang === 'ka' 
-                                  ? 'თქვენ წარმატებით დაესწარით ამ ლექციას ფიზიკურად აუდიტორიაში. თქვენი ადგილი: მერხი #14.' 
-                                  : lang === 'ru'
-                                  ? 'Вы успешно присутствовали на этой лекции в классе. Ваше место: парта №14.'
-                                  : 'You successfully attended this physical lecture. Your seat: Desk #14.'}
+                                {t('studentDashboard.attendanceConfirmedDesc')}
                               </p>
                             </div>
                           ) : (
                             <div className="space-y-3">
                               <p className="text-[11px] text-slate-500 leading-relaxed font-light">
-                                {lang === 'ka' 
-                                  ? 'დასწრების დასადასტურებლად შეიყვანეთ ლექტორის მიერ სალექციო დაფაზე დაწერილი 4-ნიშნა კოდი:' 
-                                  : lang === 'ru'
-                                  ? 'Для подтверждения присутствия введите 4-значный код, написанный преподавателем на доске:'
-                                  : 'To confirm attendance, please type the 4-digit verification code written on the whiteboard by the lecturer:'}
+                                {t('studentDashboard.enterCodePrompt')}
                               </p>
 
                               <form onSubmit={handleConfirmAttendance} className="flex flex-col sm:flex-row gap-2 max-w-sm">
@@ -644,7 +564,7 @@ export default function DashboardStudent({
                                   <input
                                     type="text"
                                     maxLength={4}
-                                    placeholder="მაგ: 1234"
+                                    placeholder={t('studentDashboard.codePlaceholder')}
                                     value={attendanceCodeInput}
                                     onChange={(e) => setAttendanceCodeInput(e.target.value)}
                                     className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-center font-mono font-bold tracking-widest text-slate-900 text-xs focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -654,30 +574,26 @@ export default function DashboardStudent({
                                   type="submit"
                                   className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-bold transition active:scale-[0.98]"
                                 >
-                                  {lang === 'ka' ? 'დასწრების დადასტურება' : lang === 'ru' ? 'Подтвердить присутствие' : 'Confirm Attendance'}
+                                  {t('studentDashboard.confirmAttendanceBtn')}
                                 </button>
                               </form>
 
                               {attendanceError && (
                                 <p className="text-[10px] text-red-600 font-bold">
-                                  ❌ {lang === 'ka' ? 'არასწორი კოდი. გთხოვთ შეამოწმოთ დაფაზე დაწერილი კოდი.' : lang === 'ru' ? 'Неверный код. Пожалуйста, сверьте с доской.' : 'Incorrect code. Please verify with the board.'}
+                                  ❌ {t('studentDashboard.incorrectCodeError')}
                                 </p>
                               )}
 
                               {attendanceSuccess && (
                                 <p className="text-[10px] text-emerald-600 font-bold">
-                                  ✅ {lang === 'ka' ? 'დასწრება წარმატებით დადასტურდა!' : lang === 'ru' ? 'Присутствие успешно подтверждено!' : 'Attendance verified successfully!'}
+                                  ✅ {t('studentDashboard.attendanceVerifiedSuccess')}
                                 </p>
                               )}
 
-                              {/* Interactive Interactive Help for Demo */}
+                              {/* Interactive Help for Demo */}
                               <div className="bg-amber-50 rounded-xl border border-amber-100 p-3 text-[10px] text-amber-800 leading-relaxed font-light">
-                                💡 <strong>{lang === 'ka' ? 'დემო მინიშნება:' : lang === 'ru' ? 'Подсказка для демо:' : 'Demo Hint:'}</strong>{' '}
-                                {lang === 'ka'
-                                  ? `ლექტორის მიერ დაფაზე დაწერილი მიმდინარე საათის კოდია: `
-                                  : lang === 'ru'
-                                  ? `Код, написанный преподавателем на доске: `
-                                  : `The code written on the classroom board is: `}
+                                💡 <strong>{t('studentDashboard.demoHintLabel')}</strong>{' '}
+                                {t('studentDashboard.demoHintText')}{' '}
                                 <strong className="font-mono text-xs bg-white px-1.5 py-0.5 rounded border border-amber-200 font-black">{currentExpectedCode}</strong>
                               </div>
                             </div>
@@ -688,7 +604,7 @@ export default function DashboardStudent({
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 py-10">
                       <BookOpen className="h-10 w-10 mb-2 opacity-55" />
-                      <p className="text-sm">{localT.selectLesson[lang]}</p>
+                      <p className="text-sm">{t('studentDashboard.selectLesson')}</p>
                     </div>
                   )}
 
@@ -703,7 +619,7 @@ export default function DashboardStudent({
                           onClick={() => setActiveLessonId(activeLessons[currentLessonIndex + 1].id)}
                           className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 transition"
                         >
-                          {lang === 'ka' ? 'შემდეგი ლექცია' : lang === 'ru' ? 'Следующая лекция' : 'Next Lecture'}
+                          {t('studentDashboard.nextLectureBtn')}
                           <ChevronRight className="h-4 w-4" />
                         </button>
                       )}
@@ -715,15 +631,15 @@ export default function DashboardStudent({
           ) : (
             /* Enrolled Courses catalog */
             <div className="space-y-4">
-              <h3 className="font-sans text-lg font-bold text-slate-950">{localT.activeCoursesTitle[lang]}</h3>
-              
+              <h3 className="font-sans text-lg font-bold text-slate-950">{t('studentDashboard.activeCoursesTitle')}</h3>
+
               {enrolledCoursesWithEnrollment.length === 0 ? (
                 <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center space-y-3">
                   <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-slate-700">{localT.noCoursesYet[lang]}</p>
+                    <p className="text-sm font-semibold text-slate-700">{t('studentDashboard.noCoursesYet')}</p>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                      {localT.noCoursesSubtitle[lang]}
+                      {t('studentDashboard.noCoursesSubtitle')}
                     </p>
                   </div>
                 </div>
@@ -752,7 +668,7 @@ export default function DashboardStudent({
                         {/* Progress tracking */}
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                            <span>{localT.progressLabel[lang]}</span>
+                            <span>{t('studentDashboard.progressLabel')}</span>
                             <span>{enrollment.progress}%</span>
                           </div>
                           <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -771,17 +687,19 @@ export default function DashboardStudent({
                               className="flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 text-xs font-bold hover:bg-emerald-100 transition"
                             >
                               <Award className="h-4 w-4" />
-                              {localT.certificateBtn[lang]}
+                              {t('studentDashboard.certificateBtn')}
                             </button>
                           ) : (
-                            <span className="text-xs text-slate-400 font-medium">{localT.lessonsLeft[lang](course.lessons.length - enrollment.completedLessons.length)}</span>
+                            <span className="text-xs text-slate-400 font-medium">
+                              {t('studentDashboard.lessonsLeft', { count: course.lessons.length - enrollment.completedLessons.length })}
+                            </span>
                           )}
 
                           <button
                             onClick={() => handleSelectCourse(course.id)}
                             className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition cursor-pointer"
                           >
-                            {enrollment.progress === 0 ? localT.startStudy[lang] : localT.continueStudy[lang]}
+                            {enrollment.progress === 0 ? t('studentDashboard.startStudy') : t('studentDashboard.continueStudy')}
                           </button>
                         </div>
                       </div>
@@ -812,29 +730,29 @@ export default function DashboardStudent({
               </div>
 
               <div className="space-y-2">
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-indigo-600">{localT.certTitle[lang]}</span>
-                <h3 className="text-2xl font-black text-slate-900 font-sans">{t.brandName.toUpperCase()}</h3>
+                <span className="text-xs font-mono font-bold uppercase tracking-widest text-indigo-600">{t('studentDashboard.certTitle')}</span>
+                <h3 className="text-2xl font-black text-slate-900 font-sans">{t('brandName').toUpperCase()}</h3>
               </div>
 
               <div className="py-2 border-y border-indigo-100/60 max-w-sm mx-auto">
-                <span className="text-xs font-medium text-slate-400 block">{localT.certSub[lang]}</span>
+                <span className="text-xs font-medium text-slate-400 block">{t('studentDashboard.certSub')}</span>
                 <span className="text-lg font-extrabold text-indigo-700 block mt-1">{student.name}</span>
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs text-slate-500 block font-normal">{localT.certCompleted[lang]}</span>
+                <span className="text-xs text-slate-500 block font-normal">{t('studentDashboard.certCompleted')}</span>
                 <span className="text-sm font-extrabold text-slate-800 block">
-                  {courses.find(c => c.id === showCertificateId)?.title || 'აკადემიის სასწავლო კურსი'}
+                  {courses.find(c => c.id === showCertificateId)?.title || t('studentDashboard.certFallbackCourseTitle', 'აკადემიის სასწავლო კურსი')}
                 </span>
               </div>
 
               <div className="flex justify-between items-end pt-4 max-w-md mx-auto">
                 <div className="text-left">
-                  <span className="text-[10px] text-slate-400 block font-normal">{localT.certDate[lang]}</span>
+                  <span className="text-[10px] text-slate-400 block font-normal">{t('studentDashboard.certDate')}</span>
                   <span className="text-xs font-bold text-slate-700">{new Date().toLocaleDateString(lang === 'ka' ? 'ka-GE' : lang === 'ru' ? 'ru-RU' : 'en-US')}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block font-normal">{localT.certSignature[lang]}</span>
+                  <span className="text-[10px] text-slate-400 block font-normal">{t('studentDashboard.certSignature')}</span>
                   <span className="text-xs font-serif font-semibold text-indigo-600 block italic leading-none">Beridze M.</span>
                 </div>
               </div>
@@ -845,7 +763,7 @@ export default function DashboardStudent({
                 onClick={() => window.print()}
                 className="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 transition"
               >
-                {localT.certPrintBtn[lang]}
+                {t('studentDashboard.certPrintBtn')}
               </button>
             </div>
           </div>

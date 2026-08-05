@@ -5,7 +5,15 @@
       "title": "Popular Courses",
       "description": "Learn the most in-demand skills with top compensations. Start from scratch and become a professional.",
       "button": "View All Courses"
-    }
+    },
+ "activeSessions": {
+  "badge": "Enrolling now",
+  "title": "Active sessions",
+  "description": "Join a course session that's currently open for enrollment.",
+  "weeks": "weeks",
+  "spotsLeft": "spots left",
+  "btnJoin": "Join session"
+}
   },
   "footer": {
   "about": "About Us",
@@ -38,7 +46,7 @@
   },
   "projects": {
     "badge": "Student Creativity",
-    "title": "Featured Projects",
+    "title": "Projects",
     "subtitle": "Explore real digital products and artworks created by our students during their studies.",
     "categoryLabel": "Category",
     "authorLabel": "Author:",
@@ -554,5 +562,61 @@
         "description": "Students create real-world applications during internal and external hackathons."
       }
     }
+  },
+  "studentDashboard": {
+    "greeting": "Hello, {{name}}! 👋",
+    "studyTab": "Study Room",
+    "profileTab": "Personal Data",
+    "leaveClassroom": "← Leave Classroom",
+    "overallProgress": "Overall Progress",
+    "lessonsList": "Lecture Meetings & Attendance",
+    "physicalLec": "On-site Lecture",
+    "activeCoursesTitle": "My Active Courses",
+    "noCoursesYet": "You are not enrolled in any courses yet. Choose your course from the main page.",
+    "noCoursesSubtitle": "Go to the course catalog, select your desired direction and start learning today!",
+    "progressLabel": "Progress",
+    "certificateBtn": "Certificate",
+    "lessonsLeft": "{{count}} lectures left",
+    "startStudy": "Enter Classroom",
+    "continueStudy": "Continue Classroom",
+    "certTitle": "Certificate of Completion",
+    "certSub": "This certificate is awarded to:",
+    "certCompleted": "Has successfully completed the academy classroom course:",
+    "certDate": "Date",
+    "certSignature": "Academy Signature",
+    "certPrintBtn": "Print / Save as PDF",
+
+    "profEditTitle": "Edit Personal Details",
+    "profEditSub": "Update your profile so information is accurate on certificates and attendance log",
+    "fullNameLabel": "Full Name *",
+    "emailLabel": "Email *",
+    "phoneLabel": "Phone Number *",
+    "headlineLabel": "Headline / Status",
+    "bioLabel": "About Me",
+    "avatarSelectLabel": "Select Avatar",
+    "chooseReadyAvatar": "Choose ready avatar",
+    "uploadOwnPhoto": "Or upload your own",
+    "selectPhotoBtn": "Select Photo",
+    "saveChangesBtn": "Save Changes",
+    "profileSavedSuccess": "Profile updated successfully!",
+    "selectLesson": "Please select a lecture from the left sidebar to see physical classroom details",
+
+    "auditoriumBadge": "Auditorium #204",
+    "scheduleInfo": "Schedule: Mon & Thu, 19:00 - 21:00 (Duration: {{duration}})",
+    "lectureTopicsHeader": "Lecture Topics & Task",
+    "defaultLessonContent": "In this lesson, you will learn about interesting aspects and main directions of the course. Take notes of important terms and practice in your editor.",
+    "onSiteAssignment": "On-site assignment: Prepare a practical project sketch for projector demonstration in the next class.",
+
+    "attendanceCheckHeader": "Physical Classroom Attendance Check",
+    "attendanceConfirmedTitle": "Attendance Confirmed ✓",
+    "attendanceConfirmedDesc": "You successfully attended this physical lecture. Your seat: Desk #14.",
+    "enterCodePrompt": "To confirm attendance, please type the 4-digit verification code written on the whiteboard by the lecturer:",
+    "codePlaceholder": "e.g. 1234",
+    "confirmAttendanceBtn": "Confirm Attendance",
+    "incorrectCodeError": "Incorrect code. Please verify with the board.",
+    "attendanceVerifiedSuccess": "Attendance verified successfully!",
+    "demoHintLabel": "Demo Hint:",
+    "demoHintText": "The code written on the classroom board is:",
+    "nextLectureBtn": "Next Lecture"
   }
 }
