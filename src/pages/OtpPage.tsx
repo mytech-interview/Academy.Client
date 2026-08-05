@@ -73,14 +73,24 @@ export default function OtpPage() {
 
     setLoading(true);
     try {
-      await validateOtp({ email: otpEmail, otpNumber: code });
+      const result = await validateOtp({ email: otpEmail, otpNumber: code });
 
       if (otpMode === 'login') {
-        // ── LOGIN flow: user already exists, just log them in ──────────────
-        if (!otpPendingUser) throw new Error('no_pending_user');
-        handleLoginSuccess(otpPendingUser);
-        navigate(otpPendingUser.role === 'teacher' ? '/teacher-sessions' : '/dashboard', { replace: true });
-
+        // LOGIN flow: build user from API response
+        const auth = (result as any)?.authResponse;
+        const loggedInUser: User = otpPendingUser ?? {
+          id: auth?.userGuid ?? `user-${Date.now()}`,
+          email: auth?.email ?? otpEmail,
+          name: `${auth?.firstName ?? ''} ${auth?.lastName ?? ''}`.trim() || otpEmail,
+          role: otpRole,
+          avatar: undefined,
+          createdAt: new Date().toISOString(),
+        };
+        if ((result as any)?.token) {
+          localStorage.setItem('academy_token', (result as any).token);
+        }
+        handleLoginSuccess(loggedInUser);
+        navigate(loggedInUser.role === 'teacher' ? '/teacher-sessions' : '/dashboard', { replace: true });
       } else {
         // ── REGISTER flow: call registerUser API then create local user ─────
         await registerUser({
@@ -159,8 +169,8 @@ export default function OtpPage() {
               </h1>
               {/* Mode badge */}
               <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border ${otpMode === 'login'
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 }`}>
                 {modeLabel}
               </span>
@@ -194,8 +204,8 @@ export default function OtpPage() {
                     onKeyDown={(e) => onKeyDown(i, e)}
                     onPaste={onPaste}
                     className={`h-14 w-11 sm:w-12 rounded-2xl border text-center text-lg font-black text-slate-900 focus:outline-none focus:ring-2 transition ${d
-                        ? 'border-indigo-400 bg-indigo-50 focus:ring-indigo-200'
-                        : 'border-slate-200/80 bg-slate-50/50 focus:ring-indigo-100 focus:border-indigo-500'
+                      ? 'border-indigo-400 bg-indigo-50 focus:ring-indigo-200'
+                      : 'border-slate-200/80 bg-slate-50/50 focus:ring-indigo-100 focus:border-indigo-500'
                       }`}
                   />
                 ))}
