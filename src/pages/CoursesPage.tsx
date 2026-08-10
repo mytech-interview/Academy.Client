@@ -11,6 +11,8 @@ interface CoursesPageProps {
   lang: Language;
   activeUser: User | null;
   enrollments: Enrollment[];
+  // Course id currently being enrolled into (drives the button's loading state)
+  enrollingCourseId: string | null;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   selectedCategory: string;
@@ -29,6 +31,7 @@ export default function CoursesPage({
   lang,
   activeUser,
   enrollments,
+  enrollingCourseId,
   searchQuery,
   onSearchQueryChange,
   selectedCategory,
@@ -59,7 +62,7 @@ export default function CoursesPage({
         setError('');
 
         let sessionsList: ActiveSession[] = [];
-        
+
         // Normalize selectedCategory (defaults to 'all' if empty or invalid)
         const currentCategory = (!selectedCategory || selectedCategory === '0') ? 'all' : selectedCategory;
 
@@ -73,7 +76,7 @@ export default function CoursesPage({
           // Combine results and remove duplicates
           const combined = [...cat1Res, ...cat2Res];
           const uniqueMap = new Map<number | string, ActiveSession>();
-          
+
           combined.forEach((item) => {
             if (!item) return;
             const id = item.sessionId || item.courseId;
@@ -258,6 +261,7 @@ export default function CoursesPage({
                 key={courseId}
                 course={course}
                 isEnrolled={isEnrolled}
+                isEnrolling={String(enrollingCourseId) === String(courseId)}
                 onSelect={() => onSelectCourse(course)}
                 onEnroll={() => onEnroll(courseId)}
                 isLoggedIn={activeUser !== null}

@@ -13,6 +13,8 @@ import { getHomeActiveSessions } from "../api/sessions";
 interface HomePageProps {
   activeUser: User | null;
   enrollments: Enrollment[];
+  // Course id currently being enrolled into (drives the button's loading state)
+  enrollingCourseId: string | null;
   onBrowseCourses: () => void;
   onOpenAuth: () => void;
   onSelectCourse: (course: any) => void;
@@ -23,6 +25,7 @@ interface HomePageProps {
 export default function HomePage({
   activeUser,
   enrollments,
+  enrollingCourseId,
   onBrowseCourses,
   onOpenAuth,
   onSelectCourse,
@@ -138,6 +141,7 @@ export default function HomePage({
                   key={courseId}
                   course={course}
                   isEnrolled={isEnrolled}
+                  isEnrolling={String(enrollingCourseId) === String(courseId)}
                   onSelect={() => onSelectCourse(course)}
                   onEnroll={() => onEnroll(courseId)}
                   isLoggedIn={activeUser !== null}

@@ -100,12 +100,44 @@ export interface ActiveSession {
   levelName: string;
   title: string;
   courseDescription: string;
-  durationWeeks: number;
   amountOfLessons: number;
   maxStudents: number;
   enrolledCount: number;
   teacherName: string;
-  averageRating: number | null;
+  averageRating: string | null; 
   reviewCount: number;
   price: number;
+  cityId: number;
+  cityName: string;
+  startDate: string;
+  endDate: string;
+  attendanceModeId: number;
+  attendanceModeName: string;
+  lessonCount: number;
+}
+export interface StudentSession {
+  sessionId: number;
+  courseId: number;
+  courseTitle: string;
+  category: string;     
+  coverImage: string;
+  sessionLabel: string;    
+  schedule: string;       
+  location: string;
+  progress: number;        
+  startDate: string;       
+  endDate: string;
+  isCompleted: boolean;
+  canSubmitReview: boolean;
+}
+
+export interface EditStudentRequest {
+  email: string;
+  firstName: string;
+  isActive: boolean;
+  lastName: string;
+  picture: string;
+  studentId: number | string;
+  telephone: string;
+  userGuid: string;
 }

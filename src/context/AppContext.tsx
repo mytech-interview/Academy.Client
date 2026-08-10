@@ -4,6 +4,7 @@ import { Language } from '../lib/translations';
 import { mockCourses, mockTeachers, mockStudents } from '../data/mockData';
 import { getTranslatedCourse } from '../lib/courseTranslations';
 import { getHomeActiveSessions } from '../api/sessions';
+import { addEnrollment as addEnrollmentRequest } from '../api/enrollments';
 import i18n from '../i18n';
 
 interface AppContextValue {
@@ -28,6 +29,10 @@ interface AppContextValue {
   handleEnrollInCourse: (courseId: string, onNeedAuth: () => void) => void;
   handleUpdateEnrollment: (id: string, lessons: string[], progress: number, completed: boolean) => void;
   enrollSuccessMessage: string | null;
+  // Tracks which course is currently being enrolled into (for button loading state)
+  enrollingCourseId: string | null;
+  // Holds the last enrollment error message, if any
+  enrollError: string | null;
   // OTP flow state
   otpMode: 'login' | 'register';
   setOtpMode: (v: 'login' | 'register') => void;
@@ -60,6 +65,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const s = localStorage.getItem('academy_courses');
     return s ? JSON.parse(s) : mockCourses;
   });
+  // NOTE: enrollments are no longer seeded with mock/local-only data on write.
+  // They still hydrate from localStorage as a cache for a snappier first paint,
+  // but are only ever appended to after a confirmed backend response.
   const [enrollments, setEnrollments] = useState<Enrollment[]>(() => {
     const s = localStorage.getItem('academy_enrollments');
     return s ? JSON.parse(s) : [];
@@ -69,6 +77,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return s ? JSON.parse(s) : [...mockTeachers, ...mockStudents];
   });
   const [enrollSuccessMessage, setEnrollSuccessMessage] = useState<string | null>(null);
+  const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null);
+  const [enrollError, setEnrollError] = useState<string | null>(null);
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
 
   // OTP flow
@@ -92,11 +102,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { localStorage.setItem('academy_registered_users', JSON.stringify(registeredUsers)); }, [registeredUsers]);
   useEffect(() => { i18n.changeLanguage(lang); }, [lang]);
 
-useEffect(() => {
-  getHomeActiveSessions(1) 
-    .then(setActiveSessions)
-    .catch((err) => console.error('Ошибка загрузки активных сессий:', err));
-}, []);
+  useEffect(() => {
+    getHomeActiveSessions(1)
+      .then(setActiveSessions)
+      .catch((err) => console.error('Ошибка загрузки активных сессий:', err));
+  }, []);
 
   const translatedCourses = courses.map((c) => getTranslatedCourse(c, lang));
   const setLang = (l: Language) => setLangState(l);
@@ -111,17 +121,56 @@ useEffect(() => {
     setRegisteredUsers((p) => p.map((u) => (u.id === activeUser.id ? updated : u)));
   };
   const handleAddCourse = (c: Course) => setCourses((p) => [c, ...p]);
-  const handleEnrollInCourse = (courseId: string, onNeedAuth: () => void) => {
+
+  // Real enrollment flow: calls the backend, and only touches local state
+  // (enrollments / courses / success message) once the request succeeds.
+  const handleEnrollInCourse = async (courseId: string, onNeedAuth: () => void) => {
     if (!activeUser) { onNeedAuth(); return; }
     if (activeUser.role === 'teacher') return;
+
+    // Already enrolled locally — nothing to do.
     if (enrollments.some((e) => e.studentId === activeUser.id && e.courseId === courseId)) return;
-    const newE: Enrollment = { id: `enrollment-${Date.now()}`, studentId: activeUser.id, courseId, progress: 0, completedLessons: [], isCompleted: false, enrolledAt: new Date().toISOString() };
-    setEnrollments((p) => [...p, newE]);
-    setCourses((p) => p.map((c) => c.id === courseId ? { ...c, enrolledCount: c.enrolledCount + 1 } : c));
-    const course = courses.find((c) => c.id === courseId);
-    setEnrollSuccessMessage(course?.title ?? '');
-    setTimeout(() => setEnrollSuccessMessage(null), 4000);
+
+    // Prevent duplicate in-flight requests for the same course.
+    if (enrollingCourseId === courseId) return;
+
+    setEnrollError(null);
+    setEnrollingCourseId(courseId);
+
+    try {
+      // NOTE: assumes activeUser.id holds the student's GUID.
+      // If your User type stores it under a different field (e.g. `guid`),
+      // change the line below accordingly.
+      const studentGuid = activeUser.id;
+
+      await addEnrollmentRequest({
+        studentGuid,
+        sessionId: Number(courseId),
+      });
+
+      // Only update local state after the backend confirms success.
+      const newE: Enrollment = {
+        id: `enrollment-${Date.now()}`,
+        studentId: activeUser.id,
+        courseId,
+        progress: 0,
+        completedLessons: [],
+        isCompleted: false,
+        enrolledAt: new Date().toISOString(),
+      };
+      setEnrollments((p) => [...p, newE]);
+      setCourses((p) => p.map((c) => (c.id === courseId ? { ...c, enrolledCount: c.enrolledCount + 1 } : c)));
+
+      const course = courses.find((c) => c.id === courseId);
+      setEnrollSuccessMessage(course?.title ?? '');
+      setTimeout(() => setEnrollSuccessMessage(null), 4000);
+    } catch (err: any) {
+      setEnrollError(err?.message || 'Не удалось записаться на курс. Попробуйте ещё раз.');
+    } finally {
+      setEnrollingCourseId(null);
+    }
   };
+
   const handleUpdateEnrollment = (id: string, lessons: string[], progress: number, completed: boolean) => {
     setEnrollments((p) => p.map((e) => e.id === id ? { ...e, completedLessons: lessons, progress, isCompleted: completed, completedAt: completed ? new Date().toISOString() : e.completedAt } : e));
   };
@@ -133,7 +182,7 @@ useEffect(() => {
       activeSessions, setActiveSessions,
       lang, setLang, handleLoginSuccess, handleLogout, handleRegisterUser,
       handleUpdateProfile, handleAddCourse, handleEnrollInCourse, handleUpdateEnrollment,
-      enrollSuccessMessage,
+      enrollSuccessMessage, enrollingCourseId, enrollError,
       otpMode, setOtpMode, otpPendingUser, setOtpPendingUser,
       otpEmail, setOtpEmail, otpPassword, setOtpPassword,
       otpRole, setOtpRole, otpName, setOtpName,

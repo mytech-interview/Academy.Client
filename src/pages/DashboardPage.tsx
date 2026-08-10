@@ -45,11 +45,11 @@ export default function DashboardPage({
             lang={lang}
           />
         ) : (
+          // DashboardStudent now fetches its own real enrolled sessions
+          // (getStudentSessions) internally, so courses/enrollments/
+          // onUpdateEnrollment mock props are no longer passed here.
           <DashboardStudent
             student={activeUser}
-            courses={courses}
-            enrollments={enrollments}
-            onUpdateEnrollment={onUpdateEnrollment}
             onUpdateProfile={onUpdateProfile}
             lang={lang}
           />

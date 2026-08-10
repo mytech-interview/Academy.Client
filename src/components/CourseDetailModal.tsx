@@ -1,12 +1,54 @@
-import React, { useState } from 'react';
+// CourseDetailModal.tsx
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { X, Clock, Award, Star, BookOpen, GraduationCap, CheckCircle, ChevronRight, MessageSquare, Mail, Lock, Eye, EyeOff, User as UserIcon } from 'lucide-react';
-import { Course, User, Enrollment } from '../types';
-import { mockTeachers } from '../data/mockData';
-import { Language } from '../lib/translations';
+import {
+  X, Clock, Award, Star, BookOpen, Users, ChevronRight, ChevronDown, ChevronUp,
+  Calendar, MapPin, Loader2, AlertCircle, User as UserIcon, GraduationCap,
+  Sparkles, Check, Layers, PlayCircle, FileText,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ActiveSession } from '../types';
+import { getCourseSessionDetailsForStudent, CourseSessionDetailsForStudent } from '../api/sessions';
+import { getCityName } from '../lib/cityNames';
+
+// Same placeholder used in CourseCard — backend has no image field yet.
+// TODO: move to a shared constants file once both components import it.
+const DEFAULT_COURSE_IMAGE =
+  'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
+
+// TODO(stub): no teacher-profile endpoint yet. Swap for real avatar/bio once
+// the backend exposes GET /teachers/:id or similar.
+const TEACHER_AVATAR_STUB = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150';
+
+interface StubLesson {
+  id: string;
+  title: string;
+  duration: string;
+  videoUrl?: string;
+}
+
+// TODO(stub): no per-lesson content endpoint yet. This generates
+// `amountOfLessons` placeholder rows so the tab isn't empty. Replace with
+// real lesson data (title/content/duration/videoUrl) as soon as it's available.
+function buildStubLessons(count: number, t: (k: string, o?: any) => string): StubLesson[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `stub-lesson-${i}`,
+    title: t('courseDetailModal.lessonPlaceholderTitle', { index: i + 1, defaultValue: `Lesson ${i + 1}` }),
+    duration: '45',
+  }));
+}
+
+// TODO(stub): no reviews endpoint yet. Replace with real review list once
+// the backend exposes it — keep averageRating from ActiveSession as-is.
+interface StubReview {
+  id: string;
+  studentName: string;
+  rating: number;
+  comment: string;
+}
 
 interface CourseDetailModalProps {
-  course: Course;
+  course: ActiveSession;
   isOpen: boolean;
   onClose: () => void;
   isEnrolled: boolean;
@@ -14,10 +56,8 @@ interface CourseDetailModalProps {
   onStartStudy: () => void;
   isLoggedIn: boolean;
   userRole: string | undefined;
-  lang: Language;
-  registeredUsers?: User[];
-  onRegisterUser?: (newUser: User) => void;
-  onLoginSuccess?: (user: User) => void;
+  // Needed to fetch schedule/city details — only available for logged-in students
+  studentGuid?: string;
 }
 
 export default function CourseDetailModal({
@@ -29,486 +69,460 @@ export default function CourseDetailModal({
   onStartStudy,
   isLoggedIn,
   userRole,
-  lang,
-  registeredUsers = [],
-  onRegisterUser,
-  onLoginSuccess
+  studentGuid,
 }: CourseDetailModalProps) {
-  const [showQuickReg, setShowQuickReg] = useState(false);
-  const [isRegLogin, setIsRegLogin] = useState(false);
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [showRegPassword, setShowRegPassword] = useState(false);
-  const [regError, setRegError] = useState('');
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language || 'en';
 
-  if (!isOpen) return null;
+  const [activeTab, setActiveTab] = useState<'overview' | 'lessons' | 'instructor' | 'reviews'>('overview');
+  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
 
-  const handleQuickSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegError('');
+  const [extraDetails, setExtraDetails] = useState<CourseSessionDetailsForStudent | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
 
-    if (!regEmail || !regPassword || (!isRegLogin && !regName)) {
-      setRegError(lang === 'ka' ? 'გთხოვთ შეავსოთ ყველა ველი' : 'Please fill out all fields');
+  // Extra schedule/city fields only exist on GetCourseSessionDetailsForStudent,
+  // which requires a studentGuid — so we only fetch it for logged-in students.
+  useEffect(() => {
+    if (!isOpen || !isLoggedIn || userRole !== 'student' || !studentGuid) {
+      setExtraDetails(null);
       return;
     }
 
-    if (isRegLogin) {
-      // Inline log in
-      const matched = registeredUsers.find((u) => u.email.toLowerCase() === regEmail.toLowerCase());
-      if (!matched) {
-        setRegError(
-          lang === 'ka'
-            ? 'ამ ელ-ფოსტით მომხმარებელი ვერ მოიძებნა. გთხოვთ დარეგისტრირდეთ.'
-            : 'User with this email not found. Please register.'
-        );
-        return;
-      }
-      if (onLoginSuccess) onLoginSuccess(matched);
-      onEnroll();
-    } else {
-      // Inline registration
-      const exists = registeredUsers.some((u) => u.email.toLowerCase() === regEmail.toLowerCase());
-      if (exists) {
-        setRegError(
-          lang === 'ka'
-            ? 'ეს ელ-ფოსტა უკვე გამოყენებულია'
-            : 'This email is already in use'
-        );
-        return;
-      }
+    let cancelled = false;
+    setDetailsLoading(true);
+    setDetailsError(null);
 
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        email: regEmail.toLowerCase(),
-        name: regName,
-        role: 'student',
-        createdAt: new Date().toISOString()
-      };
+    getCourseSessionDetailsForStudent(course.sessionId, studentGuid)
+      .then((data) => { if (!cancelled) setExtraDetails(data); })
+      .catch((err) => {
+        if (!cancelled) setDetailsError(err.message || t('courseDetailModal.loadError', 'Failed to load schedule details'));
+      })
+      .finally(() => { if (!cancelled) setDetailsLoading(false); });
 
-      if (onRegisterUser) onRegisterUser(newUser);
-      if (onLoginSuccess) onLoginSuccess(newUser);
-      onEnroll();
+    return () => { cancelled = true; };
+  }, [isOpen, course.sessionId, isLoggedIn, userRole, studentGuid]);
+
+  // Reset to the overview tab each time a different course is opened
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab('overview');
+      setExpandedLessonId(null);
     }
+  }, [isOpen, course.sessionId]);
+
+  if (!isOpen) return null;
+
+  const {
+    title, courseDescription, categoryName, levelName, durationWeeks,
+    amountOfLessons, teacherName, averageRating, price, enrolledCount, maxStudents,
+  } = course;
+
+  const ratingNum = typeof averageRating === 'number' ? averageRating : parseFloat(averageRating as unknown as string);
+  const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '0.0';
+  const priceDisplay = price === 0 ? t('courseDetailModal.free', 'Free') : `$${price}`;
+
+  const formatDate = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(lang);
   };
 
-  const t = {
-    ka: {
-      lblDuration: 'ხანგრძლივობა',
-      lblDifficulty: 'სირთულე',
-      lblLessons: 'ლექციები',
-      lblRating: 'რეიტინგი',
-      lessonsCount: `${course.lessons.length} ლექცია`,
-      aboutTitle: 'კურსის შესახებ',
-      syllabusTitle: 'სასწავლო პროგრამა (სილაბუსი)',
-      teacherTitle: 'მასწავლებელი',
-      reviewsTitle: 'სტუდენტების შეფასებები',
-      lblPrice: 'ღირებულება',
-      teacherHeadline: 'აკადემიის ლექტორი',
-      teacherBio: 'გამოცდილი პრაქტიკოსი სპეციალისტი, რომელიც ხელმძღვანელობს ამ კურსს.',
-      isTeacherLabel: 'თქვენ ხართ კურსის ლექტორი',
-      btnStart: 'სწავლის დაწყება',
-      btnEnroll: 'რეგისტრაცია კურსზე'
-    },
-    en: {
-      lblDuration: 'Duration',
-      lblDifficulty: 'Level',
-      lblLessons: 'Lessons',
-      lblRating: 'Rating',
-      lessonsCount: `${course.lessons.length} Lessons`,
-      aboutTitle: 'About the Course',
-      syllabusTitle: 'Syllabus (Curriculum)',
-      teacherTitle: 'Instructor',
-      reviewsTitle: 'Student Reviews',
-      lblPrice: 'Price',
-      teacherHeadline: 'Academy Mentor',
-      teacherBio: 'An experienced industry practitioner leading this interactive course.',
-      isTeacherLabel: 'You are the instructor of this course',
-      btnStart: 'Start Learning',
-      btnEnroll: 'Enroll in Course'
-    },
-    ru: {
-      lblDuration: 'Длительность',
-      lblDifficulty: 'Уровень',
-      lblLessons: 'Лекции',
-      lblRating: 'Рейтинг',
-      lessonsCount: `${course.lessons.length} лекций`,
-      aboutTitle: 'О курсе',
-      syllabusTitle: 'Учебная программа (силлабус)',
-      teacherTitle: 'Преподаватель',
-      reviewsTitle: 'Отзывы студентов',
-      lblPrice: 'Стоимость',
-      teacherHeadline: 'Преподаватель академии',
-      teacherBio: 'Опытный практикующий специалист, ведущий данный интерактивный курс.',
-      isTeacherLabel: 'Вы являетесь преподавателем этого курса',
-      btnStart: 'Начать обучение',
-      btnEnroll: 'Записаться на курс'
-    }
-  }[lang] || {
-    lblDuration: 'ხანგრძლივობა',
-    lblDifficulty: 'სირთულე',
-    lblLessons: 'ლექციები',
-    lblRating: 'რეიტინგი',
-    lessonsCount: `${course.lessons.length} ლექცია`,
-    aboutTitle: 'კურსის შესახებ',
-    syllabusTitle: 'სასწავლო პროგრამა (სილაბუსი)',
-    teacherTitle: 'მასწავლებელი',
-    reviewsTitle: 'სტუდენტების შეფასებები',
-    lblPrice: 'ღირებულება',
-    teacherHeadline: 'აკადემიის ლექტორი',
-    teacherBio: 'გამოცდილი პრაქტიკოსი სპეციალისტი, რომელიც ხელმძღვანელობს ამ კურსს.',
-    isTeacherLabel: 'თქვენ ხართ კურსის ლექტორი',
-    btnStart: 'სწავლის დაწყება',
-    btnEnroll: 'რეგისტრაცია კურსზე'
-  };
+  const cityLabel = extraDetails ? getCityName(Number(extraDetails.cityId), extraDetails.cityName, lang) : '';
 
-  // Find detailed instructor
-  const matchedTeacher = mockTeachers.find((tch) => tch.id === course.teacherId);
-  const teacher = {
-    name: course.teacherName, // derived dynamically
-    headline: matchedTeacher ? (lang === 'en' ? 'Academy Mentor' : lang === 'ru' ? 'Преподаватель академии' : 'აკადემიის ლექტორი') : t.teacherHeadline,
-    avatar: matchedTeacher?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-    bio: matchedTeacher ? (lang === 'en' ? 'Senior industry expert teaching professional programs with years of active web experience.' : lang === 'ru' ? 'Старший отраслевой эксперт, преподающий профессиональные программы с многолетним опытом.' : 'აკადემიის წამყვანი პრაქტიკოსი სპეციალისტი მრავალწლიანი სამუშაო გამოცდილებით.') : t.teacherBio
-  };
+  const stubLessons = buildStubLessons(amountOfLessons || 0, t);
 
-  // Generate some realistic course reviews based on rating
-  const mockReviews = [
+  const stubReviews: StubReview[] = [
     {
-      id: 'r-1',
-      studentName: lang === 'en' ? 'Alexander Ganjashvili' : lang === 'ru' ? 'Александр Ганджашвили' : 'ალექსანდრე განჯაშვილი',
-      rating: 5,
-      comment: lang === 'en' ? 'Excellent course! The material is explained very simply and clearly. I especially loved the hands-on tasks.' : lang === 'ru' ? 'Отличный курс! Материал объясняется очень просто и понятно. Особенно понравились практические задания.' : 'საუკეთესო კურსია, მასალა ახსნილია ძალიან მარტივად და გასაგებად. განსაკუთრებით მომეწონა პრაქტიკული დავალებები.',
-      date: lang === 'en' ? 'Yesterday' : lang === 'ru' ? 'Вчера' : 'გუშინ'
+      id: 'stub-review-1',
+      studentName: t('courseDetailModal.reviewStub1Name', 'Anonymous Student'),
+      rating: Math.round(Number.isFinite(ratingNum) ? ratingNum : 5),
+      comment: t('courseDetailModal.reviewStub1Comment', 'Great course, clearly explained and practical.'),
     },
     {
-      id: 'r-2',
-      studentName: lang === 'en' ? 'Ekaterine M.' : lang === 'ru' ? 'Екатерина М.' : 'ეკატერინე მ.',
-      rating: Math.floor(course.rating),
-      comment: lang === 'en' ? 'Very robust syllabus, we covered Figma prototyping in high detail. Highly recommended!' : lang === 'ru' ? 'Очень хорошая программа обучения, подробно разобрали прототипирование в Figma. Рекомендую!' : 'ძალიან კარგი სილაბუსი აქვს, Figma-ში პროტოტიპირება ძალიან დეტალურად გავიარეთ. რეკომენდაციას ვუწევ!',
-      date: lang === 'en' ? '3 days ago' : lang === 'ru' ? '3 дня назад' : '3 დღის წინ'
-    }
+      id: 'stub-review-2',
+      studentName: t('courseDetailModal.reviewStub2Name', 'Anonymous Student'),
+      rating: Math.max(1, Math.round((Number.isFinite(ratingNum) ? ratingNum : 5) - 1)),
+      comment: t('courseDetailModal.reviewStub2Comment', 'Solid syllabus, would recommend to a friend.'),
+    },
+  ];
+
+  const tabs: { key: typeof activeTab; label: string; count?: number }[] = [
+    { key: 'overview', label: t('courseDetailModal.tabOverview', 'Overview') },
+    { key: 'lessons', label: t('courseDetailModal.tabLessons', 'Lessons'), count: amountOfLessons },
+    { key: 'instructor', label: t('courseDetailModal.tabInstructor', 'Instructor') },
+    { key: 'reviews', label: t('courseDetailModal.tabReviews', 'Reviews') },
   ];
 
   return (
-    <div id="course-detail-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div id="course-detail-overlay" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-3 sm:p-5 overflow-y-auto">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        exit={{ opacity: 0, scale: 0.96, y: 15 }}
         transition={{ duration: 0.2 }}
         id="course-detail-container"
-        className="relative my-8 w-full max-w-3xl overflow-hidden rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]"
+        className="relative my-auto w-full max-w-4xl overflow-hidden rounded-[2.5rem] bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[92vh]"
       >
-        {/* Sticky Close Button */}
         <button
           onClick={onClose}
           id="btn-close-course-details"
-          className="absolute right-6 top-6 z-10 rounded-full bg-slate-900/40 backdrop-blur-md p-2 text-white hover:bg-slate-900/60 transition cursor-pointer"
+          className="absolute right-5 top-5 z-20 rounded-full bg-slate-900/60 backdrop-blur-md p-2.5 text-white hover:bg-slate-900 transition cursor-pointer shadow-md"
         >
           <X className="h-5 w-5" />
         </button>
 
         <div className="overflow-y-auto flex-1 text-left">
-          {/* Header Banner */}
-          <div className="relative aspect-[21/9] w-full bg-slate-950">
+          {/* Header banner — stub image, same placeholder as CourseCard */}
+          <div className="relative aspect-[21/8] sm:aspect-[21/7] w-full bg-slate-950">
             <img
-              src={course.image}
-              alt={course.title}
-              className="h-full w-full object-cover opacity-65"
+              src={DEFAULT_COURSE_IMAGE}
+              alt={title}
+              className="h-full w-full object-cover opacity-60"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-            <div className="absolute bottom-6 left-8 right-8">
-              <span className="rounded-xl bg-indigo-600 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-wider">
-                {course.category}
-              </span>
-              <h2 id="detail-course-title" className="mt-2 text-xl font-extrabold text-white sm:text-2xl lg:text-3xl leading-snug">
-                {course.title}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+
+            <div className="absolute bottom-6 left-6 right-6 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {categoryName && (
+                  <span className="rounded-lg bg-indigo-600 px-3 py-1 text-[10px] font-black text-white uppercase tracking-wider shadow-sm">
+                    {categoryName}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white">
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  <span>{ratingFormatted}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white">
+                  <BookOpen className="h-3 w-3 text-indigo-300" />
+                  <span>{t('courseCard.lessons', { count: amountOfLessons, defaultValue: `${amountOfLessons} lessons` })}</span>
+                </span>
+              </div>
+
+              <h2 id="detail-course-title" className="text-xl font-black text-white sm:text-2xl lg:text-3xl leading-snug drop-shadow-sm">
+                {title}
               </h2>
+
+              <p className="text-xs text-slate-300 font-medium line-clamp-1 max-w-2xl">
+                {t('courseDetailModal.teacherPrefix', 'Instructor:')} <strong className="text-white font-bold">{teacherName}</strong>
+              </p>
             </div>
           </div>
 
-          {/* Grid Layout Content */}
-          <div className="p-8 space-y-8">
-            {/* Quick Specs bar */}
-            <div className="grid grid-cols-2 gap-4 rounded-[2rem] bg-slate-50 p-6 sm:grid-cols-4 text-center border border-slate-200/50">
-              <div>
-                <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">{t.lblDuration}</span>
-                <span className="mt-1 flex items-center justify-center gap-1.5 text-sm font-bold text-slate-800">
-                  <Clock className="h-4 w-4 text-indigo-500" />
-                  {course.duration}
-                </span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">{t.lblDifficulty}</span>
-                <span className="mt-1 flex items-center justify-center gap-1.5 text-sm font-bold text-slate-800">
-                  <Award className="h-4 w-4 text-indigo-500" />
-                  {course.level}
-                </span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">{t.lblLessons}</span>
-                <span className="mt-1 flex items-center justify-center gap-1.5 text-sm font-bold text-slate-800">
-                  <BookOpen className="h-4 w-4 text-indigo-500" />
-                  {t.lessonsCount}
-                </span>
-              </div>
-              <div>
-                <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">{t.lblRating}</span>
-                <span className="mt-1 flex items-center justify-center gap-1 text-sm font-bold text-slate-800">
-                  <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                  {course.rating.toFixed(1)} / 5
-                </span>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2 text-left">
-              <h3 className="font-sans text-lg font-bold text-slate-950">{t.aboutTitle}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed font-normal">
-                {course.description}
-              </p>
-            </div>
-
-            {/* Syllabus */}
-            <div className="space-y-3 text-left">
-              <h3 className="font-sans text-lg font-bold text-slate-950">{t.syllabusTitle}</h3>
-              <div id="syllabus-list" className="space-y-2.5">
-                {course.syllabus.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
-                  >
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[10px] font-bold text-indigo-600 border border-indigo-100">
-                      {index + 1}
-                    </span>
-                    <p className="text-sm font-medium text-slate-700 leading-none pt-0.5">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Instructor Profile */}
-            <div className="space-y-3 border-t border-slate-100 pt-6 text-left">
-              <h3 className="font-sans text-lg font-bold text-slate-950">{t.teacherTitle}</h3>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center rounded-[2rem] border border-slate-200/60 p-5 bg-white shadow-sm">
-                <img
-                  src={teacher.avatar}
-                  alt={teacher.name}
-                  className="h-14 w-14 rounded-2xl object-cover border border-slate-200"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="space-y-1">
-                  <h4 className="font-sans text-base font-bold text-slate-950">{teacher.name}</h4>
-                  <p className="text-xs font-semibold text-indigo-600">{teacher.headline}</p>
-                  <p className="text-xs text-slate-500 leading-relaxed max-w-xl font-normal">
-                    {teacher.bio}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Student Reviews Section */}
-            <div className="space-y-3 border-t border-slate-100 pt-6 text-left">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-slate-600" />
-                <h3 className="font-sans text-lg font-bold text-slate-950">{t.reviewsTitle}</h3>
-              </div>
-              <div id="reviews-list" className="space-y-3">
-                {mockReviews.map((review) => (
-                  <div key={review.id} className="rounded-2xl border border-slate-100 p-4 space-y-2 bg-slate-50/30 text-left">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">{review.studentName}</span>
-                      <span className="text-[10px] font-medium text-slate-400">{review.date}</span>
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-3 w-3 ${
-                            i < review.rating ? 'fill-amber-500 text-amber-500' : 'text-slate-200'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed font-normal italic">
-                      "{review.comment}"
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Inline Quick Registration / Authorization */}
-            {!isLoggedIn && showQuickReg && (
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="border-2 border-indigo-100/60 bg-indigo-50/30 rounded-3xl p-5 sm:p-6 space-y-4 text-left shadow-sm"
+          {/* Tabs */}
+          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 pt-3 flex items-center gap-2 overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+                  activeTab === tab.key
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                }`}
               >
-                <div className="flex items-center justify-between border-b border-indigo-100/50 pb-3">
-                  <div>
-                    <h4 className="text-sm font-extrabold text-indigo-950">
-                      {isRegLogin 
-                        ? (lang === 'ka' ? 'ავტორიზაცია და კურსზე ჩაწერა' : 'Log In & Enroll')
-                        : (lang === 'ka' ? 'სწრაფი რეგისტრაცია და კურსზე ჩაწერა' : 'Quick Register & Enroll')}
-                    </h4>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                      {isRegLogin 
-                        ? (lang === 'ka' ? 'შეავსეთ ფორმა შესასვლელად' : 'Fill out the form to log in')
-                        : (lang === 'ka' ? 'შექმენით უფასო ანგარიში კურსის დასაწყებად' : 'Create a free account to start learning')}
-                    </p>
+                <span>{tab.label}</span>
+                {typeof tab.count === 'number' && (
+                  <span className={`px-2 py-0.2 rounded-full text-[10px] font-black ${
+                    activeTab === tab.key ? 'bg-indigo-800 text-white' : 'bg-indigo-50 text-indigo-700'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* TAB: OVERVIEW */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3.5 rounded-2xl bg-slate-50 p-5 sm:grid-cols-4 text-center border border-slate-200/60">
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                      {t('courseDetailModal.lblDuration', 'Duration')}
+                    </span>
+                    <span className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-900">
+                      <Clock className="h-4 w-4 text-indigo-600" />
+                      {t('course.durationWeeks', { count: durationWeeks, defaultValue: `${durationWeeks} weeks` })}
+                    </span>
                   </div>
-                  <button 
-                    onClick={() => setShowQuickReg(false)}
-                    className="text-slate-400 hover:text-slate-600 p-1 rounded-xl transition cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                      {t('courseDetailModal.lblLevel', 'Level')}
+                    </span>
+                    <span className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-900">
+                      <Award className="h-4 w-4 text-indigo-600" />
+                      {levelName}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                      {t('courseDetailModal.lblLessons', 'Lessons')}
+                    </span>
+                    <span className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-900">
+                      <BookOpen className="h-4 w-4 text-indigo-600" />
+                      {amountOfLessons}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
+                      {t('courseDetailModal.lblRating', 'Rating')}
+                    </span>
+                    <span className="flex items-center justify-center gap-1 text-sm font-black text-slate-900">
+                      <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                      {ratingFormatted} / 5.0
+                    </span>
+                  </div>
                 </div>
 
-                {regError && (
-                  <div className="rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700 border border-rose-100 flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                    <span>{regError}</span>
+                <div className="flex items-center gap-2.5 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-3 w-fit">
+                  <Users className="h-4 w-4 text-indigo-600 shrink-0" />
+                  <span>
+                    {enrolledCount}
+                    {maxStudents ? ` / ${maxStudents}` : ''} {t('courseDetailModal.studentsLabel', 'students enrolled')}
+                  </span>
+                </div>
+
+                {courseDescription && (
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-indigo-600" />
+                      <span>{t('courseDetailModal.aboutTitle', 'About the Course')}</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                      {courseDescription}
+                    </p>
                   </div>
                 )}
 
-                <form onSubmit={handleQuickSubmit} className="space-y-3.5">
-                  {!isRegLogin && (
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block pl-1">
-                        {lang === 'ka' ? 'სახელი და გვარი' : 'Full Name'}
-                      </label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                          <UserIcon className="h-3.5 w-3.5" />
-                        </span>
-                        <input
-                          type="text"
-                          placeholder={lang === 'ka' ? 'მაგ: გიორგი ბერიძე' : 'e.g. John Doe'}
-                          value={regName}
-                          onChange={(e) => setRegName(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs font-medium focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                          required
-                        />
+                {/* Schedule/city block — real data, only fetched for logged-in students */}
+                {isLoggedIn && userRole === 'student' && (
+                  <div className="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 space-y-3">
+                    <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider">
+                      {t('courseDetailModal.scheduleTitle', 'Schedule')}
+                    </h4>
+
+                    {detailsLoading && (
+                      <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>{t('courseDetailModal.loading', 'Loading...')}</span>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block pl-1">
-                      {lang === 'ka' ? 'ელ-ფოსტა' : 'Email'}
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                        <Mail className="h-3.5 w-3.5" />
-                      </span>
-                      <input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs font-medium focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                        required
-                      />
-                    </div>
+                    {detailsError && !detailsLoading && (
+                      <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{detailsError}</span>
+                      </div>
+                    )}
+
+                    {extraDetails && !detailsLoading && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                          <Calendar className="h-4 w-4 text-indigo-600 shrink-0" />
+                          <span>{formatDate(extraDetails.startDate)} — {formatDate(extraDetails.endDate)}</span>
+                        </div>
+                        {extraDetails.lessonDaysDescription && (
+                          <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                            <Clock className="h-4 w-4 text-indigo-600 shrink-0" />
+                            <span>{extraDetails.lessonDaysDescription}</span>
+                          </div>
+                        )}
+                        {cityLabel && (
+                          <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                            <MapPin className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <span>{cityLabel}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                          <UserIcon className="h-4 w-4 text-slate-500 shrink-0" />
+                          <span>{extraDetails.teacherName}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block pl-1">
-                      {lang === 'ka' ? 'პაროლი' : 'Password'}
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                        <Lock className="h-3.5 w-3.5" />
-                      </span>
-                      <input
-                        type={showRegPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-xs font-medium focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowRegPassword(!showRegPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        {showRegPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
+                {/* STUB: key outcomes — no backend field for this yet, generic copy */}
+                <div className="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 space-y-3">
+                  <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-2">
+                    <Check className="h-4 w-4 text-indigo-600" />
+                    <span>{t('courseDetailModal.keyOutcomesTitle', 'What you will learn')}</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex items-start gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                        <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{t(`courseDetailModal.keyOutcome${i}`, `Practical skill ${i}`)}</span>
+                      </div>
+                    ))}
                   </div>
-
-                  <button
-                    type="submit"
-                    className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 py-3 text-xs font-bold text-white transition shadow-md shadow-indigo-150 uppercase tracking-widest mt-1 cursor-pointer active:scale-[0.98]"
-                  >
-                    {isRegLogin 
-                      ? (lang === 'ka' ? 'შესვლა და რეგისტრაცია კურსზე' : 'Log In & Enroll')
-                      : (lang === 'ka' ? 'რეგისტრაცია და კურსზე ჩაწერა' : 'Register & Enroll')}
-                  </button>
-                </form>
-
-                <div className="text-center text-[11px] text-slate-500 pt-2.5 border-t border-indigo-100/40">
-                  {isRegLogin ? (
-                    <p>
-                      {lang === 'ka' ? 'ჯერ არ გაქვთ ანგარიში? ' : "Don't have an account? "}
-                      <button 
-                        onClick={() => { setIsRegLogin(false); setRegError(''); }} 
-                        className="font-bold text-indigo-600 hover:underline cursor-pointer"
-                      >
-                        {lang === 'ka' ? 'შექმენით ანგარიში' : 'Create an account'}
-                      </button>
-                    </p>
-                  ) : (
-                    <p>
-                      {lang === 'ka' ? 'უკვე გაქვთ ანგარიში? ' : 'Already have an account? '}
-                      <button 
-                        onClick={() => { setIsRegLogin(true); setRegError(''); }} 
-                        className="font-bold text-indigo-600 hover:underline cursor-pointer"
-                      >
-                        {lang === 'ka' ? 'შესვლა' : 'Log In'}
-                      </button>
-                    </p>
-                  )}
                 </div>
-              </motion.div>
+              </div>
+            )}
+
+            {/* TAB: LESSONS — stub content, count is real */}
+            {activeTab === 'lessons' && (
+              <div className="space-y-6">
+                <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                      <Layers className="h-5 w-5 text-indigo-400" />
+                      <span>{t('courseDetailModal.lessonsTitle', { count: amountOfLessons, defaultValue: `Lessons (${amountOfLessons})` })}</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {t('courseDetailModal.lessonsSubtitle', 'Full list of lessons attached to this course')}
+                    </p>
+                  </div>
+                </div>
+
+                {stubLessons.length > 0 ? (
+                  <div className="space-y-3">
+                    {stubLessons.map((les, idx) => {
+                      const isExpanded = expandedLessonId === les.id;
+                      return (
+                        <div key={les.id} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition hover:border-indigo-300">
+                          <div
+                            onClick={() => setExpandedLessonId(isExpanded ? null : les.id)}
+                            className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none bg-white hover:bg-slate-50/80 transition"
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <span className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">
+                                #{idx + 1}
+                              </span>
+                              <div className="min-w-0 space-y-1">
+                                <h4 className="text-sm font-black text-slate-900 truncate">{les.title}</h4>
+                                <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+                                  {t('courseDetailModal.lessonPlaceholderContent', 'Lesson content will be added by the instructor.')}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                ⏱️ {les.duration} {t('courseDetailModal.minutesShort', 'min')}
+                              </span>
+                              <div className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+                                {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                              </div>
+                            </div>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="p-5 bg-slate-50 border-t border-slate-100 space-y-3 text-xs leading-relaxed text-slate-700">
+                              <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-2">
+                                <p className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                  <BookOpen className="h-4 w-4 text-indigo-600" />
+                                  <span>{t('courseDetailModal.lessonDetailLabel', 'Lesson description:')}</span>
+                                </p>
+                                <p className="text-slate-700 font-medium">
+                                  {t('courseDetailModal.lessonPlaceholderContent', 'Lesson content will be added by the instructor.')}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                    <BookOpen className="h-8 w-8 text-slate-400 mx-auto" />
+                    <p className="text-xs font-bold text-slate-700">{t('courseDetailModal.noLessonsYet', 'No lessons attached to this course yet')}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: INSTRUCTOR — stub avatar/bio, real name */}
+            {activeTab === 'instructor' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
+                  <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+                    <img
+                      src={TEACHER_AVATAR_STUB}
+                      alt={teacherName}
+                      className="h-20 w-20 rounded-2xl object-cover ring-4 ring-indigo-50 border border-slate-200"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="space-y-1">
+                      <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase">
+                        {t('courseDetailModal.instructorHeadline', 'Academy Instructor')}
+                      </span>
+                      <h3 className="text-lg font-black text-slate-950 mt-1">{teacherName}</h3>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed font-medium">
+                    {t('courseDetailModal.instructorBioStub', 'An experienced practitioner leading this course.')}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: REVIEWS — stub list, real rating summary */}
+            {activeTab === 'reviews' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="text-base font-black text-slate-900">{t('courseDetailModal.reviewsTitle', 'Student Reviews')}</h3>
+                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-xl">
+                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                      <span className="text-base font-black text-amber-950">{ratingFormatted} / 5.0</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {stubReviews.map((review) => (
+                      <div key={review.id} className="rounded-2xl border border-slate-100 p-4 space-y-2 bg-slate-50/50 text-left">
+                        <span className="text-xs font-black text-slate-900">{review.studentName}</span>
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={`h-3.5 w-3.5 ${i < review.rating ? 'fill-amber-500 text-amber-500' : 'text-slate-200'}`} />
+                          ))}
+                        </div>
+                        <p className="text-xs text-slate-700 leading-relaxed font-medium italic">"{review.comment}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Sticky Action Footer */}
-        <div className="sticky bottom-0 border-t border-slate-100 bg-white p-6 flex items-center justify-between">
+        {/* Sticky action footer */}
+        <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/95 backdrop-blur-md p-5 sm:p-6 flex items-center justify-between">
           <div className="px-2 text-left">
-            <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 leading-none mb-1">{t.lblPrice}</span>
-            <span className={`text-xl font-extrabold block leading-none ${course.price === 'უფასო' || course.price === 'Free' || course.price === 'Бесплатно' ? 'text-emerald-600' : 'text-slate-950'}`}>
-              {course.price}
+            <span className="block text-[10px] uppercase font-extrabold tracking-widest text-slate-400 leading-none mb-1">
+              {t('courseDetailModal.lblPrice', 'Price')}
+            </span>
+            <span className={`text-xl font-black block leading-none ${price === 0 ? 'text-emerald-600' : 'text-slate-950'}`}>
+              {priceDisplay}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5">
             {isLoggedIn && userRole === 'teacher' ? (
-              <span className="rounded-xl bg-slate-50 border border-slate-100 px-5 py-3 text-sm font-bold text-slate-400">
-                {t.isTeacherLabel}
+              <span className="rounded-xl bg-slate-50 border border-slate-200 px-5 py-3 text-xs font-bold text-slate-400">
+                {t('courseDetailModal.isTeacherLabel', 'You are the instructor of this course')}
               </span>
             ) : isEnrolled ? (
               <button
                 onClick={onStartStudy}
                 id="btn-detail-start-study"
-                className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-md shadow-indigo-100 cursor-pointer"
+                className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs sm:text-sm font-black text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-md shadow-indigo-100 cursor-pointer"
               >
-                {t.btnStart}
+                {t('courseDetailModal.btnStart', 'Start Learning')}
                 <ChevronRight className="h-4 w-4" />
               </button>
             ) : (
               <button
-                onClick={isLoggedIn ? onEnroll : () => setShowQuickReg(!showQuickReg)}
+                onClick={onEnroll}
                 id="btn-detail-enroll"
-                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-md shadow-indigo-100 cursor-pointer"
+                className="rounded-xl bg-indigo-600 px-6 py-3 text-xs sm:text-sm font-black text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-md shadow-indigo-100 cursor-pointer"
               >
-                {showQuickReg ? (lang === 'ka' ? 'ფორმის დახურვა' : 'Close Form') : t.btnEnroll}
+                {t('courseDetailModal.btnEnroll', 'Enroll in Course')}
               </button>
             )}
           </div>

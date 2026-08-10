@@ -22,7 +22,8 @@ import OtpPage from './pages/OtpPage';
 import { translateCategory } from './lib/translations';
 import { mockCategories } from './data/mockData';
 import { useState } from 'react';
-import { Course } from './types';
+import { ActiveSession } from './types';
+import CourseDetailModal from './components/CourseDetailModal';
 
 function RequireAuth({
   children,
@@ -57,7 +58,10 @@ function AppRoutes() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ყველა');
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  // NOTE: CourseCard/HomePage/CoursesPage all work with ActiveSession
+  // (from getHomeActiveSessions), not the old mock Course type — this state
+  // must match what onSelectCourse actually receives.
+  const [selectedCourse, setSelectedCourse] = useState<ActiveSession | null>(null);
 
   const filteredCourses = translatedCourses.filter((c) => {
     const matchCat = selectedCategory === 'ყველა' || c.category === translateCategory(selectedCategory, lang) || c.category === selectedCategory;
@@ -65,7 +69,17 @@ function AppRoutes() {
     return matchCat && matchSearch;
   });
 
+  const isSelectedCourseEnrolled = selectedCourse
+    ? enrollments.some(
+        (e) =>
+          activeUser != null &&
+          e.studentId === activeUser.id &&
+          String(e.courseId) === String(selectedCourse.sessionId)
+      )
+    : false;
+
   return (
+    <>
     <Routes>
       {/* ── Standalone auth pages (no layout) ── */}
       <Route path="/login" element={<LoginPage />} />
@@ -113,6 +127,24 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+
+    {/* Rendered once, outside <Routes>, so it works from both "/" and "/courses" */}
+    {selectedCourse && (
+      <CourseDetailModal
+        course={selectedCourse}
+        isOpen={selectedCourse !== null}
+        onClose={() => setSelectedCourse(null)}
+        isEnrolled={isSelectedCourseEnrolled}
+        isLoggedIn={activeUser !== null}
+        userRole={activeUser?.role}
+        studentGuid={activeUser?.id}
+        onEnroll={() => handleEnrollInCourse(selectedCourse.sessionId, () => window.location.assign('/login'))}
+        // TODO: no dedicated "start study" route/handler yet — wire this up
+        // to wherever a student actually resumes an enrolled course.
+        onStartStudy={() => window.location.assign('/dashboard')}
+      />
+    )}
+    </>
   );
 }
 
