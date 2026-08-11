@@ -205,7 +205,22 @@
     "didntGetCode": "Не получили код?",
     "resend": "Отправить снова"
   },
+  "reviewModal": {
+    "title": "Оценить сессию / курс",
+    "ratingLabel": "Оценка (1 - 5 звезд)",
+    "commentLabel": "Комментарий / Отзыв",
+    "placeholder": "Поделитесь вашим мнением о сессии и преподавателе...",
+    "cancel": "Отмена",
+    "send": "Отправить",
+    "submitErrorDefault": "Не удалось отправить отзыв"
+  },
+  
   "courseDetail": {
+    "loading": "Загрузка курса...",
+    "loadError": "Ошибка загрузки: {{error}}",
+    "loadErrorDefault": "Не удалось загрузить данные курса",
+    "close": "Закрыть",
+    "defaultDuration": "~2 часа",
     "duration": "Длительность",
     "difficulty": "Уровень",
     "lessons": "Лекции",
@@ -624,7 +639,84 @@
       }
     }
   },
+  "studentModal": {
+    "loadingCourse": "Загрузка курса...",
+    "noCategory": "Без категории",
+    "courseProgress": "Прогресс освоения курса",
+    "teacher": "Преподаватель",
+    "notSpecified": "Не указано",
+    "closeBtn": "Закрыть",
+    "tabs": {
+      "syllabus": "Силлабус и прогресс",
+      "attendance": "Моя посещаемость",
+      "homeworks": "Задания курса",
+      "schedule": "Сессия и расписание",
+      "materials": "Учебные материалы"
+    },
+    "attendanceStatus": {
+      "present": "Присутствовал(а)",
+      "absent": "Отсутствовал(а)",
+      "unrecorded": "Не отмечено"
+    },
+    "syllabus": {
+      "title": "Чеклист уроков, посещаемость и прогресс",
+      "description": "Просматривайте статус посещаемости и отмечайте пройденные уроки",
+      "completedCount": "{{completed}} / {{total}} завершено",
+      "lessonNumber": "Урок #{{number}}: {{title}}",
+      "noLessons": "Список интегрированных уроков пока не добавлен",
+      "topicsTitle": "Темы силлабуса курса (Course Syllabus)"
+    },
+    "attendance": {
+      "title": "Подробный журнал посещаемости",
+      "lessonDefaultTitle": "Урок #{{id}}",
+      "date": "Дата: {{date}}",
+      "noRecords": "Учёт посещаемости для этого курса ещё не занесён",
+      "noRecordsSub": "Преподаватель отмечает посещаемость после проведения лекции."
+    },
+    "homeworks": {
+      "nextTaskTag": "Задание на следующий урок",
+      "dueDate": "Срок: {{date}}",
+      "active": "Активно",
+      "submitNowBtn": "Отправить задание",
+      "allCompleted": "Все текущие задания сданы! Новых заданий пока нет.",
+      "allTasksTitle": "Все задания курса и оценки ({{count}})",
+      "grade": "Оценка: {{grade}}",
+      "underReview": "Сдано (на проверке)",
+      "submitBtn": "Сдать",
+      "teacherFeedback": "Комментарий преподавателя: \"{{feedback}}\"",
+      "defaultFeedback": "Отлично!",
+      "noHomeworks": "Задания по этому курсу ещё не опубликованы"
+    },
+    "schedule": {
+      "title": "Расписание сессии и локация",
+      "sessionName": "Название сессии",
+      "lectureSchedule": "Расписание лекций",
+      "location": "Локация",
+      "onlineLecture": "Онлайн-лекция",
+      "startDate": "Дата начала",
+      "loading": "Информация о сессии загружается..."
+    },
+    "materials": {
+      "title": "Учебные материалы и ссылки",
+      "defaultFileType": "Файл",
+      "openBtn": "Открыть",
+      "noMaterials": "Вспомогательные файлы и материалы к этому курсу ещё не загружены"
+    }
+  },
   "studentDashboard": {
+    "activeCoursesSubtitle": "Просматривайте лекции, прогресс и оставляйте отзывы к сессиям",
+    "loading": "Загрузка курсов...",
+    "sessionLabel": "Сессия",
+    "scheduleWord": "Расписание",
+    "locationWord": "Локация",
+    "writeReview": "Написать отзыв",
+    "enrolledStatus": "Зачислен",
+     "defaultHeadline": "Студент в академии",
+    "defaultBio": "Целеустремленный студент, осваивающий технологические навыки.",
+    "loadError": "Не удалось загрузить сессии",
+    "saveError": "Не удалось сохранить профиль",
+    "badge": "КАБИНЕТ СТУДЕНТА",
+    "activeCoursesStat": "АКТИВНЫЕ КУРСЫ",
     "greeting": "Привет, {{name}}! 👋",
     "studyTab": "Учебный кабинет",
     "profileTab": "Личные данные",

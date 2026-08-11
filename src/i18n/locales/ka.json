@@ -36,6 +36,22 @@
     "btnEnroll": "რეგისტრაცია",
     "btnEnrolling": "ვრეგისტრირებთ..."
   },
+  "courseDetail": {
+    "loading": "კურსის ჩატვირთვა...",
+    "loadError": "ჩატვირთვის შეცდომა: {{error}}",
+    "loadErrorDefault": "კურსის მონაცემების ჩატვირთვა ვერ მოხერხდა",
+    "close": "დახურვა",
+    "defaultDuration": "~2 საათი"
+  },
+  "reviewModal": {
+    "title": "სესიის / კურსის შეფასება",
+    "ratingLabel": "შეფასება (1 - 5 ვარსკვლავი)",
+    "commentLabel": "კომენტარი / შენიშვნა",
+    "placeholder": "გააზიარეთ თქვენი აზრი სესიის და ლექტორის შესახებ...",
+    "cancel": "გაუქმება",
+    "send": "გაგზავნა",
+    "submitErrorDefault": "შეფასების გაგზავნა ვერ მოხერხდა"
+  },
   "courseDetailModal": {
     "loadError": "განრიგის ჩატვირთვა ვერ მოხერხდა",
     "free": "უფასო",
@@ -593,7 +609,84 @@
       }
     }
   },
+  "studentModal": {
+    "loadingCourse": "კურსის ჩატვირთვა...",
+    "noCategory": "კატეგორიის გარეშე",
+    "courseProgress": "კურსის ათვისების პროგრესი",
+    "teacher": "ლექტორი",
+    "notSpecified": "არ არის მითითებული",
+    "closeBtn": "დახურვა",
+    "tabs": {
+      "syllabus": "სილაბუსი & პროგრესი",
+      "attendance": "ჩემი დასწრება",
+      "homeworks": "კურსის დავალებები",
+      "schedule": "სესია & განრიგი",
+      "materials": "სასწავლო მასალები"
+    },
+    "attendanceStatus": {
+      "present": "ესწრებოდა",
+      "absent": "არ ესწრებოდა",
+      "unrecorded": "აღურიცხავია"
+    },
+    "syllabus": {
+      "title": "გაკვეთილების ჩექლისტი, დასწრება & პროგრესი",
+      "description": "იხილეთ თითოეულ გაკვეთილზე თქვენი დასწრების სტატუსი და მონიშნეთ გავლილი გაკვეთილები",
+      "completedCount": "{{completed}} / {{total}} დასრულებული",
+      "lessonNumber": "გაკვეთილი #{{number}}: {{title}}",
+      "noLessons": "ინტეგრირებული გაკვეთილების სია ჯერ არ არის დამატებული",
+      "topicsTitle": "კურსის სილაბუსის თემები (Course Syllabus)"
+    },
+    "attendance": {
+      "title": "დასწრების დეტალური ჟურნალი",
+      "lessonDefaultTitle": "გაკვეთილი #{{id}}",
+      "date": "თარიღი: {{date}}",
+      "noRecords": "ამ კურსზე დასწრების აღრიცხვა ჯერ არ არის შეყვანილი",
+      "noRecordsSub": "ლექტორი დასწრებას აღრიცხავს ჩატარებული ლექციის შემდეგ."
+    },
+    "homeworks": {
+      "nextTaskTag": "შემდეგი დღის დავალება (Next Upcoming Task)",
+      "dueDate": "ვადა: {{date}}",
+      "active": "აქტიური",
+      "submitNowBtn": "დავალების გაგზავნა (Submit Now)",
+      "allCompleted": "ყველა მიმდინარე დავალება ჩაბარებულია! ახალი დავალებები ჯერ არ არის გამოქვეყნებული.",
+      "allTasksTitle": "ამ კურსის ყველა დავალება & შეფასებები ({{count}})",
+      "grade": "შეფასება: {{grade}}",
+      "underReview": "ჩაბარებულია (შემოწმების პროცესში)",
+      "submitBtn": "ჩაბარება",
+      "teacherFeedback": "ლექტორის კომენტარი: \"{{feedback}}\"",
+      "defaultFeedback": "შესანიშნავია!",
+      "noHomeworks": "ამ კურსზე დავალებები ჯერ არ არის გამოქვეყნებული"
+    },
+    "schedule": {
+      "title": "სესიის განრიგი & ლოკაცია",
+      "sessionName": "სესიის დასახელება",
+      "lectureSchedule": "ლექციის განრიგი",
+      "location": "ლოკაცია",
+      "onlineLecture": "ონლაინ ლექცია",
+      "startDate": "დაწყების თარიღი",
+      "loading": "სესიის ინფორმაცია იტვირთება..."
+    },
+    "materials": {
+      "title": "სასწავლო მასალები & ბმულები",
+      "defaultFileType": "ფაილი",
+      "openBtn": "გახსნა",
+      "noMaterials": "ამ კურსზე დამხმარე ფაილები და მასალები ჯერ არ არის ატვირთული"
+    }
+  },
   "studentDashboard": {
+    "activeCoursesSubtitle": "იხილეთ ლექციები, პროგრესი და დატოვეთ შეფასება",
+    "loading": "კურსების ჩატვირთვა...",
+    "sessionLabel": "სესია",
+    "scheduleWord": "განრიგი",
+    "locationWord": "ლოკაცია",
+    "writeReview": "შეფასების დაწერა",
+    "enrolledStatus": "ჩარიცხული",
+    "defaultHeadline": "სტუდენტი აკადემიაში",
+    "defaultBio": "მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.",
+    "loadError": "სესიების ჩატვირთვა ვერ მოხერხდა",
+    "saveError": "პროფილის შენახვა ვერ მოხერხდა",
+    "badge": "სტუდენტის კაბინეტი",
+    "activeCoursesStat": "აქტიური კურსები",
     "greeting": "გამარჯობა, {{name}}! 👋",
     "studyTab": "სასწავლო კაბინეტი",
     "profileTab": "პირადი მონაცემები",

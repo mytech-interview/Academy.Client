@@ -196,7 +196,21 @@
     "didntGetCode": "Didn't receive the code?",
     "resend": "Send again"
   },
+  "reviewModal": {
+    "title": "Rate Session / Course",
+    "ratingLabel": "Rating (1 - 5 stars)",
+    "commentLabel": "Comment / Feedback",
+    "placeholder": "Share your thoughts about the session and instructor...",
+    "cancel": "Cancel",
+    "send": "Send",
+    "submitErrorDefault": "Failed to submit review"
+  },
   "courseDetail": {
+    "loading": "Loading course...",
+    "loadError": "Loading error: {{error}}",
+    "loadErrorDefault": "Failed to load course details",
+    "close": "Close",
+    "defaultDuration": "~2 hours",
     "duration": "Duration",
     "difficulty": "Level",
     "lessons": "Lessons",
@@ -615,8 +629,85 @@
       }
     }
   },
+  "studentModal": {
+    "loadingCourse": "Loading course...",
+    "noCategory": "Uncategorized",
+    "courseProgress": "Course Completion Progress",
+    "teacher": "Instructor",
+    "notSpecified": "Not specified",
+    "closeBtn": "Close",
+    "tabs": {
+      "syllabus": "Syllabus & Progress",
+      "attendance": "My Attendance",
+      "homeworks": "Course Homeworks",
+      "schedule": "Session & Schedule",
+      "materials": "Study Materials"
+    },
+    "attendanceStatus": {
+      "present": "Present",
+      "absent": "Absent",
+      "unrecorded": "Unrecorded"
+    },
+    "syllabus": {
+      "title": "Lesson Checklist, Attendance & Progress",
+      "description": "View your attendance status for each lesson and mark completed topics",
+      "completedCount": "{{completed}} / {{total}} completed",
+      "lessonNumber": "Lesson #{{number}}: {{title}}",
+      "noLessons": "No integrated lesson list has been added yet",
+      "topicsTitle": "Course Syllabus Topics"
+    },
+    "attendance": {
+      "title": "Detailed Attendance Log",
+      "lessonDefaultTitle": "Lesson #{{id}}",
+      "date": "Date: {{date}}",
+      "noRecords": "Attendance records have not been submitted for this course yet",
+      "noRecordsSub": "The instructor logs attendance after each conducted lecture."
+    },
+    "homeworks": {
+      "nextTaskTag": "Next Upcoming Task",
+      "dueDate": "Due date: {{date}}",
+      "active": "Active",
+      "submitNowBtn": "Submit Assignment",
+      "allCompleted": "All current assignments are submitted! No new tasks available.",
+      "allTasksTitle": "All Course Tasks & Grades ({{count}})",
+      "grade": "Grade: {{grade}}",
+      "underReview": "Submitted (Under review)",
+      "submitBtn": "Submit",
+      "teacherFeedback": "Instructor Feedback: \"{{feedback}}\"",
+      "defaultFeedback": "Great job!",
+      "noHomeworks": "No assignments published for this course yet"
+    },
+    "schedule": {
+      "title": "Session Schedule & Location",
+      "sessionName": "Session Title",
+      "lectureSchedule": "Lecture Schedule",
+      "location": "Location",
+      "onlineLecture": "Online Lecture",
+      "startDate": "Start Date",
+      "loading": "Loading session details..."
+    },
+    "materials": {
+      "title": "Study Materials & Links",
+      "defaultFileType": "File",
+      "openBtn": "Open",
+      "noMaterials": "No supplementary files or materials uploaded for this course yet"
+    }
+  },
   "studentDashboard": {
+    "activeCoursesSubtitle": "View lectures, progress, and leave reviews for your sessions",
+    "loading": "Loading courses...",
+    "sessionLabel": "Session",
+    "scheduleWord": "Schedule",
+    "locationWord": "Location",
+    "writeReview": "Write Review",
+    "enrolledStatus": "Enrolled",
     "greeting": "Hello, {{name}}! 👋",
+    "defaultHeadline": "Student at the Academy",
+    "defaultBio": "A motivated student mastering technology skills.",
+    "loadError": "Failed to load sessions",
+    "saveError": "Failed to save profile",
+    "badge": "STUDENT CABINET",
+    "activeCoursesStat": "ACTIVE COURSES",
     "studyTab": "Study Room",
     "profileTab": "Personal Data",
     "leaveClassroom": "← Leave Classroom",

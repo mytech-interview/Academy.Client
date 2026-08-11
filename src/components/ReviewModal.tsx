@@ -1,6 +1,6 @@
-// components/ReviewModal.tsx
 import React, { useState } from 'react';
 import { Star, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { upsertReview } from '../api/reviews';
 
 interface ReviewModalProps {
@@ -16,6 +16,8 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   onClose,
   onSubmitted,
 }) => {
+  const { t } = useTranslation();
+
   const [mark, setMark] = useState(5);
   const [hoverMark, setHoverMark] = useState<number | null>(null);
   const [description, setDescription] = useState('');
@@ -35,7 +37,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       onSubmitted?.();
       onClose();
     } catch (e: any) {
-      setError(e?.message || 'Не удалось отправить отзыв');
+      setError(e?.message || t('reviewModal.submitErrorDefault'));
     } finally {
       setSubmitting(false);
     }
@@ -52,11 +54,13 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         </button>
 
         <h3 className="text-lg font-black text-slate-950">
-          სესიის / კურსის შეფასება (Review)
+          {t('reviewModal.title')}
         </h3>
 
         <div className="space-y-2">
-          <p className="text-xs font-bold text-slate-600">შეფასება (1 - 5 ვარსკვლავი)</p>
+          <p className="text-xs font-bold text-slate-600">
+            {t('reviewModal.ratingLabel')}
+          </p>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -79,12 +83,14 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-bold text-slate-600">კომენტარი / შენიშვნა</p>
+          <p className="text-xs font-bold text-slate-600">
+            {t('reviewModal.commentLabel')}
+          </p>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            placeholder="გააზიარეთ თქვენი აზრი სესიის და ლექტორის შესახებ..."
+            placeholder={t('reviewModal.placeholder')}
             className="w-full rounded-xl border border-slate-200 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
           />
         </div>
@@ -96,14 +102,14 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600"
           >
-            გაუქმება
+            {t('reviewModal.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
             className="px-4 py-2 rounded-xl bg-[#5842F8] hover:bg-[#4832E6] text-white text-xs font-extrabold disabled:opacity-60"
           >
-            {submitting ? '...' : 'გაგზავნა'}
+            {submitting ? '...' : t('reviewModal.send')}
           </button>
         </div>
       </div>

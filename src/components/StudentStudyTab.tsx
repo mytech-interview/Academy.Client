@@ -4,10 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { StudentSession } from '../api/sessions';
 import { StudentCourseDetailContainer } from './Studentcoursedetailmodal.container';
-// в начале компонента StudentStudyTab
+// at the beginning of StudentStudyTab component
 import { ReviewModal } from './ReviewModal';
-
-
 
 const COURSE_IMAGE_PLACEHOLDER =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
@@ -27,7 +25,7 @@ interface StudentStudyTabProps {
   sessions: StudentSession[];
   avgProgress: number;
   lang: Language;
-  /** GUID текущего студента — обязателен для запроса деталей курса в модалке */
+  /** Current student's GUID — required for fetching course details in the modal */
   studentGuid: string;
 }
 
@@ -39,7 +37,6 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
   studentGuid,
 }) => {
   const { t } = useTranslation();
-
 
   const [viewingCourseDetail, setViewingCourseDetail] = useState<StudentSession | null>(null);
   const [reviewingSession, setReviewingSession] = useState<StudentSession | null>(null);
@@ -62,7 +59,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
       {sessionsLoading ? (
         <div className="rounded-[2rem] border border-slate-100 py-16 text-center space-y-3 bg-white flex flex-col items-center justify-center shadow-sm">
           <Loader2 className="h-9 w-9 text-indigo-600 animate-spin" />
-          <p className="text-xs text-slate-400 font-semibold">{t('studentDashboard.loading', 'Загрузка курсов...')}</p>
+          <p className="text-xs text-slate-400 font-semibold">{t('studentDashboard.loading', 'Loading courses...')}</p>
         </div>
       ) : sessionsError ? (
         <div className="rounded-[2rem] border border-red-100 bg-red-50/50 p-6 text-center shadow-sm">
@@ -79,7 +76,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
           </div>
         </div>
       ) : (
-        /* Список карточек курсов */
+        /* Course card list */
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {sessions.map((session) => (
             <div
@@ -87,7 +84,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
               className="flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition duration-300"
             >
               <div>
-                {/* Картинка и категория */}
+                {/* Image and category */}
                 <div className="relative h-48 sm:h-52 w-full overflow-hidden">
                   <img
                     src={COURSE_IMAGE_PLACEHOLDER}
@@ -102,7 +99,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
                   </div>
                 </div>
 
-                {/* Контент карточки */}
+                {/* Card content */}
                 <div className="p-6 space-y-5">
                   <h4 className="text-lg font-black text-slate-950 tracking-tight leading-snug line-clamp-2">
                     {session.title}
@@ -125,7 +122,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
                     )}
                   </div>
 
-                  {/* Кнопка открытия модального окна */}
+                  {/* Modal open button */}
                   <button
                     onClick={() => setViewingCourseDetail(session)}
                     className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#5842F8] hover:bg-[#4832E6] py-3.5 text-xs font-extrabold text-white transition duration-200 active:scale-[0.98] shadow-md shadow-indigo-200 cursor-pointer"
@@ -136,7 +133,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
                 </div>
               </div>
 
-              {/* Футер карточки */}
+              {/* Card footer */}
               <div className="px-6 pb-6 pt-1 flex items-center justify-between border-t border-slate-100 mt-2">
                 <button
                   type="button"
@@ -157,7 +154,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
         </div>
       )}
 
-      {/* --- Вызов модального окна --- */}
+      {/* --- Modal windows --- */}
       {viewingCourseDetail && (
         <StudentCourseDetailContainer
           sessionId={viewingCourseDetail.sessionId}

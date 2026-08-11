@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   getLessonsForSession,
   getCourseSessionDetailsForStudent,
@@ -45,17 +46,17 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
   courseCategoryName,
   onClose,
 }) => {
+  const { t } = useTranslation();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [course, setCourse] = useState<Course>({ id: sessionId, title: 'Загрузка курса...' });
+  const [course, setCourse] = useState<Course>({ id: sessionId, title: t('courseDetail.loading') });
   const [session, setSession] = useState<Session>({});
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
 
-  // Сырые данные с бэка — храним отдельно, чтобы доставать полный объект
-  // (homeWorkId, teacherGuid, teacherName) для SubmitHomeworkModal без
-  // рискованных кастов типов.
+  // Raw data from backend stored separately to extract full object for SubmitHomeworkModal
   const [rawHomeworks, setRawHomeworks] = useState<StudentHomeWork[]>([]);
 
   const [enrollment] = useState<Enrollment>({ completedLessonIds: [] });
@@ -64,14 +65,9 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
 
   const [submittingHomework, setSubmittingHomework] = useState<StudentHomeWork | null>(null);
 
-  // Отдельно вынесен рефетч домашек — используется и при первой загрузке,
-  // и после успешной отправки задания.
   const loadHomeworks = useCallback(async () => {
     const studentHomeworks = await getHomeWorksForStudent(studentGuid, sessionId);
     setRawHomeworks(studentHomeworks);
-    // ВНИМАНИЕ: бэкенд пока не отдаёт SessionId/CourseId в
-    // GetHomeWorksForStudentResponse — если getHomeWorksForStudent сама
-    // не фильтрует по sessionId на сервере, здесь будут ВСЕ домашки студента.
     setHomeworks(
       studentHomeworks.map((hw) => ({
         id: hw.homeWorkId,
@@ -89,11 +85,10 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
       setLoading(true);
       setError(null);
       try {
-        const [lessons, sessionDetails, libraryItems, studentHomeworks] = await Promise.all([
+        const [lessons, sessionDetails, libraryItems] = await Promise.all([
           getLessonsForSession(sessionId),
           getCourseSessionDetailsForStudent(sessionId, studentGuid),
           getCourseLibrarySessionId(sessionId, studentGuid),
-          getHomeWorksForStudent(studentGuid, sessionId),
         ]);
 
         if (cancelled) return;
@@ -107,7 +102,7 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
             id: l.lessonId,
             title: l.title,
             content: l.content,
-            duration: '~2 часа', // фиксировано, в бэке поля нет
+            duration: t('courseDetail.defaultDuration'),
           })),
         });
 
@@ -129,18 +124,10 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
           }))
         );
 
-        setRawHomeworks(studentHomeworks as StudentHomeWork[]);
-        setHomeworks(
-          (studentHomeworks as StudentHomeWork[]).map((hw) => ({
-            id: hw.homeWorkId,
-            title: hw.title,
-            description: hw.description,
-            dueDate: hw.dueDate,
-          }))
-        );
+        await loadHomeworks();
       } catch (e: any) {
         if (!cancelled) {
-          setError(e?.message || 'Не удалось загрузить данные курса');
+          setError(e?.message || t('courseDetail.loadErrorDefault'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -151,15 +138,12 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
     return () => {
       cancelled = true;
     };
-  }, [sessionId, studentGuid, courseCategoryName]);
+  }, [sessionId, studentGuid, courseCategoryName, loadHomeworks, t]);
 
-  // hw здесь — Homework (только id/title/description/dueDate), поэтому
-  // достаём полноценный StudentHomeWork из rawHomeworks по id вместо
-  // небезопасного каста.
   const handleOpenSubmitHomework = (hw: Homework) => {
     const full = rawHomeworks.find((r) => r.homeWorkId === hw.id);
     if (!full) {
-      console.error('Не удалось найти исходные данные домашки для id', hw.id);
+      console.error('Failed to find raw homework data for id:', hw.id);
       return;
     }
     setSubmittingHomework(full);
@@ -169,7 +153,7 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm">
         <div className="bg-white rounded-2xl px-6 py-4 text-sm font-bold text-slate-700">
-          Загрузка курса...
+          {t('courseDetail.loading')}
         </div>
       </div>
     );
@@ -179,12 +163,12 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl px-6 py-4 text-sm font-bold text-rose-700 space-y-3">
-          <p>Ошибка загрузки: {error}</p>
+          <p>{t('courseDetail.loadError', { error })}</p>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold"
           >
-            Закрыть
+            {t('courseDetail.close')}
           </button>
         </div>
       </div>

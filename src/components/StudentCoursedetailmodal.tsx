@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   BookOpen,
@@ -112,7 +113,7 @@ interface StudentCourseDetailModalProps {
 type TabId = 'syllabus' | 'attendance' | 'homeworks' | 'schedule' | 'materials';
 
 export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> = ({
-  course = { id: 0, title: 'Загрузка курса...' },
+  course,
   enrollment = { completedLessonIds: [] },
   session = {},
   student = {},
@@ -124,10 +125,12 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
   onUpdateEnrollment,
   onOpenSubmitHomework
 }) => {
+  const { t } = useTranslation();
+
   const [activeTab, setActiveTab] = useState<TabId>('syllabus');
   const [localEnrollment, setLocalEnrollment] = useState<Enrollment>(enrollment);
-  
-  const lessons = course.lessons || [];
+
+  const lessons = course?.lessons || [];
   const completedIds = localEnrollment?.completedLessonIds || [];
   const totalLessons = lessons.length || 1;
 
@@ -139,8 +142,6 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
   const totalHomeworksCount = homeworks.length;
   const totalAttendance = attendanceRecords.length;
   const presentAttendance = attendanceRecords.filter((a) => a.isPresent).length;
-  const attendancePercentage =
-    totalAttendance > 0 ? Math.round((presentAttendance / totalAttendance) * 100) : 100;
 
   const pendingHomework = homeworks.find(
     (hw) => !homeworkSubmissions.some((s) => s.homeworkId === hw.id)
@@ -156,11 +157,11 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
   };
 
   const TABS: { id: TabId; label: string; icon: React.ElementType; count?: number }[] = [
-    { id: 'syllabus', label: '📖 სილაბუსი & პროგრესი', icon: BookOpen },
-    { id: 'attendance', label: '📋 ჩემი დასწრება', icon: CheckCircle },
-    { id: 'homeworks', label: '📝 კურსის დავალებები', icon: FileText, count: totalHomeworksCount },
-    { id: 'schedule', label: '📅 სესია & განრიგი', icon: Calendar },
-    { id: 'materials', label: '📁 სასწავლო მასალები', icon: FileText }
+    { id: 'syllabus', label: `📖 ${t('studentModal.tabs.syllabus')}`, icon: BookOpen },
+    { id: 'attendance', label: `📋 ${t('studentModal.tabs.attendance')}`, icon: CheckCircle },
+    { id: 'homeworks', label: `📝 ${t('studentModal.tabs.homeworks')}`, icon: FileText, count: totalHomeworksCount },
+    { id: 'schedule', label: `📅 ${t('studentModal.tabs.schedule')}`, icon: Calendar },
+    { id: 'materials', label: `📁 ${t('studentModal.tabs.materials')}`, icon: FileText }
   ];
 
   return (
@@ -176,10 +177,10 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
               </div>
               <div>
                 <span className="px-2.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 text-[10px] font-extrabold uppercase tracking-wider">
-                  {course?.categoryName || 'Без категории'}
+                  {course?.categoryName || t('studentModal.noCategory')}
                 </span>
                 <h3 className="text-xl font-black text-white mt-1">
-                  {course?.title || 'Название курса'}
+                  {course?.title || t('studentModal.loadingCourse')}
                 </h3>
               </div>
             </div>
@@ -196,9 +197,9 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
             <div className="flex items-center gap-3">
               <TrendingUp className="h-5 w-5 text-indigo-400 shrink-0" />
               <div>
-                <p className="font-bold text-white">კურსის ათვისების პროგრესი</p>
+                <p className="font-bold text-white">{t('studentModal.courseProgress')}</p>
                 <p className="text-[11px] text-slate-400">
-                  ლექტორი: <span className="text-indigo-300 font-semibold">{course?.teacherName || 'არ არის მითითებული'}</span>
+                  {t('studentModal.teacher')}: <span className="text-indigo-300 font-semibold">{course?.teacherName || t('studentModal.notSpecified')}</span>
                 </p>
               </div>
             </div>
@@ -255,14 +256,14 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                   <div>
                     <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-emerald-600" />
-                      <span>გაკვეთილების ჩექლისტი, დასწრება & პროგრესი</span>
+                      <span>{t('studentModal.syllabus.title')}</span>
                     </h4>
                     <p className="text-xs text-slate-500">
-                      იხილეთ თითოეულ გაკვეთილზე თქვენი დასწრების სტატუსი და მონიშნეთ გავლილი გაკვეთილები
+                      {t('studentModal.syllabus.description')}
                     </p>
                   </div>
                   <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-200">
-                    {completedIds.length} / {lessons.length || 1} დასრულებული
+                    {t('studentModal.syllabus.completedCount', { completed: completedIds.length, total: lessons.length || 1 })}
                   </span>
                 </div>
 
@@ -296,7 +297,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                             </div>
                             <div>
                               <p className={`text-xs font-black ${isDone ? 'text-emerald-950 line-through' : 'text-slate-900'}`}>
-                                გაკვეთილი #{idx + 1}: {les.title}
+                                {t('studentModal.syllabus.lessonNumber', { number: idx + 1, title: les.title })}
                               </p>
                               {les.content && (
                                 <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{les.content}</p>
@@ -309,18 +310,18 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                               lessonAtt.isPresent ? (
                                 <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-[11px] flex items-center gap-1 shadow-2xs">
                                   <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                                  <span>ესწრებოდა</span>
+                                  <span>{t('studentModal.attendanceStatus.present')}</span>
                                 </span>
                               ) : (
                                 <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-black text-[11px] flex items-center gap-1 shadow-2xs">
                                   <XCircle className="h-3.5 w-3.5 text-rose-600" />
-                                  <span>არ ესწრებოდა</span>
+                                  <span>{t('studentModal.attendanceStatus.absent')}</span>
                                 </span>
                               )
                             ) : (
                               <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500 font-bold text-[10px] flex items-center gap-1 border border-slate-200">
                                 <Clock className="h-3 w-3 text-slate-400" />
-                                <span>აღურიცხავია</span>
+                                <span>{t('studentModal.attendanceStatus.unrecorded')}</span>
                               </span>
                             )}
 
@@ -336,16 +337,16 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 font-medium p-4 text-center bg-white rounded-xl border border-slate-200/60">
-                    ინტეგრირებული გაკვეთილების სია ჯერ არ არის დამატებული
+                    {t('studentModal.syllabus.noLessons')}
                   </p>
                 )}
               </div>
 
-              {course.syllabus && course.syllabus.length > 0 && (
+              {course?.syllabus && course.syllabus.length > 0 && (
                 <div className="bg-white p-5 rounded-2xl border border-slate-200/80 space-y-3">
                   <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                     <FileText className="h-4 w-4 text-indigo-600" />
-                    <span>კურსის სილაბუსის თემები (Course Syllabus)</span>
+                    <span>{t('studentModal.syllabus.topicsTitle')}</span>
                   </h4>
                   <div className="space-y-2">
                     {course.syllabus.map((syl, i) => (
@@ -363,36 +364,10 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
           {/* TAB: ATTENDANCE */}
           {activeTab === 'attendance' && (
             <div className="space-y-4">
-              {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase">დასწრების პროცენტი</p>
-                    <p className="text-xl font-black text-indigo-900 mt-0.5">{attendancePercentage}%</p>
-                  </div>
-                  <span className="text-2xl">📊</span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase">დასწრებული ლექციები</p>
-                    <p className="text-xl font-black text-emerald-950 mt-0.5">{presentAttendance} ლექცია</p>
-                  </div>
-                  <span className="text-2xl">✅</span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase">სულ აღრიცხული</p>
-                    <p className="text-xl font-black text-slate-900 mt-0.5">{totalAttendance} სესია</p>
-                  </div>
-                  <span className="text-2xl">📅</span>
-                </div>
-              </div> */}
-
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <UserCheck className="h-4 w-4 text-emerald-600" />
-                  <span>დასწრების დეტალური ჟურნალი</span>
+                  <span>{t('studentModal.attendance.title')}</span>
                 </h4>
 
                 {attendanceRecords.length > 0 ? (
@@ -401,22 +376,22 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                       <div key={rec.id} className="py-3 flex items-center justify-between text-xs">
                         <div className="space-y-0.5">
                           <p className="font-bold text-slate-900">
-                            {rec.lessonTitle || `გაკვეთილი #${rec.lessonId ?? ''}`}
+                            {rec.lessonTitle || t('studentModal.attendance.lessonDefaultTitle', { id: rec.lessonId ?? '' })}
                           </p>
                           {rec.lessonDate && (
-                            <p className="text-[11px] text-slate-500 font-mono">📅 თარიღი: {rec.lessonDate}</p>
+                            <p className="text-[11px] text-slate-500 font-mono">📅 {t('studentModal.attendance.date', { date: rec.lessonDate })}</p>
                           )}
                         </div>
                         <div>
                           {rec.isPresent ? (
                             <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold flex items-center gap-1 text-[11px]">
                               <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                              <span>ესწრებოდა</span>
+                              <span>{t('studentModal.attendanceStatus.present')}</span>
                             </span>
                           ) : (
                             <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-extrabold flex items-center gap-1 text-[11px]">
                               <X className="h-3.5 w-3.5 text-rose-600" />
-                              <span>არ ესწრებოდა</span>
+                              <span>{t('studentModal.attendanceStatus.absent')}</span>
                             </span>
                           )}
                         </div>
@@ -425,8 +400,8 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                   </div>
                 ) : (
                   <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                    <p className="text-xs font-bold text-slate-700">ამ კურსზე დასწრების აღრიცხვა ჯერ არ არის შეყვანილი</p>
-                    <p className="text-[11px] text-slate-400">ლექტორი დასწრებას აღრიცხავს ჩატარებული ლექციის შემდეგ.</p>
+                    <p className="text-xs font-bold text-slate-700">{t('studentModal.attendance.noRecords')}</p>
+                    <p className="text-[11px] text-slate-400">{t('studentModal.attendance.noRecordsSub')}</p>
                   </div>
                 )}
               </div>
@@ -441,10 +416,10 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                   <div className="flex items-center justify-between">
                     <span className="px-3 py-1 rounded-full bg-amber-400 text-amber-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
                       <Sparkles className="h-3.5 w-3.5" />
-                      ⚡ შემდეგი დღის დავალება (Next Upcoming Task)
+                      ⚡ {t('studentModal.homeworks.nextTaskTag')}
                     </span>
                     <span className="text-xs font-bold text-amber-300 font-mono">
-                      📅 ვადა: {pendingHomework.dueDate || 'აქტიური'}
+                      📅 {t('studentModal.homeworks.dueDate', { date: pendingHomework.dueDate || t('studentModal.homeworks.active') })}
                     </span>
                   </div>
 
@@ -464,7 +439,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs transition cursor-pointer shadow-md active:scale-95"
                       >
                         <Send className="h-4 w-4" />
-                        <span>დავალების გაგზავნა (Submit Now)</span>
+                        <span>{t('studentModal.homeworks.submitNowBtn')}</span>
                       </button>
                     </div>
                   )}
@@ -472,14 +447,14 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
               ) : (
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <span>ყველა მიმდინარე დავალება ჩაბარებულია! ახალი დავალებები ჯერ არ არის გამოქვეყნებული.</span>
+                  <span>{t('studentModal.homeworks.allCompleted')}</span>
                 </div>
               )}
 
               <div className="space-y-4 pt-2">
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <FileText className="h-4 w-4 text-indigo-600" />
-                  <span>ამ კურსის ყველა დავალება & შეფასებები ({totalHomeworksCount})</span>
+                  <span>{t('studentModal.homeworks.allTasksTitle', { count: totalHomeworksCount })}</span>
                 </h4>
 
                 {homeworks.length > 0 ? (
@@ -492,7 +467,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                             <div>
                               {hw.dueDate && (
-                                <span className="text-[10px] font-bold text-slate-500 font-mono">📅 ვადა: {hw.dueDate}</span>
+                                <span className="text-[10px] font-bold text-slate-500 font-mono">📅 {t('studentModal.homeworks.dueDate', { date: hw.dueDate })}</span>
                               )}
                               <h5 className="text-sm font-black text-slate-900">{hw.title}</h5>
                             </div>
@@ -500,11 +475,11 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                             {sub ? (
                               sub.grade ? (
                                 <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-black">
-                                  🏆 შეფასება: {sub.grade}
+                                  🏆 {t('studentModal.homeworks.grade', { grade: sub.grade })}
                                 </span>
                               ) : (
                                 <span className="px-3 py-1 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold">
-                                  ⏳ ჩაბარებულია (შემოწმების პროცესში)
+                                  ⏳ {t('studentModal.homeworks.underReview')}
                                 </span>
                               )
                             ) : (
@@ -513,7 +488,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                                   onClick={() => onOpenSubmitHomework(hw)}
                                   className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 cursor-pointer shadow-2xs"
                                 >
-                                  ჩაბარება
+                                  {t('studentModal.homeworks.submitBtn')}
                                 </button>
                               )
                             )}
@@ -534,7 +509,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                               )}
                               {sub.grade && (
                                 <p className="text-xs font-bold text-emerald-800 bg-white p-2 rounded-lg border border-emerald-200">
-                                  🌟 ლექტორის კომენტარი: "{sub.feedback || 'შესანიშნავია!'}"
+                                  🌟 {t('studentModal.homeworks.teacherFeedback', { feedback: sub.feedback || t('studentModal.homeworks.defaultFeedback') })}
                                 </p>
                               )}
                             </div>
@@ -545,7 +520,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 font-medium p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80">
-                    ამ კურსზე დავალებები ჯერ არ არის გამოქვეყნებული
+                    {t('studentModal.homeworks.noHomeworks')}
                   </p>
                 )}
               </div>
@@ -558,30 +533,30 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
                 <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-indigo-600" />
-                  <span>სესიის განრიგი & ლოკაცია</span>
+                  <span>{t('studentModal.schedule.title')}</span>
                 </h4>
 
                 {session?.title ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">სესიის დასახელება</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{t('studentModal.schedule.sessionName')}</p>
                       <p className="text-xs font-black text-slate-900">{session.title}</p>
                     </div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">ლექციის განრიგი</p>
-                      <p className="text-xs font-black text-indigo-600">{session.schedule || 'არ არის მითითებული'}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{t('studentModal.schedule.lectureSchedule')}</p>
+                      <p className="text-xs font-black text-indigo-600">{session.schedule || t('studentModal.notSpecified')}</p>
                     </div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">ლოკაცია</p>
-                      <p className="text-xs font-black text-slate-900">{session.room || 'ონლაინ ლექცია'}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{t('studentModal.schedule.location')}</p>
+                      <p className="text-xs font-black text-slate-900">{session.room || t('studentModal.schedule.onlineLecture')}</p>
                     </div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">დაწყების თარიღი</p>
-                      <p className="text-xs font-black text-slate-900">{session.startDate || 'არ არის მითითებული'}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{t('studentModal.schedule.startDate')}</p>
+                      <p className="text-xs font-black text-slate-900">{session.startDate || t('studentModal.notSpecified')}</p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">სესიის ინფორმაცია იტვირთება...</p>
+                  <p className="text-xs text-slate-500">{t('studentModal.schedule.loading')}</p>
                 )}
               </div>
             </div>
@@ -593,7 +568,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
                 <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-indigo-600" />
-                  <span>სასწავლო მასალები & ბმულები</span>
+                  <span>{t('studentModal.materials.title')}</span>
                 </h4>
 
                 {materials.length > 0 ? (
@@ -606,7 +581,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                           </div>
                           <div>
                             <p className="text-xs font-bold text-slate-900">{mat.title}</p>
-                            <p className="text-[10px] text-slate-500 font-mono uppercase">{mat.type || 'ფაილი'}</p>
+                            <p className="text-[10px] text-slate-500 font-mono uppercase">{mat.type || t('studentModal.materials.defaultFileType')}</p>
                           </div>
                         </div>
                         {mat.url && (
@@ -616,7 +591,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                             rel="noreferrer"
                             className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition"
                           >
-                            გახსნა
+                            {t('studentModal.materials.openBtn')}
                           </a>
                         )}
                       </div>
@@ -624,7 +599,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 font-medium p-8 text-center bg-slate-50 rounded-xl">
-                    ამ კურსზე დამხმარე ფაილები და მასალები ჯერ არ არის ატვირთული
+                    {t('studentModal.materials.noMaterials')}
                   </p>
                 )}
               </div>
@@ -639,7 +614,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
           >
-            დახურვა
+            {t('studentModal.closeBtn')}
           </button>
         </div>
 

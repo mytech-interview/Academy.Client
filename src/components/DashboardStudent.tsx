@@ -87,8 +87,8 @@ export default function DashboardStudent({
       const [firstName, ...rest] = profName.trim().split(' ');
       const lastName = rest.join(' ');
 
-      // Реальный вызов бэкенда — раньше этого не было,
-      // форма только обновляла локальный/мок-стейт через onUpdateProfile.
+      // Real backend API call — previously the form only updated
+      // local/mock state via onUpdateProfile.
       await editStudent({
         studentGuid: student.id,
         firstName: firstName ?? '',
@@ -98,7 +98,7 @@ export default function DashboardStudent({
         picture: profAvatar,
       });
 
-      // Обновляем локальный UI/контекст только после успешного ответа сервера
+      // Update local UI/context only after a successful server response
       if (onUpdateProfile) {
         onUpdateProfile({
           name: profName,
@@ -113,7 +113,7 @@ export default function DashboardStudent({
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 2000);
     } catch (err: any) {
-      setProfileError(err.message || t('studentDashboard.saveError', 'Не удалось сохранить профиль'));
+      setProfileError(err.message || t('studentDashboard.saveError', 'Failed to save profile'));
     } finally {
       setProfileSaving(false);
     }
