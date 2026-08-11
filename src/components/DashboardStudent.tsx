@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { User } from '../types';
 import { Language } from '../lib/translations';
 import { getStudentSessions, StudentSession } from '../api/sessions';
+import { editStudent } from '../api/students';
 import { AVATAR_OPTIONS, avatarUrl } from '../lib/avatars';
+import { useApp } from '../context/AppContext';
 
 import { StudentProfileTab } from './StudentProfileTab';
 import { StudentStudyTab } from './StudentStudyTab';
@@ -24,6 +26,7 @@ export default function DashboardStudent({
 
   // Tab control
   const [activeSubTab, setActiveSubTab] = useState<'study' | 'profile'>('study');
+  const { user } = useApp();
 
   // Real enrolled sessions
   const [sessions, setSessions] = useState<StudentSession[]>([]);
@@ -41,6 +44,8 @@ export default function DashboardStudent({
   const [profBio, setProfBio] = useState(student.bio || t('studentDashboard.defaultBio', 'მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.'));
   const [profAvatar, setProfAvatar] = useState(student.avatar || defaultAvatar);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -73,19 +78,44 @@ export default function DashboardStudent({
     setActiveSessionId(sessionId);
   };
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onUpdateProfile) {
-      onUpdateProfile({
-        name: profName,
+    setProfileError('');
+    setProfileSaving(true);
+
+    try {
+      const [firstName, ...rest] = profName.trim().split(' ');
+      const lastName = rest.join(' ');
+
+      // Реальный вызов бэкенда — раньше этого не было,
+      // форма только обновляла локальный/мок-стейт через onUpdateProfile.
+      await editStudent({
+        studentGuid: student.id,
+        firstName: firstName ?? '',
+        lastName: lastName || '',
         email: profEmail,
-        headline: profHeadline,
-        bio: profBio,
-        avatar: profAvatar,
-        ...({ phone: profPhone } as any)
+        telephone: profPhone,
+        picture: profAvatar,
       });
+
+      // Обновляем локальный UI/контекст только после успешного ответа сервера
+      if (onUpdateProfile) {
+        onUpdateProfile({
+          name: profName,
+          email: profEmail,
+          headline: profHeadline,
+          bio: profBio,
+          avatar: profAvatar,
+          ...({ phone: profPhone } as any)
+        });
+      }
+
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 2000);
+    } catch (err: any) {
+      setProfileError(err.message || t('studentDashboard.saveError', 'Не удалось сохранить профиль'));
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -181,6 +211,8 @@ export default function DashboardStudent({
             setProfAvatar={setProfAvatar}
             onSubmit={handleProfileSubmit}
             profileSuccess={profileSuccess}
+            profileSaving={profileSaving}
+            profileError={profileError}
           />
         ) : (
           <StudentStudyTab
@@ -192,6 +224,7 @@ export default function DashboardStudent({
             lang={lang}
             onSelectSession={handleSelectSession}
             onLeaveClassroom={() => setActiveSessionId(null)}
+            studentGuid={student.id}
           />
         )}
       </div>

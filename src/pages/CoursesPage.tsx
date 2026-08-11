@@ -44,6 +44,7 @@ export default function CoursesPage({
   const [courses, setCourses] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  
 
   // Frontend sorting state
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'title' | 'duration'>('default');

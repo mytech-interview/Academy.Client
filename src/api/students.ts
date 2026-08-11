@@ -21,7 +21,7 @@ async function parseResponse<T = ApiEnvelope>(response: Response): Promise<T> {
   return data;
 }
 
-// --- Enrollment (как вы прислали) ---
+// --- Enrollment ---
 export interface AddEnrollmentRequest {
   studentGuid: string;
   sessionId: number;
@@ -37,16 +37,35 @@ export async function addEnrollment(request: AddEnrollmentRequest) {
 }
 
 // --- Edit student profile ---
+// Соответствует Academy.CoreApi.Entities.General.UpdateStudentRequest на бэкенде
+export interface EditStudentRequest {
+  studentGuid: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  telephone: string;
+  picture: string;
+}
+
+export interface EditStudentResponse extends ApiEnvelope {}
+
 export async function editStudent(request: EditStudentRequest) {
-  const response = await fetch(`${API_BASE_URL}/api/students/editStudent`, {
-    method: 'PUT',
+  // ВАЖНО: бэкенд-эндпоинт называется /api/general/updateStudent (POST),
+  // а не /api/students/editStudent (PUT), как было раньше.
+  const response = await fetch(`${API_BASE_URL}/api/general/updateStudent`, {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  return parseResponse(response);
+  return parseResponse<EditStudentResponse>(response);
 }
 
-// --- Sessions for a student (подставьте реальный путь, если отличается) ---
+// --- Sessions for a student ---
+export interface StudentSession {
+  id: number;
+  [key: string]: any;
+}
+
 export async function getStudentSessions(userGuid: string): Promise<StudentSession[]> {
   const response = await fetch(`${API_BASE_URL}/api/students/${userGuid}/sessions`, {
     method: 'GET',

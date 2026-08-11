@@ -51,7 +51,7 @@ export default function CourseCard({
     attendanceModeName,
   } = course;
 
-  const ratingNum = averageRating ? parseFloat(averageRating) : 0;
+  const ratingNum = averageRating ? parseFloat(averageRating) : 5;
   const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '0.0';
   const priceDisplay = price === 0 ? t('courseCard.free', 'Free') : `$${price}`;
 
@@ -61,9 +61,79 @@ export default function CourseCard({
   const durationWeeks = hasValidDates ? Math.max(1, Math.round((end.getTime() - start.getTime()) / MS_PER_WEEK)) : 0;
   const durationHours = durationWeeks * HOURS_PER_WEEK;
 
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString(lang, { day: 'numeric', month: 'long', year: 'numeric' });
+  const dateLocale =
+  lang.startsWith('ru')
+    ? 'ru-RU'
+    : lang.startsWith('ka')
+    ? 'ka-GE'
+    : 'en-US';
 
+const formatDate = (d: Date) => {
+  const months = {
+    en: [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ],
+    ru: [
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
+    ],
+    ka: [
+      'იანვარი',
+      'თებერვალი',
+      'მარტი',
+      'აპრილი',
+      'მაისი',
+      'ივნისი',
+      'ივლისი',
+      'აგვისტო',
+      'სექტემბერი',
+      'ოქტომბერი',
+      'ნოემბერი',
+      'დეკემბერი',
+    ],
+  };
+
+  const currentLang = lang.startsWith('ru')
+    ? 'ru'
+    : lang.startsWith('ka')
+    ? 'ka'
+    : 'en';
+
+  const day = d.getDate();
+  const month = months[currentLang][d.getMonth()];
+  const year = d.getFullYear();
+
+  if (currentLang === 'ru') {
+    return `${day} ${month} ${year} г.`;
+  }
+
+  if (currentLang === 'ka') {
+    return `${day} ${month}, ${year}`;
+  }
+
+  return `${month} ${day}, ${year}`;
+};
   // Session status derived from its date range — backend doesn't send one directly
   const now = new Date();
   const status = !hasValidDates

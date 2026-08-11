@@ -3,8 +3,11 @@ import { BookOpen, Loader2, Star, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Language } from '../lib/translations';
 import { StudentSession } from '../api/sessions';
-// Импортируйте ваш компонент модального окна и тип студента (при необходимости)
-import { StudentCourseDetailModal } from './StudentCourseDetailModal';
+import { StudentCourseDetailContainer } from './Studentcoursedetailmodal.container';
+// в начале компонента StudentStudyTab
+import { ReviewModal } from './ReviewModal';
+
+
 
 const COURSE_IMAGE_PLACEHOLDER =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
@@ -24,15 +27,8 @@ interface StudentStudyTabProps {
   sessions: StudentSession[];
   avgProgress: number;
   lang: Language;
-  // Передайте необходимые пропсы для передачи в модальное окно:
-  student?: any;
-  enrollment?: any;
-  homeworks?: any[];
-  homeworkSubmissions?: any[];
-  attendanceRecords?: any[];
-  materials?: any[];
-  onUpdateEnrollment?: () => void;
-  setSubmittingHwId?: (hwId: number) => void;
+  /** GUID текущего студента — обязателен для запроса деталей курса в модалке */
+  studentGuid: string;
 }
 
 export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
@@ -40,19 +36,13 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
   sessionsError,
   sessions,
   lang,
-  student,
-  enrollment,
-  homeworks = [],
-  homeworkSubmissions = [],
-  attendanceRecords = [],
-  materials = [],
-  onUpdateEnrollment = () => {},
-  setSubmittingHwId = () => {},
+  studentGuid,
 }) => {
   const { t } = useTranslation();
 
-  // Состояние для открытия модального окна выбранного курса/сессии
+
   const [viewingCourseDetail, setViewingCourseDetail] = useState<StudentSession | null>(null);
+  const [reviewingSession, setReviewingSession] = useState<StudentSession | null>(null);
 
   return (
     <div className="space-y-6 text-left animate-fade-in">
@@ -150,6 +140,7 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
               <div className="px-6 pb-6 pt-1 flex items-center justify-between border-t border-slate-100 mt-2">
                 <button
                   type="button"
+                  onClick={() => setReviewingSession(session)}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-indigo-600 hover:bg-slate-50 transition active:scale-95 shadow-2xs"
                 >
                   <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
@@ -166,20 +157,21 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
         </div>
       )}
 
-      {/* --- Вызов вашего модального окна --- */}
+      {/* --- Вызов модального окна --- */}
       {viewingCourseDetail && (
-        <StudentCourseDetailModal
-          course={viewingCourseDetail}
-          enrollment={enrollment}
-          session={viewingCourseDetail}
-          student={student}
-          homeworks={homeworks}
-          homeworkSubmissions={homeworkSubmissions}
-          attendanceRecords={attendanceRecords}
-          materials={materials}
+        <StudentCourseDetailContainer
+          sessionId={viewingCourseDetail.sessionId}
+          studentGuid={studentGuid}
+          listItem={viewingCourseDetail}
           onClose={() => setViewingCourseDetail(null)}
-          onUpdateEnrollment={onUpdateEnrollment}
-          onOpenSubmitHomework={(hwId) => setSubmittingHwId(hwId)}
+        />
+      )}
+
+      {reviewingSession && (
+        <ReviewModal
+          sessionId={reviewingSession.sessionId}
+          studentGuid={studentGuid}
+          onClose={() => setReviewingSession(null)}
         />
       )}
     </div>

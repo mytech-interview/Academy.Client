@@ -31,16 +31,10 @@ export async function getHomeActiveSessions(
     throw new Error(data.errMsg ?? '');
   }
 
-  // Safely fallback to an empty array if activeSessions is null/undefined
   return data.activeSessions || [];
 }
 
 // --- Student sessions ("My courses" in the student dashboard) --------------
-// Mirrors Academy.CoreApi.Entities.Sessions.GetStudentSessionsResponse.
-// NOTE: this DTO only contains session/course metadata — it does NOT include
-// per-lesson progress, completed lessons, or attendance data. Those fields
-// don't exist on the backend yet, so the UI layer stubs them until a
-// dedicated endpoint (e.g. getStudentProgress) is added.
 export interface StudentSession {
   sessionId: number;
   courseCategoryId: number;
@@ -61,23 +55,54 @@ interface GetStudentSessionsResponse {
   errorCode: string | null;
   err: number;
 }
+
+export async function getStudentSessions(studentGuid: string): Promise<StudentSession[]> {
+  const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentSessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentGuid }),
+  });
+
+  if (!response.ok) {
+    throw new Error('');
+  }
+
+  const text = await response.text();
+  const data: GetStudentSessionsResponse = text
+    ? JSON.parse(text)
+    : { studentSessions: [], errMsg: null, errorCode: null, err: 0 };
+
+  if (data.err !== 0) {
+    throw new Error(data.errMsg ?? '');
+  }
+
+  return data.studentSessions || [];
+}
+
 // --- Course session details for student -------------------------------
 // Mirrors Academy.CoreApi.Entities.Sessions.GetCourseSessionDetailsForStudentResponse.
-// NOTE: SessionId/CourseId/CityId come back as GUIDs from the backend,
-// even though the request SessionId is an int (matches Sessions/StudentSession list id).
 export interface CourseSessionDetailsForStudent {
-  sessionId: string;
+  sessionId: number;
   title: string;
   startDate: string;
   endDate: string;
-  courseId: string;
+  courseId: number;
   teacherName: string;
   lessonDaysDescription: string;
-  cityId: string;
+  cityId: number;
   cityName: string;
 }
 
-interface GetCourseSessionDetailsForStudentResponse extends CourseSessionDetailsForStudent {
+interface GetCourseSessionDetailsForStudentResponse {
+  sessionId: number;
+  title: string;
+  startDate: string;
+  endDate: string;
+  courseId: number;
+  teacherName: string;
+  lessonDaysDescription: string;
+  cityId: number;
+  cityName: string;
   errMsg: string | null;
   errorCode: string | null;
   err: number;
@@ -108,11 +133,28 @@ export async function getCourseSessionDetailsForStudent(
   return details;
 }
 
-export async function getStudentSessions(studentGuid: string): Promise<StudentSession[]> {
-  const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentSessions`, {
+// --- Course library materials --------------------------------------------
+export interface CourseLibraryItem {
+  courseLibraryId: number;
+  title: string;
+  filePath: string;
+}
+
+interface GetCourseLibrarySessionIdResponse {
+  courseLibrarySessions: CourseLibraryItem[];
+  errMsg: string | null;
+  errorCode: string | null;
+  err: number;
+}
+
+export async function getCourseLibrarySessionId(
+  sessionId: number,
+  userGuid: string
+): Promise<CourseLibraryItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/sessions/getCourseLibrarySessionId`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ studentGuid }),
+    body: JSON.stringify({ sessionId, userGuid }),
   });
 
   if (!response.ok) {
@@ -120,13 +162,245 @@ export async function getStudentSessions(studentGuid: string): Promise<StudentSe
   }
 
   const text = await response.text();
-  const data: GetStudentSessionsResponse = text
+  const data: GetCourseLibrarySessionIdResponse = text
     ? JSON.parse(text)
-    : { studentSessions: [], errMsg: null, errorCode: null, err: 0 };
+    : { courseLibrarySessions: [], errMsg: null, errorCode: null, err: 0 };
 
   if (data.err !== 0) {
     throw new Error(data.errMsg ?? '');
   }
 
-  return data.studentSessions || [];
+  return data.courseLibrarySessions || [];
+}
+
+// --- Course details by session id (public, no login required) -------------
+export interface CourseDetailsBySessionId {
+  categoryName: string;
+  levelName: string;
+  title: string;
+  courseDescription: string;
+  amountOfLessons: number;
+  maxStudents: number;
+  price: number;
+  picture: string;
+  enrolledCount: number;
+  teacherName: string;
+  averageRating: number;
+  reviewCount: number;
+  cityId: number;
+  cityName: string;
+  weeks: number;
+  startDate: string;
+  endDate: string;
+  lessonCount: number;
+}
+
+interface GetCourseDetailsBySessionIdResponse extends CourseDetailsBySessionId {
+  errMsg: string | null;
+  errorCode: string | null;
+  err: number;
+}
+
+export async function getCourseDetailsBySessionId(
+  sessionId: number
+): Promise<CourseDetailsBySessionId> {
+  const response = await fetch(`${API_BASE_URL}/Home/getCourseDetailsBySessionId`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('');
+  }
+
+  const text = await response.text();
+  const data: GetCourseDetailsBySessionIdResponse | null = text ? JSON.parse(text) : null;
+
+  if (!data || data.err !== 0) {
+    throw new Error(data?.errMsg ?? '');
+  }
+
+  const { errMsg, errorCode, err, ...details } = data;
+  return details;
+}
+
+// --- Lessons for a session --------------------------------------------
+// Mirrors Academy.CoreApi.Entities.Sessions.GetLessonsForSessionResponseList.
+// Backend fields: CourseLessonId, Title, Description, LessonNumber.
+// NOTE: backend has no duration/videoUrl field yet — duration is fixed
+// on the frontend (~2 hours per lesson) until that's added server-side.
+export interface SessionLesson {
+  lessonId: number;
+  orderIndex: number;
+  title: string;
+  content: string;
+}
+
+interface GetLessonsForSessionApiItem {
+  courseLessonId: number;
+  title: string;
+  description: string;
+  lessonNumber: number;
+}
+
+interface GetLessonsForSessionResponse {
+  lessons: GetLessonsForSessionApiItem[];
+  errMsg: string | null;
+  errorCode: string | null;
+  err: number;
+}
+
+export async function getLessonsForSession(sessionId: number): Promise<SessionLesson[]> {
+  const response = await fetch(`${API_BASE_URL}/api/sessions/getLessonsForSession`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('');
+  }
+
+  const text = await response.text();
+  const data: GetLessonsForSessionResponse = text
+    ? JSON.parse(text)
+    : { lessons: [], errMsg: null, errorCode: null, err: 0 };
+
+  if (data.err !== 0) {
+    throw new Error(data.errMsg ?? '');
+  }
+
+  return (data.lessons || []).map((l) => ({
+    lessonId: l.courseLessonId,
+    orderIndex: l.lessonNumber,
+    title: l.title,
+    content: l.description,
+  }));
+}
+
+// --- Homeworks for student -------------------------------------------
+// Mirrors Academy.CoreApi.Entities.HomeWorks.GetHomeWorksForStudentResponseList.
+// NOTE: backend response has NO SessionId/CourseId — these are ALL of the
+// student's homeworks, not scoped to one course. Until the backend adds
+// that link, this can't be reliably filtered per-course/session.
+export interface StudentHomeWork {
+  homeWorkId: number;
+  title: string;
+  description: string;
+  dueDate: string;
+  teacherGuid: string;
+  teacherName: string;
+}
+
+interface GetHomeWorksForStudentResponse {
+  homeWorks: StudentHomeWork[];
+  errMsg: string | null;
+  errorCode: string | null;
+  err: number;
+}
+
+export async function getHomeWorksForStudent(studentGuid: string, sessionId: number): Promise<StudentHomeWork[]> {
+  const response = await fetch(`${API_BASE_URL}/api/homeWorks/getHomeWorksForStudent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentGuid, sessionId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('');
+  }
+
+  const text = await response.text();
+  const data: GetHomeWorksForStudentResponse = text
+    ? JSON.parse(text)
+    : { homeWorks: [], errMsg: null, errorCode: null, err: 0 };
+
+  if (data.err !== 0) {
+    throw new Error(data.errMsg ?? '');
+  }
+
+  return data.homeWorks || [];
+}
+
+// --- Submission ---------------------------------------------------------
+export interface AddHomeWorkSubmissionPayload {
+  homeworkId: number;
+  studentGuid: string;
+  filePath?: string;
+  studentAnswer?: string;
+}
+
+interface AddHomeWorkSubmissionResponse {
+  errMsg: string | null;
+  errorCode: string | null;
+  err: number;
+}
+
+export async function submitHomeWork(payload: AddHomeWorkSubmissionPayload): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/homeWorks/addHomeWorkSubmission`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error('');
+  }
+
+  const text = await response.text();
+  const data: AddHomeWorkSubmissionResponse = text
+    ? JSON.parse(text)
+    : { errMsg: null, errorCode: null, err: 0 };
+
+  if (data.err !== 0) {
+    throw new Error(data.errMsg ?? '');
+  }
+}
+
+// --- Attendance (STUB — backend response has no IsPresent / LessonDate) ---
+// Mirrors Academy.CoreApi.Entities.Sessions.GetStudentAttendanceResponseList
+// as it currently exists. It only returns CourseLessonId/CourseId/
+// LessonTitle/LessonNumber/Description — no present/absent flag and no
+// date. Until that's added, the frontend can't render a real attendance
+// log, so getStudentAttendanceForSession below is left unused/unwired.
+interface GetStudentAttendanceApiItem {
+  courseLessonId: number;
+  courseId: number;
+  lessonTitle: string;
+  lessonNumber: number;
+  description: string;
+}
+
+interface GetStudentAttendanceResponse {
+  studentAttendances: GetStudentAttendanceApiItem[];
+  errMsg: string | null;
+  errorCode: string | null;
+  err: number;
+}
+
+export async function getStudentAttendanceForSession(
+  studentGuid: string,
+  sessionId: number
+): Promise<GetStudentAttendanceApiItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentAttendance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentGuid, sessionId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('');
+  }
+
+  const text = await response.text();
+  const data: GetStudentAttendanceResponse = text
+    ? JSON.parse(text)
+    : { studentAttendances: [], errMsg: null, errorCode: null, err: 0 };
+
+  if (data.err !== 0) {
+    throw new Error(data.errMsg ?? '');
+  }
+
+  return data.studentAttendances || [];
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Check } from 'lucide-react';
+import { CheckCircle2, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../types';
 import { AVATAR_OPTIONS, avatarUrl } from '../lib/avatars';
@@ -20,6 +20,8 @@ interface StudentProfileTabProps {
   setProfAvatar: (val: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   profileSuccess: boolean;
+  profileSaving?: boolean;
+  profileError?: string;
 }
 
 export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
@@ -37,7 +39,9 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
   profAvatar,
   setProfAvatar,
   onSubmit,
-  profileSuccess
+  profileSuccess,
+  profileSaving = false,
+  profileError = ''
 }) => {
   const { t } = useTranslation();
 
@@ -169,6 +173,14 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
           </div>
         </div>
 
+        {/* Error Feedback */}
+        {profileError && (
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold flex items-center gap-2.5">
+            <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+            {profileError}
+          </div>
+        )}
+
         {/* Success Feedback */}
         {profileSuccess && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-2.5">
@@ -181,8 +193,10 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
         <div className="flex justify-end pt-4">
           <button
             type="submit"
-            className="rounded-2xl bg-[#5842F8] hover:bg-[#4832E6] px-8 py-3.5 text-xs font-extrabold text-white transition duration-200 active:scale-[0.98] shadow-md shadow-indigo-200 cursor-pointer"
+            disabled={profileSaving}
+            className="rounded-2xl bg-[#5842F8] hover:bg-[#4832E6] px-8 py-3.5 text-xs font-extrabold text-white transition duration-200 active:scale-[0.98] shadow-md shadow-indigo-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
+            {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {t('studentDashboard.saveChangesBtn', 'შენახვა')}
           </button>
         </div>

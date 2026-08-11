@@ -126,7 +126,7 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('syllabus');
   const [localEnrollment, setLocalEnrollment] = useState<Enrollment>(enrollment);
-
+  
   const lessons = course.lessons || [];
   const completedIds = localEnrollment?.completedLessonIds || [];
   const totalLessons = lessons.length || 1;

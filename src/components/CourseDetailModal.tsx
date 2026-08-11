@@ -4,47 +4,35 @@ import { motion } from 'motion/react';
 import {
   X, Clock, Award, Star, BookOpen, Users, ChevronRight, ChevronDown, ChevronUp,
   Calendar, MapPin, Loader2, AlertCircle, User as UserIcon, GraduationCap,
-  Sparkles, Check, Layers, PlayCircle, FileText,
+  Sparkles, Check, Layers,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActiveSession } from '../types';
-import { getCourseSessionDetailsForStudent, CourseSessionDetailsForStudent } from '../api/sessions';
+import { getCourseDetailsBySessionId, CourseDetailsBySessionId } from '../api/sessions';
+import { getReviewsBySession, ReviewItem } from '../api/reviews';
 import { getCityName } from '../lib/cityNames';
 
-// Same placeholder used in CourseCard — backend has no image field yet.
-// TODO: move to a shared constants file once both components import it.
+// Fallback placeholder used only until real `picture` arrives from the API,
+// or if the backend ever sends an empty string.
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
-// TODO(stub): no teacher-profile endpoint yet. Swap for real avatar/bio once
-// the backend exposes GET /teachers/:id or similar.
-const TEACHER_AVATAR_STUB = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150';
+// Фиксированная длительность урока — на бэке нет per-lesson данных,
+// продукт решил показывать урок как блок в 2 часа.
+const LESSON_DURATION_HOURS = 2;
 
 interface StubLesson {
   id: string;
   title: string;
-  duration: string;
-  videoUrl?: string;
 }
 
-// TODO(stub): no per-lesson content endpoint yet. This generates
-// `amountOfLessons` placeholder rows so the tab isn't empty. Replace with
-// real lesson data (title/content/duration/videoUrl) as soon as it's available.
+// TODO(stub): нет эндпоинта контента уроков. Генерируем только счётчик
+// строк по amountOfLessons (это реальное число), без фейкового контента.
 function buildStubLessons(count: number, t: (k: string, o?: any) => string): StubLesson[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `stub-lesson-${i}`,
     title: t('courseDetailModal.lessonPlaceholderTitle', { index: i + 1, defaultValue: `Lesson ${i + 1}` }),
-    duration: '45',
   }));
-}
-
-// TODO(stub): no reviews endpoint yet. Replace with real review list once
-// the backend exposes it — keep averageRating from ActiveSession as-is.
-interface StubReview {
-  id: string;
-  studentName: string;
-  rating: number;
-  comment: string;
 }
 
 interface CourseDetailModalProps {
@@ -56,8 +44,6 @@ interface CourseDetailModalProps {
   onStartStudy: () => void;
   isLoggedIn: boolean;
   userRole: string | undefined;
-  // Needed to fetch schedule/city details — only available for logged-in students
-  studentGuid?: string;
 }
 
 export default function CourseDetailModal({
@@ -69,7 +55,6 @@ export default function CourseDetailModal({
   onStartStudy,
   isLoggedIn,
   userRole,
-  studentGuid,
 }: CourseDetailModalProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language || 'en';
@@ -77,31 +62,44 @@ export default function CourseDetailModal({
   const [activeTab, setActiveTab] = useState<'overview' | 'lessons' | 'instructor' | 'reviews'>('overview');
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
 
-  const [extraDetails, setExtraDetails] = useState<CourseSessionDetailsForStudent | null>(null);
+  const [details, setDetails] = useState<CourseDetailsBySessionId | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
 
-  // Extra schedule/city fields only exist on GetCourseSessionDetailsForStudent,
-  // which requires a studentGuid — so we only fetch it for logged-in students.
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+  // Public endpoints — no login required, fetch both as soon as the modal opens.
   useEffect(() => {
-    if (!isOpen || !isLoggedIn || userRole !== 'student' || !studentGuid) {
-      setExtraDetails(null);
+    if (!isOpen) {
+      setDetails(null);
+      setReviews([]);
       return;
     }
 
     let cancelled = false;
+
     setDetailsLoading(true);
     setDetailsError(null);
-
-    getCourseSessionDetailsForStudent(course.sessionId, studentGuid)
-      .then((data) => { if (!cancelled) setExtraDetails(data); })
+    getCourseDetailsBySessionId(course.sessionId)
+      .then((data) => { if (!cancelled) setDetails(data); })
       .catch((err) => {
-        if (!cancelled) setDetailsError(err.message || t('courseDetailModal.loadError', 'Failed to load schedule details'));
+        if (!cancelled) setDetailsError(err.message || t('courseDetailModal.loadError', 'Failed to load course details'));
       })
       .finally(() => { if (!cancelled) setDetailsLoading(false); });
 
+    setReviewsLoading(true);
+    setReviewsError(null);
+    getReviewsBySession(course.sessionId)
+      .then((data) => { if (!cancelled) setReviews(data); })
+      .catch((err) => {
+        if (!cancelled) setReviewsError(err.message || t('courseDetailModal.reviewsLoadError', 'Failed to load reviews'));
+      })
+      .finally(() => { if (!cancelled) setReviewsLoading(false); });
+
     return () => { cancelled = true; };
-  }, [isOpen, course.sessionId, isLoggedIn, userRole, studentGuid]);
+  }, [isOpen, course.sessionId]);
 
   // Reset to the overview tab each time a different course is opened
   useEffect(() => {
@@ -113,13 +111,30 @@ export default function CourseDetailModal({
 
   if (!isOpen) return null;
 
-  const {
-    title, courseDescription, categoryName, levelName, durationWeeks,
-    amountOfLessons, teacherName, averageRating, price, enrolledCount, maxStudents,
-  } = course;
+  const title = details?.title ?? course.title;
+  const courseDescription = details?.courseDescription ?? course.courseDescription;
+  const categoryName = details?.categoryName ?? course.categoryName;
+  const levelName = details?.levelName ?? course.levelName;
+  const durationWeeks = details?.weeks ?? course.durationWeeks;
+  const amountOfLessons = details?.amountOfLessons ?? course.amountOfLessons;
+  const teacherName = details?.teacherName ?? course.teacherName;
+  const price = details?.price ?? course.price;
+  const enrolledCount = details?.enrolledCount ?? course.enrolledCount;
+  const maxStudents = details?.maxStudents ?? course.maxStudents;
+  const picture = details?.picture || DEFAULT_COURSE_IMAGE;
 
-  const ratingNum = typeof averageRating === 'number' ? averageRating : parseFloat(averageRating as unknown as string);
-  const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '0.0';
+  // Реальное количество отзывов и рейтинг — из данных сессии,
+  // как только подтянутся отзывы, используем точную длину списка.
+  const reviewCount = reviews.length > 0 ? reviews.length : (details?.reviewCount ?? course.reviewCount ?? 0);
+
+  const averageRatingRaw = details?.averageRating ?? course.averageRating;
+  const ratingNum =
+    typeof averageRatingRaw === 'number'
+      ? averageRatingRaw
+      : parseFloat(averageRatingRaw as unknown as string);
+  const ratingFormatted =
+    Number.isFinite(ratingNum) && ratingNum !== 0 ? ratingNum.toFixed(1) : '—';
+
   const priceDisplay = price === 0 ? t('courseDetailModal.free', 'Free') : `$${price}`;
 
   const formatDate = (iso?: string) => {
@@ -128,30 +143,19 @@ export default function CourseDetailModal({
     return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(lang);
   };
 
-  const cityLabel = extraDetails ? getCityName(Number(extraDetails.cityId), extraDetails.cityName, lang) : '';
+  const cityLabel = details ? getCityName(details.cityId, details.cityName, lang) : '';
 
   const stubLessons = buildStubLessons(amountOfLessons || 0, t);
 
-  const stubReviews: StubReview[] = [
-    {
-      id: 'stub-review-1',
-      studentName: t('courseDetailModal.reviewStub1Name', 'Anonymous Student'),
-      rating: Math.round(Number.isFinite(ratingNum) ? ratingNum : 5),
-      comment: t('courseDetailModal.reviewStub1Comment', 'Great course, clearly explained and practical.'),
-    },
-    {
-      id: 'stub-review-2',
-      studentName: t('courseDetailModal.reviewStub2Name', 'Anonymous Student'),
-      rating: Math.max(1, Math.round((Number.isFinite(ratingNum) ? ratingNum : 5) - 1)),
-      comment: t('courseDetailModal.reviewStub2Comment', 'Solid syllabus, would recommend to a friend.'),
-    },
-  ];
+  const sortedReviews = [...reviews].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const tabs: { key: typeof activeTab; label: string; count?: number }[] = [
     { key: 'overview', label: t('courseDetailModal.tabOverview', 'Overview') },
     { key: 'lessons', label: t('courseDetailModal.tabLessons', 'Lessons'), count: amountOfLessons },
     { key: 'instructor', label: t('courseDetailModal.tabInstructor', 'Instructor') },
-    { key: 'reviews', label: t('courseDetailModal.tabReviews', 'Reviews') },
+    { key: 'reviews', label: t('courseDetailModal.tabReviews', 'Reviews'), count: reviewCount || undefined },
   ];
 
   return (
@@ -173,15 +177,21 @@ export default function CourseDetailModal({
         </button>
 
         <div className="overflow-y-auto flex-1 text-left">
-          {/* Header banner — stub image, same placeholder as CourseCard */}
           <div className="relative aspect-[21/8] sm:aspect-[21/7] w-full bg-slate-950">
             <img
-              src={DEFAULT_COURSE_IMAGE}
+              src={picture}
               alt={title}
               className="h-full w-full object-cover opacity-60"
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+
+            {detailsLoading && (
+              <div className="absolute top-5 left-5 flex items-center gap-2 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1.5 text-[10px] font-bold text-white">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>{t('courseDetailModal.loading', 'Loading...')}</span>
+              </div>
+            )}
 
             <div className="absolute bottom-6 left-6 right-6 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -193,6 +203,7 @@ export default function CourseDetailModal({
                 <span className="inline-flex items-center gap-1 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white">
                   <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                   <span>{ratingFormatted}</span>
+                  {reviewCount > 0 && <span>({reviewCount})</span>}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white">
                   <BookOpen className="h-3 w-3 text-indigo-300" />
@@ -210,7 +221,6 @@ export default function CourseDetailModal({
             </div>
           </div>
 
-          {/* Tabs */}
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 pt-3 flex items-center gap-2 overflow-x-auto">
             {tabs.map((tab) => (
               <button
@@ -297,73 +307,48 @@ export default function CourseDetailModal({
                   </div>
                 )}
 
-                {/* Schedule/city block — real data, only fetched for logged-in students */}
-                {isLoggedIn && userRole === 'student' && (
-                  <div className="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 space-y-3">
-                    <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider">
-                      {t('courseDetailModal.scheduleTitle', 'Schedule')}
-                    </h4>
-
-                    {detailsLoading && (
-                      <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>{t('courseDetailModal.loading', 'Loading...')}</span>
-                      </div>
-                    )}
-
-                    {detailsError && !detailsLoading && (
-                      <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">
-                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span>{detailsError}</span>
-                      </div>
-                    )}
-
-                    {extraDetails && !detailsLoading && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                        <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
-                          <Calendar className="h-4 w-4 text-indigo-600 shrink-0" />
-                          <span>{formatDate(extraDetails.startDate)} — {formatDate(extraDetails.endDate)}</span>
-                        </div>
-                        {extraDetails.lessonDaysDescription && (
-                          <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
-                            <Clock className="h-4 w-4 text-indigo-600 shrink-0" />
-                            <span>{extraDetails.lessonDaysDescription}</span>
-                          </div>
-                        )}
-                        {cityLabel && (
-                          <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
-                            <MapPin className="h-4 w-4 text-emerald-600 shrink-0" />
-                            <span>{cityLabel}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
-                          <UserIcon className="h-4 w-4 text-slate-500 shrink-0" />
-                          <span>{extraDetails.teacherName}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* STUB: key outcomes — no backend field for this yet, generic copy */}
                 <div className="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 space-y-3">
-                  <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-2">
-                    <Check className="h-4 w-4 text-indigo-600" />
-                    <span>{t('courseDetailModal.keyOutcomesTitle', 'What you will learn')}</span>
+                  <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider">
+                    {t('courseDetailModal.scheduleTitle', 'Schedule')}
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="flex items-start gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
-                        <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                        <span>{t(`courseDetailModal.keyOutcome${i}`, `Practical skill ${i}`)}</span>
+
+                  {detailsLoading && (
+                    <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>{t('courseDetailModal.loading', 'Loading...')}</span>
+                    </div>
+                  )}
+
+                  {detailsError && !detailsLoading && (
+                    <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span>{detailsError}</span>
+                    </div>
+                  )}
+
+                  {details && !detailsLoading && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                        <Calendar className="h-4 w-4 text-indigo-600 shrink-0" />
+                        <span>{formatDate(details.startDate)} — {formatDate(details.endDate)}</span>
                       </div>
-                    ))}
-                  </div>
+                      {cityLabel && (
+                        <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                          <MapPin className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>{cityLabel}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                        <UserIcon className="h-4 w-4 text-slate-500 shrink-0" />
+                        <span>{details.teacherName}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* TAB: LESSONS — stub content, count is real */}
+            {/* TAB: LESSONS — count real, per-lesson content still not backed by API */}
             {activeTab === 'lessons' && (
               <div className="space-y-6">
                 <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -401,7 +386,7 @@ export default function CourseDetailModal({
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                                ⏱️ {les.duration} {t('courseDetailModal.minutesShort', 'min')}
+                                ⏱️ {t('courseDetailModal.lessonDurationHours', { count: LESSON_DURATION_HOURS, defaultValue: `${LESSON_DURATION_HOURS} hours` })}
                               </span>
                               <div className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
                                 {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -435,17 +420,14 @@ export default function CourseDetailModal({
               </div>
             )}
 
-            {/* TAB: INSTRUCTOR — stub avatar/bio, real name */}
+            {/* TAB: INSTRUCTOR — only real name, no fake photo/bio */}
             {activeTab === 'instructor' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
                   <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-                    <img
-                      src={TEACHER_AVATAR_STUB}
-                      alt={teacherName}
-                      className="h-20 w-20 rounded-2xl object-cover ring-4 ring-indigo-50 border border-slate-200"
-                      referrerPolicy="no-referrer"
-                    />
+                    <div className="h-20 w-20 rounded-2xl flex items-center justify-center bg-indigo-50 ring-4 ring-indigo-50 border border-slate-200 shrink-0">
+                      <GraduationCap className="h-9 w-9 text-indigo-600" />
+                    </div>
                     <div className="space-y-1">
                       <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase">
                         {t('courseDetailModal.instructorHeadline', 'Academy Instructor')}
@@ -453,14 +435,14 @@ export default function CourseDetailModal({
                       <h3 className="text-lg font-black text-slate-950 mt-1">{teacherName}</h3>
                     </div>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed font-medium">
-                    {t('courseDetailModal.instructorBioStub', 'An experienced practitioner leading this course.')}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
+                    {t('courseDetailModal.instructorBioMissing', 'Instructor profile is not available yet.')}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB: REVIEWS — stub list, real rating summary */}
+            {/* TAB: REVIEWS — fully real data from getReviewsBySession */}
             {activeTab === 'reviews' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
@@ -468,23 +450,59 @@ export default function CourseDetailModal({
                     <h3 className="text-base font-black text-slate-900">{t('courseDetailModal.reviewsTitle', 'Student Reviews')}</h3>
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-xl">
                       <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                      <span className="text-base font-black text-amber-950">{ratingFormatted} / 5.0</span>
+                      <span className="text-base font-black text-amber-950">
+                        {ratingFormatted} / 5.0{reviewCount > 0 && ` (${reviewCount})`}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {stubReviews.map((review) => (
-                      <div key={review.id} className="rounded-2xl border border-slate-100 p-4 space-y-2 bg-slate-50/50 text-left">
-                        <span className="text-xs font-black text-slate-900">{review.studentName}</span>
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className={`h-3.5 w-3.5 ${i < review.rating ? 'fill-amber-500 text-amber-500' : 'text-slate-200'}`} />
-                          ))}
+                  {reviewsLoading && (
+                    <div className="flex items-center gap-2 text-xs text-slate-500 py-4 justify-center">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>{t('courseDetailModal.loading', 'Loading...')}</span>
+                    </div>
+                  )}
+
+                  {reviewsError && !reviewsLoading && (
+                    <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span>{reviewsError}</span>
+                    </div>
+                  )}
+
+                  {!reviewsLoading && !reviewsError && sortedReviews.length === 0 && (
+                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                      <Star className="h-8 w-8 text-slate-300 mx-auto" />
+                      <p className="text-xs font-bold text-slate-700">
+                        {t('courseDetailModal.noReviewsYet', 'No reviews yet')}
+                      </p>
+                    </div>
+                  )}
+
+                  {!reviewsLoading && !reviewsError && sortedReviews.length > 0 && (
+                    <div className="space-y-3">
+                      {sortedReviews.map((review) => (
+                        <div key={review.reviewId} className="rounded-2xl border border-slate-100 p-4 space-y-2 bg-slate-50/50 text-left">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-900">
+                              {review.firstName} {review.lastName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {formatDate(review.createdAt)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`h-3.5 w-3.5 ${i < review.mark ? 'fill-amber-500 text-amber-500' : 'text-slate-200'}`} />
+                            ))}
+                          </div>
+                          {review.description && (
+                            <p className="text-xs text-slate-700 leading-relaxed font-medium">{review.description}</p>
+                          )}
                         </div>
-                        <p className="text-xs text-slate-700 leading-relaxed font-medium italic">"{review.comment}"</p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

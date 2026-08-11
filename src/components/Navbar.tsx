@@ -289,129 +289,67 @@ activeTab==="teacher-sessions"
 {/* Language Switcher */}
 
 <div className="relative">
+  <button
+    onClick={() => setIsLangOpen(!isLangOpen)}
+    className="
+      flex items-center gap-2
+      rounded-xl border border-slate-200
+      bg-white px-3 py-2
+      text-xs font-bold
+      hover:bg-slate-50
+      transition
+    "
+  >
+    <span className="hidden sm:inline uppercase">
+      {lang}
+    </span>
+  </button>
 
+  {isLangOpen && (
+    <>
+      <div
+        className="fixed inset-0 z-40"
+        onClick={() => setIsLangOpen(false)}
+      />
 
-<button
-onClick={()=>setIsLangOpen(!isLangOpen)}
-className="
-flex items-center gap-2 
-rounded-xl border border-slate-200
-bg-white px-3 py-2
-text-xs font-bold
-hover:bg-slate-50
-transition
-"
->
+      <div
+        className="
+          absolute right-0 mt-2
+          w-44 z-50
+          rounded-2xl
+          border border-slate-200
+          bg-white
+          p-2
+          shadow-xl
+        "
+      >
+        {languages.map((item) => (
+          <button
+            key={item.code}
+            onClick={() => {
+              onLangChange(item.code);
+              setIsLangOpen(false);
+            }}
+            className={`
+              flex items-center
+              w-full px-3 py-2
+              rounded-xl
+              text-xs font-bold
+              transition
 
-<span className="text-base">
-{
-lang==="ka"
-?
-"🇬🇪"
-:
-lang==="ru"
-?
-"🇷🇺"
-:
-"🇬🇧"
-}
-</span>
-
-
-<span className="hidden sm:inline uppercase">
-{lang}
-</span>
-
-
-</button>
-
-
-
-{
-isLangOpen && (
-
-<>
-
-
-<div
-className="fixed inset-0 z-40"
-onClick={()=>setIsLangOpen(false)}
-/>
-
-
-
-<div
-className="
-absolute right-0 mt-2
-w-44 z-50
-rounded-2xl
-border border-slate-200
-bg-white
-p-2
-shadow-xl
-"
->
-
-
-{
-languages.map((item)=>(
-
-
-<button
-key={item.code}
-onClick={()=>{
-
-onLangChange(item.code);
-setIsLangOpen(false);
-
-}}
-className={`
-flex items-center gap-3
-w-full px-3 py-2
-rounded-xl
-text-xs font-bold
-transition
-
-${
-lang===item.code
-?
-"bg-indigo-50 text-indigo-700"
-:
-"text-slate-600 hover:bg-slate-50"
-}
-
-`}
->
-
-
-<span>
-{item.flag}
-</span>
-
-
-<span>
-{item.name}
-</span>
-
-
-
-</button>
-
-
-))
-}
-
-
-</div>
-
-
-</>
-
-)
-
-}
-
-
+              ${
+                lang === item.code
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "text-slate-600 hover:bg-slate-50"
+              }
+            `}
+          >
+            <span>{item.name}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  )}
 </div>
 
 
