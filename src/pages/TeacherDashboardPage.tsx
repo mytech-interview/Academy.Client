@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GraduationCap } from 'lucide-react';
-import { User, Course, Enrollment, Session, HomeWork, HomeWorkSubmission } from '../types';
+import { User, Course, Enrollment } from '../types';
 import { Language } from '../lib/translations';
 import DashboardTeacherSessions from '../components/DashboardTeacherSessions';
+import {
+  getTeacherSessions,
+  getHomeWorksForTeacher,
+  TeacherSessionDto,
+  TeacherHomeWorkDto,
+} from '@/src/api/teacher';
 
 interface TeacherDashboardPageProps {
   lang: Language;
@@ -15,88 +21,6 @@ interface TeacherDashboardPageProps {
   onOpenAuth: () => void;
 }
 
-// Demo sessions seeded from the teacher mock data
-const DEMO_SESSIONS: Session[] = [
-  {
-    id: 'session-1',
-    courseId: 'course-1',
-    title: 'React & Node.js — ჯგუფი A (2025 გაზაფხული)',
-    teacherId: 'teacher-1',
-    teacherName: 'მარიამ ბერიძე',
-    startDate: '2025-03-01',
-    schedule: 'ორ / ოთხ — 18:00–20:00',
-    room: 'აუდიტორია #204',
-    maxStudents: 20,
-    enrolledStudentIds: [],
-  },
-  {
-    id: 'session-2',
-    courseId: 'course-2',
-    title: 'UX/UI Design — ჯგუფი B (2025 ზაფხული)',
-    teacherId: 'teacher-2',
-    teacherName: 'გიორგი კალანდაძე',
-    startDate: '2025-06-15',
-    schedule: 'სამ / პარ — 17:00–19:00',
-    room: 'სტუდია #101',
-    maxStudents: 15,
-    enrolledStudentIds: [],
-  },
-  {
-    id: 'session-3',
-    courseId: 'course-3',
-    title: 'Digital Marketing — ჯგუფი C (2025 შემოდგომა)',
-    teacherId: 'teacher-3',
-    teacherName: 'ნინო შენგელია',
-    startDate: '2025-09-10',
-    schedule: 'ხუთ / შაბ — 11:00–13:00',
-    room: 'ონლაინ (Zoom)',
-    maxStudents: 25,
-    enrolledStudentIds: [],
-  },
-];
-
-const DEMO_HOMEWORKS: HomeWork[] = [
-  {
-    id: 'hw-1',
-    sessionId: 'session-1',
-    courseId: 'course-1',
-    title: 'დავალება 1: React State Management',
-    description: 'შექმენით მარტივი To-Do App React Hooks-ის გამოყენებით.',
-    dueDate: '2025-03-15',
-    assignedByTeacherId: 'teacher-1',
-  },
-  {
-    id: 'hw-2',
-    sessionId: 'session-1',
-    courseId: 'course-1',
-    title: 'დავალება 2: REST API Integration',
-    description: 'დააკავშირეთ React-ის Front-End Node.js Back-End-თან.',
-    dueDate: '2025-03-29',
-    assignedByTeacherId: 'teacher-1',
-  },
-];
-
-const DEMO_SUBMISSIONS: HomeWorkSubmission[] = [
-  {
-    id: 'sub-1',
-    homeworkId: 'hw-1',
-    studentId: 'student-demo-1',
-    studentName: 'გიორგი მამულაშვილი',
-    content: 'https://github.com/giorgi/todo-app — To-Do App დასრულებულია Hooks-ით.',
-    submittedAt: '2025-03-12',
-    grade: '95/100',
-    feedback: 'ძალიან კარგი ნამუშევარია!',
-  },
-  {
-    id: 'sub-2',
-    homeworkId: 'hw-1',
-    studentId: 'student-demo-2',
-    studentName: 'ანა კვარაცხელია',
-    content: 'https://github.com/ana/todo-react — Hooks + TypeScript.',
-    submittedAt: '2025-03-13',
-  },
-];
-
 export default function TeacherDashboardPage({
   activeUser,
   courses,
@@ -107,18 +31,43 @@ export default function TeacherDashboardPage({
 }: TeacherDashboardPageProps) {
   const { t } = useTranslation();
 
-  const [homeworks, setHomeworks] = useState<HomeWork[]>(DEMO_HOMEWORKS);
-  const [submissions, setSubmissions] = useState<HomeWorkSubmission[]>(DEMO_SUBMISSIONS);
+  const [sessions, setSessions] = useState<TeacherSessionDto[]>([]);
+  const [homeworks, setHomeworks] = useState<TeacherHomeWorkDto[]>([]);
+  // ВАЖНО: изначально true, чтобы не рендерить дочерний дашборд
+  // с пустыми sessions/homeworks до того, как данные реально придут.
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddHomeWork = (newHW: HomeWork) => {
-    setHomeworks((prev) => [...prev, newHW]);
-  };
+  useEffect(() => {
+    if (!activeUser || activeUser.role !== 'teacher') {
+      setLoading(false);
+      return;
+    }
 
-  const handleGradeSubmission = (submissionId: string, grade: string, feedback: string) => {
-    setSubmissions((prev) =>
-      prev.map((s) => (s.id === submissionId ? { ...s, grade, feedback } : s))
-    );
-  };
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      getTeacherSessions(activeUser.id),
+      getHomeWorksForTeacher(activeUser.id),
+    ])
+      .then(([sessionsRes, homeworksRes]) => {
+        if (cancelled) return;
+        setSessions(sessionsRes.sessions ?? []);
+        setHomeworks(homeworksRes.homeWorks ?? []);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeUser]);
 
   if (!activeUser) {
     return (
@@ -126,11 +75,9 @@ export default function TeacherDashboardPage({
         <div className="rounded-[2.5rem] border border-slate-200 bg-white p-12 text-center max-w-lg mx-auto space-y-5 shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 h-24 w-24 bg-indigo-500/5 blur-2xl rounded-full" />
           <GraduationCap className="mx-auto h-16 w-16 text-indigo-500 animate-pulse" />
-          <div className="space-y-2">
-            <h3 className="text-lg font-black text-slate-950 tracking-tight">
-              {t('teacherDashboard.page.authRequiredTitle')}
-            </h3>
-          </div>
+          <h3 className="text-lg font-black text-slate-950 tracking-tight">
+            {t('teacherDashboard.page.authRequiredTitle')}
+          </h3>
           <button
             onClick={onOpenAuth}
             className="w-full rounded-2xl bg-indigo-600 py-3.5 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-md active:scale-[0.98]"
@@ -155,23 +102,32 @@ export default function TeacherDashboardPage({
     );
   }
 
-  // Filter sessions for this teacher
-  const teacherSessions = DEMO_SESSIONS.filter(
-    (s) => s.teacherId === activeUser.id || DEMO_SESSIONS.length > 0
-  );
+  if (loading) {
+    return <div className="p-10 text-center text-xs text-slate-400">Загрузка...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-10 text-center text-xs text-rose-500">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <DashboardTeacherSessions
       teacher={activeUser}
       courses={courses}
-      sessions={teacherSessions}
-      enrollments={enrollments}
+      sessions={sessions}
       homeworks={homeworks}
-      homeworkSubmissions={submissions}
+      enrollments={enrollments}
       registeredUsers={registeredUsers}
-      onAddHomeWork={handleAddHomeWork}
-      onGradeSubmission={handleGradeSubmission}
       onUpdateProfile={onUpdateProfile}
+      onHomeworkAdded={() => {
+        getHomeWorksForTeacher(activeUser.id).then((res) => {
+          setHomeworks(res.homeWorks ?? []);
+        });
+      }}
     />
   );
 }

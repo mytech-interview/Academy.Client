@@ -35,10 +35,59 @@ export interface TeacherSessionDto {
   enrolledStudents: number;
 }
 
+// Реальная форма ответа бэкенда для getTeacherSessions.
+// Отличается от TeacherSessionDto: другое имя корневого поля
+// ("teacherSessions" вместо "sessions"), другие имена полей
+// (enrolledCount вместо enrolledStudents), и часть полей (city,
+// lessonDaysDescription, courseId) в ответе просто отсутствует.
+interface RawTeacherSessionDto {
+  sessionId: number;
+  courseCategoryId?: number;
+  categoryName?: string;
+  courseEntryLevelId?: number;
+  levelName?: string;
+  title: string;
+  price?: number;
+  maxStudents: number;
+  startDate: string;
+  endDate?: string;
+  enrolledCount: number;
+  errMsg?: string | null;
+  errorCode?: string | null;
+  err?: number;
+}
+
+interface RawGetTeacherSessionsResponse {
+  teacherSessions: RawTeacherSessionDto[];
+  errMsg?: string | null;
+  errorCode?: string | null;
+  err?: number;
+}
+
+function mapRawSession(raw: RawTeacherSessionDto): TeacherSessionDto {
+  return {
+    sessionId: raw.sessionId,
+    // courseId бэк не присылает — используем courseCategoryId как заглушку,
+    // либо 0, если и его нет. Если courseId нужен по-настоящему,
+    // попроси бэкенд добавить его в ответ.
+    courseId: raw.courseCategoryId ?? 0,
+    title: raw.title,
+    startDate: raw.startDate,
+    // city и lessonDaysDescription бэк не присылает вообще —
+    // подставляем пустую строку, чтобы UI не падал на undefined.
+    lessonDaysDescription: '',
+    city: '',
+    maxStudents: raw.maxStudents,
+    enrolledStudents: raw.enrolledCount,
+  };
+}
+
 export function getTeacherSessions(teacherGuid: string) {
-  return apiPost<{ sessions: TeacherSessionDto[] }>('/sessions/getTeacherSessions', {
+  return apiPost<RawGetTeacherSessionsResponse>('/sessions/getTeacherSessions', {
     teacherGuid,
-  });
+  }).then((res) => ({
+    sessions: (res.teacherSessions ?? []).map(mapRawSession),
+  }));
 }
 
 export function getCourseSessionDetailsForTeacher(teacherGuid: string, sessionId: number) {
@@ -128,7 +177,16 @@ export function getHomeWorksForTeacher(teacherGuid: string, sessionId = 0) {
   return apiPost<{ homeWorks: TeacherHomeWorkDto[] }>('/homeWorks/getHomeWorksForTeacher', {
     teacherGuid,
     sessionId,
-  });
+  }).then((res) => ({
+    // Когда у учителя нет домашних заданий, бэкенд вместо пустого
+    // массива присылает один "пустой" объект с дефолтными значениями
+    // (homeworkId: 0, title: "", dueDate: "0001-01-01..." — это
+    // default(DateTime) в .NET). Отфильтровываем такие записи, иначе
+    // на UI появляется фантомная карточка ДЗ с пустым названием.
+    homeWorks: (res.homeWorks ?? []).filter(
+      (hw) => hw.homeworkId !== 0 && hw.title.trim() !== ''
+    ),
+  }));
 }
 
 export function addHomeWork(payload: {
@@ -164,4 +222,25 @@ export function updateTeacher(payload: {
   isActive?: boolean;
 }) {
   return apiPost<{ success: boolean }>('/general/updateTeacher', payload);
+}
+
+
+
+export interface HomeWorkSubmissionDto {
+  submissionId: number;
+  studentGuid: string;
+  studentFirstName: string;
+  studentLastName: string;
+  content: string;
+  filePath?: string;
+  submittedAt: string;
+  grade?: string;
+  feedback?: string;
+}
+
+export function getSubmissionsForHomeWork(teacherGuid: string, homeworkId: number) {
+  return apiPost<{ submissions: HomeWorkSubmissionDto[] }>(
+    '/homeWorks/getSubmissionsForHomeWork',
+    { teacherGuid, homeworkId }
+  );
 }

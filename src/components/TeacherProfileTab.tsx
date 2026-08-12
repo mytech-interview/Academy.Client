@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Upload } from 'lucide-react';
 import { User } from '../types';
-
+import { updateTeacher } from '@/src/api/teacher';
 interface TeacherProfileTabProps {
   teacher: User;
   onUpdateProfile?: (updatedFields: Partial<User>) => void;
@@ -40,17 +40,42 @@ export default function TeacherProfileTab({ teacher, onUpdateProfile }: TeacherP
   const [profAvatar, setProfAvatar] = useState(teacher?.avatar || AVATAR_PRESETS[0]);
   const [profSuccess, setProfSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateProfile?.({
-      name: profName,
-      email: profEmail,
-      headline: profHeadline,
-      avatar: profAvatar,
-      ...({ phone: profPhone } as any),
-    });
-    setProfSuccess(true);
-    setTimeout(() => setProfSuccess(false), 3000);
+    setSubmitting(true);
+    setSubmitError(null);
+
+    const [firstName, ...rest] = profName.split(' ');
+    const lastName = rest.join(' ');
+
+    try {
+      await updateTeacher({
+        teacherGuid: teacher.id,
+        firstName: firstName || profName,
+        lastName: lastName || '',
+        email: profEmail,
+        telephone: profPhone,
+        picture: profAvatar,
+        isActive: true,
+      });
+
+      onUpdateProfile?.({
+        name: profName,
+        email: profEmail,
+        headline: profHeadline,
+        avatar: profAvatar,
+      });
+
+      setProfSuccess(true);
+      setTimeout(() => setProfSuccess(false), 3000);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Не удалось сохранить профиль');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,12 +222,18 @@ export default function TeacherProfileTab({ teacher, onUpdateProfile }: TeacherP
         </div>
 
         {/* Submit Button */}
-        <div className="pt-3 flex justify-end">
+        <div className="pt-3 flex items-center justify-between gap-3">
+          {submitError && (
+            <div className="flex-1 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+              {submitError}
+            </div>
+          )}
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-[#5850ec] hover:bg-[#4338ca] text-white text-xs font-bold transition shadow-md active:scale-95 cursor-pointer"
+            disabled={submitting}
+            className="ml-auto px-6 py-3 rounded-xl bg-[#5850ec] hover:bg-[#4338ca] text-white text-xs font-bold transition shadow-md active:scale-95 cursor-pointer disabled:opacity-50 shrink-0"
           >
-            {t('teacherDashboard.profile.save')}
+            {submitting ? '...' : t('teacherDashboard.profile.save')}
           </button>
         </div>
       </form>

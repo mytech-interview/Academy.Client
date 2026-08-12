@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
 import './i18n';
+
 import { AppProvider, useApp } from './context/AppContext';
 import AppLayout from './layouts/AppLayout';
 
@@ -14,32 +16,76 @@ import DashboardPage from './pages/DashboardPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
-// Auth pages (no Navbar/Footer)
+// Auth pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import OtpPage from './pages/OtpPage';
 
 import { translateCategory } from './lib/translations';
-import { mockCategories } from './data/mockData';
-import { useState } from 'react';
 import { ActiveSession } from './types';
 import CourseDetailModal from './components/CourseDetailModal';
+
+
+/* =========================================================
+   AUTH GUARD
+========================================================= */
 
 function RequireAuth({
   children,
   teacherOnly = false,
   adminOnly = false,
+  studentOnly = false,
 }: {
   children: React.ReactNode;
   teacherOnly?: boolean;
   adminOnly?: boolean;
+  studentOnly?: boolean;
 }) {
   const { activeUser } = useApp();
-  if (!activeUser) return <Navigate to="/login" replace />;
-  if (teacherOnly && activeUser.role !== 'teacher') return <Navigate to="/dashboard" replace />;
-  if (adminOnly && activeUser.role !== 'admin') return <Navigate to="/dashboard" replace />;
+
+  // Not logged in
+  if (!activeUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Teacher-only page
+  if (teacherOnly && activeUser.role !== 'teacher') {
+    if (activeUser.role === 'admin') {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
+
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Admin-only page
+  if (adminOnly && activeUser.role !== 'admin') {
+    if (activeUser.role === 'teacher') {
+      return <Navigate to="/teacher-sessions" replace />;
+    }
+
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Student-only page
+  if (studentOnly && activeUser.role !== 'student') {
+    if (activeUser.role === 'teacher') {
+      return <Navigate to="/teacher-sessions" replace />;
+    }
+
+    if (activeUser.role === 'admin') {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
+
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 }
+
+
+/* =========================================================
+   ROUTES
+========================================================= */
 
 function AppRoutes() {
   const {
@@ -49,25 +95,47 @@ function AppRoutes() {
     enrollments,
     activeSessions,
     registeredUsers,
+
     handleUpdateProfile,
     handleAddCourse,
     handleUpdateEnrollment,
+
     translatedCourses,
     handleEnrollInCourse,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ყველა');
-  // NOTE: CourseCard/HomePage/CoursesPage all work with ActiveSession
-  // (from getHomeActiveSessions), not the old mock Course type — this state
-  // must match what onSelectCourse actually receives.
-  const [selectedCourse, setSelectedCourse] = useState<ActiveSession | null>(null);
+
+  const [selectedCourse, setSelectedCourse] =
+    useState<ActiveSession | null>(null);
+
+
+  /* =========================================================
+     FILTER COURSES
+  ========================================================= */
 
   const filteredCourses = translatedCourses.filter((c) => {
-    const matchCat = selectedCategory === 'ყველა' || c.category === translateCategory(selectedCategory, lang) || c.category === selectedCategory;
-    const matchSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCat =
+      selectedCategory === 'ყველა' ||
+      c.category === translateCategory(selectedCategory, lang) ||
+      c.category === selectedCategory;
+
+    const matchSearch =
+      c.title
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      c.description
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
     return matchCat && matchSearch;
   });
+
+
+  /* =========================================================
+     ENROLLMENT CHECK
+  ========================================================= */
 
   const isSelectedCourseEnrolled = selectedCourse
     ? enrollments.some(
@@ -78,75 +146,272 @@ function AppRoutes() {
       )
     : false;
 
+
   return (
     <>
-    <Routes>
-      {/* ── Standalone auth pages (no layout) ── */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/otp" element={<OtpPage />} />
+      <Routes>
 
-      {/* ── Main layout ── */}
-      <Route element={<AppLayout />}>
-        <Route
-          path="/"
-          element={
-            <HomePage
-              activeUser={activeUser}
-              translatedCourses={translatedCourses}
-              enrollments={enrollments}
-              activeSessions={activeSessions}
-              onBrowseCourses={() => window.location.assign('/courses')}
-              onOpenAuth={() => window.location.assign('/login')}
-              onSelectCourse={setSelectedCourse}
-              onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))}
-              onViewAllCourses={() => window.location.assign('/courses')}
-            />
-          }
-        />
-
-        <Route path="/courses" element={<CoursesPage lang={lang} activeUser={activeUser} enrollments={enrollments} filteredCourses={filteredCourses} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery} selectedCategory={selectedCategory} onSelectedCategoryChange={setSelectedCategory} onSelectCourse={setSelectedCourse} onEnroll={(id) => handleEnrollInCourse(id, () => window.location.assign('/login'))} />} />
-
-        <Route path="/about" element={<AboutPage lang={lang} />} />
-        <Route path="/offers" element={<OffersPage lang={lang} onSelectCoursesTab={() => window.location.assign('/courses')} onOpenConsultation={() => window.location.assign('/contact')} />} />
-        <Route path="/contact" element={<ContactPage lang={lang} />} />
-
-        <Route path="/dashboard" element={<RequireAuth><DashboardPage lang={lang} activeUser={activeUser} courses={courses} enrollments={enrollments} onAddCourse={handleAddCourse} onUpdateProfile={handleUpdateProfile} onUpdateEnrollment={handleUpdateEnrollment} onOpenAuth={() => window.location.assign('/login')} /></RequireAuth>} />
-
-        <Route path="/teacher-sessions" element={<RequireAuth teacherOnly><TeacherDashboardPage lang={lang} activeUser={activeUser} courses={courses} enrollments={enrollments} registeredUsers={registeredUsers} onUpdateProfile={handleUpdateProfile} onOpenAuth={() => window.location.assign('/login')} /></RequireAuth>} />
+        {/* =================================================
+            AUTH PAGES
+        ================================================= */}
 
         <Route
-          path="/admin-dashboard"
-          element={
-            <RequireAuth adminOnly>
-              <AdminDashboardPage />
-            </RequireAuth>
-          }
+          path="/login"
+          element={<LoginPage />}
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+        <Route
+          path="/register"
+          element={<RegisterPage />}
+        />
 
-    {/* Rendered once, outside <Routes>, so it works from both "/" and "/courses" */}
-    {selectedCourse && (
-      <CourseDetailModal
-        course={selectedCourse}
-        isOpen={selectedCourse !== null}
-        onClose={() => setSelectedCourse(null)}
-        isEnrolled={isSelectedCourseEnrolled}
-        isLoggedIn={activeUser !== null}
-        userRole={activeUser?.role}
-        studentGuid={activeUser?.id}
-        onEnroll={() => handleEnrollInCourse(selectedCourse.sessionId, () => window.location.assign('/login'))}
-        // TODO: no dedicated "start study" route/handler yet — wire this up
-        // to wherever a student actually resumes an enrolled course.
-        onStartStudy={() => window.location.assign('/dashboard')}
-      />
-    )}
+        <Route
+          path="/otp"
+          element={<OtpPage />}
+        />
+
+
+        {/* =================================================
+            MAIN LAYOUT
+        ================================================= */}
+
+        <Route element={<AppLayout />}>
+
+          {/* ================= HOME ================= */}
+
+          <Route
+            path="/"
+            element={
+              <HomePage
+                activeUser={activeUser}
+                translatedCourses={translatedCourses}
+                enrollments={enrollments}
+                activeSessions={activeSessions}
+
+                onBrowseCourses={() =>
+                  window.location.assign('/courses')
+                }
+
+                onOpenAuth={() =>
+                  window.location.assign('/login')
+                }
+
+                onSelectCourse={setSelectedCourse}
+
+                onEnroll={(id) =>
+                  handleEnrollInCourse(
+                    id,
+                    () => window.location.assign('/login')
+                  )
+                }
+
+                onViewAllCourses={() =>
+                  window.location.assign('/courses')
+                }
+              />
+            }
+          />
+
+
+          {/* ================= COURSES ================= */}
+
+          <Route
+            path="/courses"
+            element={
+              <CoursesPage
+                lang={lang}
+                activeUser={activeUser}
+                enrollments={enrollments}
+                filteredCourses={filteredCourses}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                selectedCategory={selectedCategory}
+                onSelectedCategoryChange={setSelectedCategory}
+                onSelectCourse={setSelectedCourse}
+
+                onEnroll={(id) =>
+                  handleEnrollInCourse(
+                    id,
+                    () => window.location.assign('/login')
+                  )
+                }
+              />
+            }
+          />
+
+
+          {/* ================= ABOUT ================= */}
+
+          <Route
+            path="/about"
+            element={
+              <AboutPage lang={lang} />
+            }
+          />
+
+
+          {/* ================= OFFERS ================= */}
+
+          <Route
+            path="/offers"
+            element={
+              <OffersPage
+                lang={lang}
+                onSelectCoursesTab={() =>
+                  window.location.assign('/courses')
+                }
+                onOpenConsultation={() =>
+                  window.location.assign('/contact')
+                }
+              />
+            }
+          />
+
+
+          {/* ================= CONTACT ================= */}
+
+          <Route
+            path="/contact"
+            element={
+              <ContactPage lang={lang} />
+            }
+          />
+
+
+          {/* =================================================
+              STUDENT DASHBOARD
+          ================================================= */}
+
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth studentOnly>
+                <DashboardPage
+                  lang={lang}
+                  activeUser={activeUser}
+                  courses={courses}
+                  enrollments={enrollments}
+                  onAddCourse={handleAddCourse}
+                  onUpdateProfile={handleUpdateProfile}
+                  onUpdateEnrollment={handleUpdateEnrollment}
+                  onOpenAuth={() =>
+                    window.location.assign('/login')
+                  }
+                />
+              </RequireAuth>
+            }
+          />
+
+
+          {/* =================================================
+              TEACHER DASHBOARD
+          ================================================= */}
+
+          <Route
+            path="/teacher-sessions"
+            element={
+              <RequireAuth teacherOnly>
+                <TeacherDashboardPage
+                  lang={lang}
+                  activeUser={activeUser}
+                  courses={courses}
+                  enrollments={enrollments}
+                  registeredUsers={registeredUsers}
+                  onUpdateProfile={handleUpdateProfile}
+                  onOpenAuth={() =>
+                    window.location.assign('/login')
+                  }
+                />
+              </RequireAuth>
+            }
+          />
+
+
+          {/* =================================================
+              ADMIN DASHBOARD
+          ================================================= */}
+
+          <Route
+            path="/admin-dashboard"
+            element={
+              <RequireAuth adminOnly>
+                <AdminDashboardPage />
+              </RequireAuth>
+            }
+          />
+
+
+          {/* =================================================
+              FALLBACK
+          ================================================= */}
+
+          <Route
+            path="*"
+            element={
+              <Navigate
+                to="/"
+                replace
+              />
+            }
+          />
+
+        </Route>
+      </Routes>
+
+
+      {/* =====================================================
+          COURSE DETAIL MODAL
+      ===================================================== */}
+
+      {selectedCourse && (
+        <CourseDetailModal
+          course={selectedCourse}
+
+          isOpen={
+            selectedCourse !== null
+          }
+
+          onClose={() =>
+            setSelectedCourse(null)
+          }
+
+          isEnrolled={
+            isSelectedCourseEnrolled
+          }
+
+          isLoggedIn={
+            activeUser !== null
+          }
+
+          userRole={
+            activeUser?.role
+          }
+
+          studentGuid={
+            activeUser?.id
+          }
+
+          onEnroll={() =>
+            handleEnrollInCourse(
+              selectedCourse.sessionId,
+              () =>
+                window.location.assign('/login')
+            )
+          }
+
+          onStartStudy={() =>
+            window.location.assign('/dashboard')
+          }
+        />
+      )}
     </>
   );
 }
+
+
+/* =========================================================
+   APP
+========================================================= */
 
 export default function App() {
   return (
