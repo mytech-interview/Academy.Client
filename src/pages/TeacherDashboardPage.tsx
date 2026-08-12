@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GraduationCap } from 'lucide-react';
 import { User, Course, Enrollment, Session, HomeWork, HomeWorkSubmission } from '../types';
 import { Language } from '../lib/translations';
@@ -97,7 +98,6 @@ const DEMO_SUBMISSIONS: HomeWorkSubmission[] = [
 ];
 
 export default function TeacherDashboardPage({
-  lang,
   activeUser,
   courses,
   enrollments,
@@ -105,6 +105,8 @@ export default function TeacherDashboardPage({
   onUpdateProfile,
   onOpenAuth,
 }: TeacherDashboardPageProps) {
+  const { t } = useTranslation();
+
   const [homeworks, setHomeworks] = useState<HomeWork[]>(DEMO_HOMEWORKS);
   const [submissions, setSubmissions] = useState<HomeWorkSubmission[]>(DEMO_SUBMISSIONS);
 
@@ -126,22 +128,14 @@ export default function TeacherDashboardPage({
           <GraduationCap className="mx-auto h-16 w-16 text-indigo-500 animate-pulse" />
           <div className="space-y-2">
             <h3 className="text-lg font-black text-slate-950 tracking-tight">
-              {lang === 'ka'
-                ? 'კაბინეტი ხელმისაწვდომია მხოლოდ ავტორიზებული წევრებისთვის'
-                : lang === 'ru'
-                ? 'Личный кабинет доступен только авторизованным пользователям'
-                : 'Cabinet is only accessible for authorized members'}
+              {t('teacherDashboard.page.authRequiredTitle')}
             </h3>
           </div>
           <button
             onClick={onOpenAuth}
             className="w-full rounded-2xl bg-indigo-600 py-3.5 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-md active:scale-[0.98]"
           >
-            {lang === 'ka'
-              ? 'ავტორიზაციის გავლა'
-              : lang === 'ru'
-              ? 'Войти / Зарегистрироваться'
-              : 'Log In / Register'}
+            {t('teacherDashboard.page.loginBtn')}
           </button>
         </div>
       </div>
@@ -154,11 +148,7 @@ export default function TeacherDashboardPage({
         <div className="rounded-[2.5rem] border border-slate-200 bg-white p-12 text-center max-w-lg mx-auto space-y-5 shadow-lg">
           <GraduationCap className="mx-auto h-16 w-16 text-amber-500" />
           <h3 className="text-lg font-black text-slate-950 tracking-tight">
-            {lang === 'ka'
-              ? 'ეს გვერდი მხოლოდ მასწავლებლებისთვისაა'
-              : lang === 'ru'
-              ? 'Эта страница только для учителей'
-              : 'This page is for teachers only'}
+            {t('teacherDashboard.page.teachersOnlyTitle')}
           </h3>
         </div>
       </div>
@@ -182,7 +172,6 @@ export default function TeacherDashboardPage({
       onAddHomeWork={handleAddHomeWork}
       onGradeSubmission={handleGradeSubmission}
       onUpdateProfile={onUpdateProfile}
-      lang={lang}
     />
   );
 }
