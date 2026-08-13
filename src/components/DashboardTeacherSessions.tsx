@@ -139,12 +139,12 @@ export default function DashboardTeacherSessions({
                   {t('teacherDashboard.header.sessionsStat')}
                 </p>
               </div>
-              <div className="bg-[#111827]/80 border border-slate-800 rounded-xl px-7 py-3 text-center min-w-[110px]">
+              {/* <div className="bg-[#111827]/80 border border-slate-800 rounded-xl px-7 py-3 text-center min-w-[110px]">
                 <p className="text-2xl font-black text-white">{homeworks.length}</p>
                 <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
                   {t('teacherDashboard.header.homeworksStat')}
                 </p>
-              </div>
+              </div> */}
             </div>
 
           </div>

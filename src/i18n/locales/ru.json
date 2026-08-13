@@ -436,7 +436,16 @@
     "notGradedWarning": "⚠️ Задание ещё не проверено. Нажмите кнопку оценки.",
     "editGradeBtn": "Изменить оценку",
     "addGradeBtn": "Добавить оценку (+Оценка)",
-    "noSubmissions": "Работы студентов пока не получены."
+    "noSubmissions": "Работы студентов пока не получены.",
+    "noCourses": "Курсы не найдены",
+    "allLessonsOption": "Все уроки",
+    "statusAll": "Все",
+    "statusSubmittedOnly": "Сдали",
+    "statusPendingOnly": "Не сдали",
+    "loadError": "Не удалось загрузить домашние задания",
+    "rosterCount": "Всего на курсе",
+    "statusNotSubmitted": "Не сдал(а)",
+    "everyoneSubmitted": "Все сдали домашнее задание"
   },
   "profile": {
     "editTitle": "Редактирование личного профиля",

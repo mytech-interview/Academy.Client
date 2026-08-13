@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -15,12 +15,21 @@ import {
   BookOpen,
   ChevronDown,
   ChevronUp,
+  Users,
+  UserX,
 } from 'lucide-react';
 import {
   TeacherHomeWorkDto,
   HomeWorkSubmissionDto,
+  TeacherSessionDto,
+  SessionLessonDto,
+  SessionStudentDto,
   getSubmissionsForHomeWork,
   gradeHomeWorkSubmission,
+  getTeacherSessions,
+  getLessonsForSession,
+  getAllStudentsOfSpecificSession,
+  getHomeWorksForTeacher,
 } from '@/src/api/teacher';
 
 interface TeacherHomeworksTabProps {
@@ -29,32 +38,150 @@ interface TeacherHomeworksTabProps {
   onOpenAddHW: () => void;
 }
 
+type StatusFilter = 'all' | 'submitted' | 'pending';
+
 export default function TeacherHomeworksTab({
   teacherGuid,
-  homeworks = [],
+  homeworks: initialHomeworks = [],
   onOpenAddHW,
 }: TeacherHomeworksTabProps) {
   const { t } = useTranslation();
 
-  const [selectedHwId, setSelectedHwId] = useState<number | null>(
-    homeworks[0]?.homeworkId ?? null
-  );
-  const [submissions, setSubmissions] = useState<HomeWorkSubmissionDto[]>([]);
-  const [loading, setLoading] = useState(false);
+  // ---------- Курс / Урок / Статус фильтры ----------
+  const [sessions, setSessions] = useState<TeacherSessionDto[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+
+  const [lessons, setLessons] = useState<SessionLessonDto[]>([]);
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+
+  const [roster, setRoster] = useState<SessionStudentDto[]>([]);
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+
+  const [homeworksList, setHomeworksList] = useState<TeacherHomeWorkDto[]>(initialHomeworks);
+  const [hwLoading, setHwLoading] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [hwError, setHwError] = useState<string | null>(null);
+
+  // Список курсов (сессий) учителя — грузим один раз.
+  // По умолчанию сразу выбираем первый курс (а не "все курсы"): бэкенд не
+  // трактует sessionId=0 как "все курсы", поэтому без выбранного курса
+  // getHomeWorksForTeacher / getAllStudentsOfSpecificSession возвращают пусто.
   useEffect(() => {
+    if (!teacherGuid) return;
+    let cancelled = false;
+    getTeacherSessions(teacherGuid)
+      .then((res) => {
+        if (cancelled) return;
+        const list = res.sessions ?? [];
+        setSessions(list);
+        if (list.length > 0) {
+          setSelectedSessionId((prev) => prev ?? list[0].sessionId);
+        }
+      })
+      .catch((err) => {
+        console.error('getTeacherSessions failed:', err);
+        if (!cancelled) setSessions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSessionsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherGuid]);
+
+  // Домашки конкретного курса
+  useEffect(() => {
+    if (!teacherGuid || !selectedSessionId) return;
+    let cancelled = false;
+    setHwLoading(true);
+    setHwError(null);
+    setSelectedHwId(null);
+    getHomeWorksForTeacher(teacherGuid, selectedSessionId)
+      .then((res) => {
+        if (!cancelled) setHomeworksList(res.homeWorks ?? []);
+      })
+      .catch((err: any) => {
+        console.error('getHomeWorksForTeacher failed:', err);
+        if (!cancelled) {
+          setHomeworksList([]);
+          setHwError(err?.message || 'Failed to load homeworks');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHwLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherGuid, selectedSessionId]);
+
+  // Уроки выбранного курса
+  useEffect(() => {
+    setSelectedLessonId(null);
+    if (!teacherGuid || !selectedSessionId) {
+      setLessons([]);
+      return;
+    }
+    let cancelled = false;
+    getLessonsForSession(selectedSessionId)
+      .then((res) => {
+        if (!cancelled) setLessons(res.lessons ?? []);
+      })
+      .catch((err) => {
+        console.error('getLessonsForSession failed:', err);
+        if (!cancelled) setLessons([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherGuid, selectedSessionId]);
+
+  // Список всех учеников курса — нужен для "не сдали"
+  useEffect(() => {
+    if (!teacherGuid || !selectedSessionId) {
+      setRoster([]);
+      return;
+    }
+    let cancelled = false;
+    getAllStudentsOfSpecificSession(teacherGuid, selectedSessionId)
+      .then((res) => {
+        if (!cancelled) setRoster(res.students ?? []);
+      })
+      .catch((err) => {
+        console.error('getAllStudentsOfSpecificSession failed:', err);
+        if (!cancelled) setRoster([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherGuid, selectedSessionId]);
+
+  // ---------- Раскрытая карточка домашки ----------
+  const [selectedHwId, setSelectedHwId] = useState<number | null>(null);
+  const [submissions, setSubmissions] = useState<HomeWorkSubmissionDto[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    console.log('[submissions effect] selectedHwId =', selectedHwId, 'teacherGuid =', teacherGuid);
     if (!selectedHwId) {
       setSubmissions([]);
       return;
     }
     let cancelled = false;
     setLoading(true);
+    console.log('[submissions effect] calling getSubmissionsForHomeWork', { teacherGuid, selectedHwId });
     getSubmissionsForHomeWork(teacherGuid, selectedHwId)
       .then((res) => {
+        console.log('[submissions effect] response:', res);
         if (!cancelled) setSubmissions(res.submissions ?? []);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[submissions effect] getSubmissionsForHomeWork failed:', err);
         if (!cancelled) setSubmissions([]);
       })
       .finally(() => {
@@ -65,7 +192,15 @@ export default function TeacherHomeworksTab({
     };
   }, [selectedHwId, teacherGuid]);
 
-  // Modal State
+  // Открыть/закрыть карточку: клик по открытой — закрывает,
+  // клик по другой — закрывает предыдущую и открывает новую
+  // (т.к. state selectedHwId один на всех карточках)
+  const toggleHomework = (hwId: number) => {
+    console.log('[toggleHomework] clicked hwId =', hwId, 'current selectedHwId =', selectedHwId);
+    setSelectedHwId((prev) => (prev === hwId ? null : hwId));
+  };
+
+  // Modal State (оценка)
   const [gradingSubId, setGradingSubId] = useState<number | null>(null);
   const [gradeValue, setGradeValue] = useState('100/100');
   const [feedbackValue, setFeedbackValue] = useState('');
@@ -105,26 +240,48 @@ export default function TeacherHomeworksTab({
   };
 
   // Stats calculation
-  const totalHomeworks = homeworks.length;
-  const totalSubmissions = homeworks.reduce((acc, hw) => acc + (hw.submittedCount || 0), 0);
+  const totalHomeworks = homeworksList.length;
+  const totalSubmissions = homeworksList.reduce((acc, hw) => acc + (hw.submittedCount || 0), 0);
   const pendingSubmissions = submissions.filter((s) => !s.grade).length;
   const gradedSubmissions = submissions.filter((s) => Boolean(s.grade)).length;
 
-  const filteredHomeworks = homeworks.filter(
-    (hw) =>
-      hw.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (hw.description && hw.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Ученики курса, которые ещё не отправили работу по выбранной домашке
+  const pendingRoster = useMemo(() => {
+    if (roster.length === 0) return [];
+    const submittedGuids = new Set(submissions.map((s) => s.studentGuid));
+    return roster.filter((st) => !submittedGuids.has(st.studentGuid));
+  }, [roster, submissions]);
+
+  // NOTE(backend): у TeacherHomeWorkDto нет courseLessonId, поэтому точного
+  // маппинга "домашка -> урок" сделать нельзя. Пока фильтруем по вхождению
+  // названия урока в заголовок/описание домашки — это эвристика. Как только
+  // на бэке появится homework.courseLessonId, заменить на строгое сравнение id.
+  const selectedLessonTitle = lessons.find((l) => l.courseLessonId === selectedLessonId)?.title;
+
+  const filteredHomeworks = homeworksList.filter((hw) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      hw.title.toLowerCase().includes(q) ||
+      (hw.description && hw.description.toLowerCase().includes(q));
+
+    const matchesLesson =
+      !selectedLessonTitle ||
+      hw.title.toLowerCase().includes(selectedLessonTitle.toLowerCase()) ||
+      (hw.description ?? '').toLowerCase().includes(selectedLessonTitle.toLowerCase());
+
+    return matchesSearch && matchesLesson;
+  });
+
+  const initials = (first?: string, last?: string) =>
+    `${first?.[0] ?? ''}${last?.[0] ?? ''}`.toUpperCase() || 'S';
 
   return (
     <div className="space-y-6 font-sans">
       {/* Dark Main Banner */}
       <div className="bg-[#0b132b] text-white p-6 md:p-8 rounded-3xl shadow-xl space-y-8 relative overflow-hidden">
-        {/* Subtle glow background effects */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs text-indigo-200 border border-white/10">
@@ -148,9 +305,7 @@ export default function TeacherHomeworksTab({
           </button>
         </div>
 
-        {/* Dark Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-          {/* Total HW */}
           <div className="bg-[#17213c]/80 border border-white/10 p-5 rounded-2xl flex items-center justify-between backdrop-blur-md">
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-slate-400">
@@ -166,7 +321,6 @@ export default function TeacherHomeworksTab({
             </div>
           </div>
 
-          {/* Submissions */}
           <div className="bg-[#17213c]/80 border border-white/10 p-5 rounded-2xl flex items-center justify-between backdrop-blur-md">
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-slate-400">
@@ -182,7 +336,6 @@ export default function TeacherHomeworksTab({
             </div>
           </div>
 
-          {/* Pending */}
           <div className="bg-[#1e1b2e]/90 border border-amber-500/20 p-5 rounded-2xl flex items-center justify-between backdrop-blur-md">
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-amber-400/90">
@@ -198,7 +351,6 @@ export default function TeacherHomeworksTab({
             </div>
           </div>
 
-          {/* Graded */}
           <div className="bg-[#122b27]/90 border border-emerald-500/20 p-5 rounded-2xl flex items-center justify-between backdrop-blur-md">
             <div className="space-y-1">
               <p className="text-[11px] font-semibold text-emerald-400/90">
@@ -216,11 +368,95 @@ export default function TeacherHomeworksTab({
         </div>
       </div>
 
-      {/* Filter / Search Bar */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm flex flex-col md:flex-row items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-2 bg-slate-100/80 rounded-xl w-full md:w-auto text-xs font-semibold text-slate-700">
-          <Filter className="h-4 w-4 text-slate-400" />
-          <span>{t('teacherDashboard.homeworks.allCoursesFilter')} ({homeworks.length})</span>
+      {/* Filter Bar: Курс / Урок / Статус + Поиск */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          {/* Курс (сессия) */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 min-w-[180px]">
+            <BookOpen className="h-4 w-4 text-indigo-500 shrink-0" />
+            <select
+              value={selectedSessionId ?? ''}
+              onChange={(e) =>
+                setSelectedSessionId(e.target.value ? Number(e.target.value) : null)
+              }
+              className="w-full bg-transparent outline-none cursor-pointer truncate"
+              disabled={sessions.length === 0}
+            >
+              {sessions.length === 0 && (
+                <option value="">
+                  {sessionsLoaded
+                    ? t('teacherDashboard.homeworks.noCourses', 'კურსები არ მოიძებნა')
+                    : t('teacherDashboard.homeworks.loading')}
+                </option>
+              )}
+              {sessions.map((s) => (
+                <option key={s.sessionId} value={s.sessionId}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Урок */}
+          <div
+            className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-bold min-w-[180px] ${
+              selectedSessionId
+                ? 'bg-slate-50 border-slate-200 text-slate-700'
+                : 'bg-slate-50/50 border-slate-100 text-slate-400'
+            }`}
+          >
+            <Calendar className="h-4 w-4 text-indigo-500 shrink-0" />
+            <select
+              value={selectedLessonId ?? ''}
+              disabled={!selectedSessionId || lessons.length === 0}
+              onChange={(e) =>
+                setSelectedLessonId(e.target.value ? Number(e.target.value) : null)
+              }
+              className="w-full bg-transparent outline-none cursor-pointer disabled:cursor-not-allowed truncate"
+            >
+              <option value="">
+                {t('teacherDashboard.homeworks.allLessonsOption', 'ყველა გაკვეთილი')}
+              </option>
+              {lessons.map((l) => (
+                <option key={l.courseLessonId} value={l.courseLessonId}>
+                  {l.lessonNumber}. {l.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Статус: сдали / не сдали (применяется к раскрытой домашке) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-50 border border-slate-200 rounded-xl">
+            {(
+              [
+                { key: 'all', label: t('teacherDashboard.homeworks.statusAll', 'ყველა'), icon: Filter },
+                {
+                  key: 'submitted',
+                  label: t('teacherDashboard.homeworks.statusSubmittedOnly', 'ჩააბარეს'),
+                  icon: CheckCircle2,
+                },
+                {
+                  key: 'pending',
+                  label: t('teacherDashboard.homeworks.statusPendingOnly', 'არ ჩაბარებულა'),
+                  icon: UserX,
+                },
+              ] as { key: StatusFilter; label: string; icon: typeof Filter }[]
+            ).map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setStatusFilter(key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold transition cursor-pointer ${
+                  statusFilter === key
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="relative w-full">
@@ -235,25 +471,43 @@ export default function TeacherHomeworksTab({
         </div>
       </div>
 
+      {hwError && (
+        <div className="flex items-center gap-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+          <span>
+            {t('teacherDashboard.homeworks.loadError', 'დავალებების ჩატვირთვა ვერ მოხერხდა')}:{' '}
+            {hwError}
+          </span>
+        </div>
+      )}
+
       {/* Homework Cards */}
       <div className="space-y-4">
-        {filteredHomeworks.length > 0 ? (
+        {hwLoading ? (
+          <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
+            <p className="text-xs text-slate-400 font-medium">
+              {t('teacherDashboard.homeworks.loading')}
+            </p>
+          </div>
+        ) : filteredHomeworks.length > 0 ? (
           filteredHomeworks.map((hw) => {
             const isSelected = selectedHwId === hw.homeworkId;
             const submittedCount = hw.submittedCount || 0;
             const totalStudents = hw.totalEnrolledStudents || 1;
-            const percent = Math.round(hw.submissionPercentage ?? (submittedCount / totalStudents) * 100);
+            const percent = Math.round(
+              hw.submissionPercentage ?? (submittedCount / totalStudents) * 100
+            );
 
             return (
               <div
                 key={hw.homeworkId}
                 className={`bg-white rounded-2xl border transition-all duration-200 shadow-sm overflow-hidden ${
-                  isSelected ? 'border-indigo-400 ring-2 ring-indigo-500/10' : 'border-slate-200/80 hover:border-slate-300'
+                  isSelected
+                    ? 'border-indigo-400 ring-2 ring-indigo-500/10'
+                    : 'border-slate-200/80 hover:border-slate-300'
                 }`}
               >
                 {/* Main Card Info */}
                 <div className="p-5 md:p-6 space-y-4">
-                  {/* Top Bar: Course Tag + Due Date */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-bold">
                       <BookOpen className="h-3.5 w-3.5 text-indigo-600" />
@@ -263,16 +517,14 @@ export default function TeacherHomeworksTab({
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-700 text-xs font-bold">
                       <Clock className="h-3.5 w-3.5 text-amber-600" />
                       <span>
-                        {t('teacherDashboard.homeworks.dueDate')}: {new Date(hw.dueDate).toLocaleDateString('sv-SE')}
+                        {t('teacherDashboard.homeworks.dueDate')}:{' '}
+                        {new Date(hw.dueDate).toLocaleDateString('sv-SE')}
                       </span>
                     </div>
                   </div>
 
-                  {/* Title & Badges */}
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    <h3 className="text-base font-extrabold text-slate-900">
-                      {hw.title}
-                    </h3>
+                    <h3 className="text-base font-extrabold text-slate-900">{hw.title}</h3>
 
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20 text-xs font-extrabold">
@@ -286,16 +538,13 @@ export default function TeacherHomeworksTab({
                     </div>
                   </div>
 
-                  {/* Description */}
                   {hw.description && (
                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
                       {hw.description}
                     </p>
                   )}
 
-                  {/* Progress & Submissions Accordion Trigger */}
                   <div className="pt-2 flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-slate-100">
-                    {/* Progress Bar */}
                     <div className="flex items-center gap-4 flex-1">
                       <div className="w-full max-w-xs bg-slate-100 h-2.5 rounded-full overflow-hidden">
                         <div
@@ -304,19 +553,23 @@ export default function TeacherHomeworksTab({
                         />
                       </div>
                       <span className="text-xs font-extrabold text-indigo-700 shrink-0">
-                        {percent}% ({submittedCount} / {totalStudents} {t('teacherDashboard.homeworks.students')})
+                        {percent}% ({submittedCount} / {totalStudents}{' '}
+                        {t('teacherDashboard.homeworks.students')})
                       </span>
                     </div>
 
-                    {/* Expand/Collapse Answers Button */}
                     <button
-                      onClick={() => setSelectedHwId(isSelected ? null : hw.homeworkId)}
+                      onClick={() => toggleHomework(hw.homeworkId)}
                       className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-extrabold transition shrink-0 cursor-pointer"
                     >
                       <span>
                         {t('teacherDashboard.homeworks.viewAnswers')} ({submittedCount})
                       </span>
-                      {isSelected ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isSelected ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -329,122 +582,175 @@ export default function TeacherHomeworksTab({
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                         {t('teacherDashboard.homeworks.submissionsTitle')} ({submissions.length})
                       </h4>
+                      {roster.length > 0 && (
+                        <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                          <Users className="h-3.5 w-3.5" />
+                          {t('teacherDashboard.homeworks.rosterCount', 'სულ კურსზე')}:{' '}
+                          {roster.length}
+                        </span>
+                      )}
                     </div>
 
                     {loading ? (
                       <div className="p-8 text-center text-xs font-medium text-slate-400">
                         {t('teacherDashboard.homeworks.loading')}
                       </div>
-                    ) : submissions.length > 0 ? (
-                      <div className="space-y-4">
-                        {submissions.map((sub) => {
-                          const isGraded = Boolean(sub.grade);
-
-                          return (
-                            <div
-                              key={sub.submissionId}
-                              className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-sm space-y-4"
-                            >
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center shrink-0">
-                                    {sub.studentFirstName ? sub.studentFirstName[0] : 'S'}
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-extrabold text-slate-900">
-                                      {sub.studentFirstName} {sub.studentLastName}
-                                    </p>
-                                    <p className="text-[11px] font-bold text-indigo-600 flex items-center gap-1 mt-0.5">
-                                      <Pin className="h-3 w-3" />
-                                      <span>{hw.title}</span>
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-lg">
-                                    <Calendar className="h-3 w-3" />
-                                    {new Date(sub.submittedAt).toLocaleDateString('sv-SE')}
-                                  </span>
-
-                                  {isGraded ? (
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
-                                      <CheckCircle2 className="h-3 w-3" />
-                                      {t('teacherDashboard.homeworks.statusGraded')} ({sub.grade})
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
-                                      <Clock className="h-3 w-3" />
-                                      {t('teacherDashboard.homeworks.statusPending')}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Student Answer Box */}
-                              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-700 space-y-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                  {t('teacherDashboard.homeworks.studentWorkLabel')}
-                                </p>
-                                <p className="font-medium text-slate-800 whitespace-pre-wrap">
-                                  {sub.content}
-                                </p>
-                              </div>
-
-                              {/* File Attachment */}
-                              {sub.filePath && (
-                                <div className="p-3 bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between">
-                                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                                    <Paperclip className="h-4 w-4 text-indigo-600" />
-                                    <span>{t('teacherDashboard.homeworks.attachedFileLabel')}</span>
-                                  </div>
-
-                                  <a
-                                    href={sub.filePath}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-3 py-1 text-[11px] font-bold text-indigo-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-                                  >
-                                    {t('teacherDashboard.homeworks.openFile')}
-                                  </a>
-                                </div>
-                              )}
-
-                              {/* Footer Comment & Grade Action */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                                <div className="text-xs">
-                                  {isGraded ? (
-                                    <p className="text-slate-600 font-medium">
-                                      {t('teacherDashboard.homeworks.teacherComment')}:{' '}
-                                      <span className="italic text-slate-800 font-semibold">
-                                        "{sub.feedback || t('teacherDashboard.homeworks.noComment')}"
-                                      </span>
-                                    </p>
-                                  ) : (
-                                    <p className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                                      {t('teacherDashboard.homeworks.notGradedWarning')}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <button
-                                  onClick={() => openGrade(sub)}
-                                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm active:scale-95 cursor-pointer shrink-0"
-                                >
-                                  {isGraded
-                                    ? t('teacherDashboard.homeworks.editGradeBtn')
-                                    : t('teacherDashboard.homeworks.addGradeBtn')}
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
                     ) : (
-                      <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/60">
-                        <p className="text-xs text-slate-400 font-medium">
-                          {t('teacherDashboard.homeworks.noSubmissions')}
-                        </p>
+                      <div className="space-y-4">
+                        {/* Сдали */}
+                        {statusFilter !== 'pending' &&
+                          submissions.map((sub) => {
+                            const isGraded = Boolean(sub.grade);
+
+                            return (
+                              <div
+                                key={sub.submissionId}
+                                className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-sm space-y-4"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center shrink-0">
+                                      {sub.studentFirstName ? sub.studentFirstName[0] : 'S'}
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-extrabold text-slate-900">
+                                        {sub.studentFirstName} {sub.studentLastName}
+                                      </p>
+                                      <p className="text-[11px] font-bold text-indigo-600 flex items-center gap-1 mt-0.5">
+                                        <Pin className="h-3 w-3" />
+                                        <span>{hw.title}</span>
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                      <Calendar className="h-3 w-3" />
+                                      {new Date(sub.submittedAt).toLocaleDateString('sv-SE')}
+                                    </span>
+
+                                    {isGraded ? (
+                                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        {t('teacherDashboard.homeworks.statusGraded')} (
+                                        {sub.grade})
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                                        <Clock className="h-3 w-3" />
+                                        {t('teacherDashboard.homeworks.statusPending')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-700 space-y-1">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    {t('teacherDashboard.homeworks.studentWorkLabel')}
+                                  </p>
+                                  <p className="font-medium text-slate-800 whitespace-pre-wrap">
+                                    {sub.content}
+                                  </p>
+                                </div>
+
+                                {sub.filePath && (
+                                  <div className="p-3 bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                                      <Paperclip className="h-4 w-4 text-indigo-600" />
+                                      <span>
+                                        {t('teacherDashboard.homeworks.attachedFileLabel')}
+                                      </span>
+                                    </div>
+
+                                    <a
+                                      href={sub.filePath}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-3 py-1 text-[11px] font-bold text-indigo-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+                                    >
+                                      {t('teacherDashboard.homeworks.openFile')}
+                                    </a>
+                                  </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                                  <div className="text-xs">
+                                    {isGraded ? (
+                                      <p className="text-slate-600 font-medium">
+                                        {t('teacherDashboard.homeworks.teacherComment')}:{' '}
+                                        <span className="italic text-slate-800 font-semibold">
+                                          "{sub.feedback || t('teacherDashboard.homeworks.noComment')}"
+                                        </span>
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                                        {t('teacherDashboard.homeworks.notGradedWarning')}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    onClick={() => openGrade(sub)}
+                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm active:scale-95 cursor-pointer shrink-0"
+                                  >
+                                    {isGraded
+                                      ? t('teacherDashboard.homeworks.editGradeBtn')
+                                      : t('teacherDashboard.homeworks.addGradeBtn')}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                        {/* Не сдали */}
+                        {statusFilter !== 'submitted' &&
+                          pendingRoster.map((st) => (
+                            <div
+                              key={st.studentGuid}
+                              className="bg-white/60 p-4 rounded-2xl border border-dashed border-slate-300 flex items-center justify-between gap-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-slate-100 text-slate-400 font-extrabold text-xs flex items-center justify-center shrink-0">
+                                  {initials(st.firstName, st.lastName)}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-extrabold text-slate-700">
+                                    {st.firstName} {st.lastName}
+                                  </p>
+                                  <p className="text-[11px] font-medium text-slate-400">
+                                    {st.email}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg shrink-0">
+                                <UserX className="h-3 w-3" />
+                                {t('teacherDashboard.homeworks.statusNotSubmitted', 'არ ჩაბარებულა')}
+                              </span>
+                            </div>
+                          ))}
+
+                        {/* Пусто */}
+                        {statusFilter !== 'pending' &&
+                          submissions.length === 0 &&
+                          (statusFilter === 'submitted' ||
+                            pendingRoster.length === 0) && (
+                            <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/60">
+                              <p className="text-xs text-slate-400 font-medium">
+                                {t('teacherDashboard.homeworks.noSubmissions')}
+                              </p>
+                            </div>
+                          )}
+                        {statusFilter === 'pending' && pendingRoster.length === 0 && (
+                          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/60">
+                            <p className="text-xs text-slate-400 font-medium">
+                              {t(
+                                'teacherDashboard.homeworks.everyoneSubmitted',
+                                'ყველამ ჩააბარა დავალება'
+                              )}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

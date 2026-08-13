@@ -470,7 +470,16 @@
       "noSubmissions": "No submissions received yet",
       "noHomeworksCreated": "No homeworks created yet",
     "listTitle": "Published Assignments",
-    "duePrefix": "due"
+    "duePrefix": "due",
+   "noCourses": "No courses found",
+    "allLessonsOption": "All lessons",
+    "statusAll": "All",
+    "statusSubmittedOnly": "Submitted",
+    "statusPendingOnly": "Not submitted",
+    "loadError": "Failed to load homeworks",
+    "rosterCount": "Total in course",
+    "statusNotSubmitted": "Not submitted",
+    "everyoneSubmitted": "Everyone has submitted"
   },
   "profile": {
     "editTitle": "Edit Personal Profile",

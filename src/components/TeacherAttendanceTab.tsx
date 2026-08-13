@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheck, CheckCircle, Calendar, BookOpen, Check, X } from 'lucide-react';
+import { ClipboardCheck, CheckCircle, Calendar, BookOpen, Check, X, Loader2 } from 'lucide-react';
 import {
   TeacherSessionDto,
   SessionLessonDto,
@@ -35,29 +35,26 @@ export default function TeacherAttendanceTab({
 
   const [students, setStudents] = useState<StudentAttendanceRowDto[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+
+  // ID студентов, для которых сейчас идёт запрос на сервер (индивидуально)
+  const [savingStudentIds, setSavingStudentIds] = useState<Set<string>>(new Set());
+  // ID студентов, для которых последний запрос упал с ошибкой
+  const [errorStudentIds, setErrorStudentIds] = useState<Set<string>>(new Set());
+  // ID студентов, у которых только что успешно сохранилось (для галочки)
+  const [savedStudentIds, setSavedStudentIds] = useState<Set<string>>(new Set());
 
   // загрузка списка уроков при смене сессии
   useEffect(() => {
     if (!activeSession) return;
 
-    // ⬇️ ВРЕМЕННО: для диагностики, потом можно убрать
-    console.log('[Attendance] activeSession:', activeSession);
-
     let cancelled = false;
     getLessonsForSession(activeSession.sessionId)
       .then((res) => {
         if (cancelled) return;
-
-        // ⬇️ ВРЕМЕННО
-        console.log('[Attendance] RAW lessons response:', res);
-
         setLessons(res.lessons ?? []);
         setSelectedLessonId(res.lessons?.[0]?.courseLessonId ?? null);
       })
       .catch((e) => {
-        // раньше здесь не было catch — ошибка проваливалась молча
         console.error('[Attendance] Ошибка загрузки уроков:', e);
         if (!cancelled) {
           setLessons([]);
@@ -78,22 +75,23 @@ export default function TeacherAttendanceTab({
     let cancelled = false;
     setLoading(true);
 
-    // ⬇️ ВРЕМЕННО
-    console.log('[Attendance] запрос посещаемости, sessionId:', activeSession.sessionId, 'lessonId:', selectedLessonId);
-
     getStudentAttendancesPerLesson(teacherGuid, activeSession.sessionId, selectedLessonId)
       .then((res) => {
-        // ⬇️ ВРЕМЕННО
-        console.log('[Attendance] RAW attendance response:', res);
         if (!cancelled) setStudents(res.students ?? []);
       })
       .catch((e) => {
-        console.error('[Attendance] Ошибка загрузки посещаемости:', e); // раньше молчало
+        console.error('[Attendance] Ошибка загрузки посещаемости:', e);
         if (!cancelled) setStudents([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
+    // сбрасываем индикаторы при смене урока
+    setSavingStudentIds(new Set());
+    setErrorStudentIds(new Set());
+    setSavedStudentIds(new Set());
+
     return () => {
       cancelled = true;
     };
@@ -101,32 +99,60 @@ export default function TeacherAttendanceTab({
 
   const selectedLesson = lessons.find((l) => l.courseLessonId === selectedLessonId);
 
-  const setStatus = (studentGuid: string, wasAttended: boolean) => {
+  // Клик по кнопке "Был" / "Не был" — сразу шлёт запрос для этого студента
+  const handleSetStatus = async (studentGuid: string, wasAttended: boolean) => {
+    if (!activeSession || !selectedLessonId) return;
+
+    const prevStudent = students.find((s) => s.studentGuid === studentGuid);
+    if (!prevStudent) return;
+
+    // Оптимистично обновляем UI сразу
     setStudents((prev) =>
       prev.map((s) => (s.studentGuid === studentGuid ? { ...s, wasAttended } : s))
     );
-  };
 
-  const handleSave = async () => {
-    if (!activeSession || !selectedLessonId) return;
-    setSaving(true);
+    setSavingStudentIds((prev) => new Set(prev).add(studentGuid));
+    setErrorStudentIds((prev) => {
+      const next = new Set(prev);
+      next.delete(studentGuid);
+      return next;
+    });
+
     try {
-      await Promise.all(
-        students.map((st) =>
-          addStudentAttendance({
-            teacherGuid,
-            studentGuid: st.studentGuid,
-            sessionId: activeSession.sessionId,
-            lessonId: selectedLessonId,
-            wasAttended: st.wasAttended,
-            message: st.message,
-          })
+      await addStudentAttendance({
+        teacherGuid,
+        studentGuid,
+        sessionId: activeSession.sessionId,
+        lessonId: selectedLessonId,
+        wasAttended,
+        message: prevStudent.message ?? '',
+      });
+
+      setSavedStudentIds((prev) => new Set(prev).add(studentGuid));
+      setTimeout(() => {
+        setSavedStudentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(studentGuid);
+          return next;
+        });
+      }, 2000);
+    } catch (e) {
+      console.error('[Attendance] Ошибка сохранения посещаемости для студента', studentGuid, e);
+
+      // откатываем UI назад к прежнему значению, раз запрос не прошёл
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.studentGuid === studentGuid ? { ...s, wasAttended: prevStudent.wasAttended } : s
         )
       );
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+
+      setErrorStudentIds((prev) => new Set(prev).add(studentGuid));
     } finally {
-      setSaving(false);
+      setSavingStudentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(studentGuid);
+        return next;
+      });
     }
   };
 
@@ -226,87 +252,91 @@ export default function TeacherAttendanceTab({
 
       {/* Main Attendance List */}
       <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-900">
-              {t('teacherDashboard.attendance.sessionLabel')}: {activeSession?.title}
-            </h3>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">
-              {t('teacherDashboard.attendance.totalRegistered')}: {students.length}{' '}
-              {t('teacherDashboard.attendance.studentsCount')}
-            </p>
-          </div>
-
-          <button
-            onClick={handleSave}
-            disabled={saving || !selectedLessonId}
-            className="flex items-center justify-center gap-2 rounded-xl bg-[#059669] hover:bg-[#047857] px-5 py-2.5 text-xs font-bold text-white transition shadow-md active:scale-95 cursor-pointer shrink-0 disabled:opacity-50"
-          >
-            <CheckCircle className="h-4 w-4" />
-            <span>{saving ? '...' : t('teacherDashboard.attendance.saveAttendance')}</span>
-          </button>
+        <div className="border-b border-slate-100 pb-4">
+          <h3 className="text-sm font-extrabold text-slate-900">
+            {t('teacherDashboard.attendance.sessionLabel')}: {activeSession?.title}
+          </h3>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">
+            {t('teacherDashboard.attendance.totalRegistered')}: {students.length}{' '}
+            {t('teacherDashboard.attendance.studentsCount')}
+          </p>
         </div>
-
-        {saved && (
-          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
-            <span>{t('teacherDashboard.attendance.saved')}</span>
-          </div>
-        )}
 
         {loading ? (
           <p className="text-xs text-slate-400 font-medium text-center py-8">…</p>
         ) : students.length > 0 ? (
           <div className="space-y-3">
-            {students.map((st) => (
-              <div
-                key={st.studentGuid}
-                className="p-4 rounded-xl border border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-100/80 text-emerald-700 font-extrabold text-xs flex items-center justify-center shrink-0">
-                    {st.picture ? (
-                      <img src={st.picture} alt="" className="h-10 w-10 rounded-xl object-cover" />
-                    ) : (
-                      st.firstName ? st.firstName[0] : 'S'
+            {students.map((st) => {
+              const isSaving = savingStudentIds.has(st.studentGuid);
+              const hasError = errorStudentIds.has(st.studentGuid);
+              const justSaved = savedStudentIds.has(st.studentGuid);
+
+              return (
+                <div
+                  key={st.studentGuid}
+                  className="p-4 rounded-xl border border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-100/80 text-emerald-700 font-extrabold text-xs flex items-center justify-center shrink-0">
+                      {st.picture ? (
+                        <img src={st.picture} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                      ) : (
+                        st.firstName ? st.firstName[0] : 'S'
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-900">
+                        {st.firstName} {st.lastName}
+                      </p>
+                      {hasError && (
+                        <p className="text-[10px] font-bold text-rose-500 mt-0.5">
+                          {t('teacherDashboard.attendance.saveError') || 'Не удалось сохранить'}
+                        </p>
+                      )}
+                      {justSaved && !hasError && (
+                        <p className="text-[10px] font-bold text-emerald-600 mt-0.5">
+                          {t('teacherDashboard.attendance.saved')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/80">
+                    {isSaving && (
+                      <Loader2 className="h-3.5 w-3.5 text-slate-400 animate-spin mx-1" />
                     )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-extrabold text-slate-900">
-                      {st.firstName} {st.lastName}
-                    </p>
+
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => handleSetStatus(st.studentGuid, true)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                        st.wasAttended
+                          ? 'bg-[#059669] text-white shadow-xs'
+                          : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{t('teacherDashboard.attendance.present')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => handleSetStatus(st.studentGuid, false)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                        !st.wasAttended
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>{t('teacherDashboard.attendance.absent')}</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/80">
-                  <button
-                    type="button"
-                    onClick={() => setStatus(st.studentGuid, true)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer ${
-                      st.wasAttended
-                        ? 'bg-[#059669] text-white shadow-xs'
-                        : 'text-slate-500 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    <span>{t('teacherDashboard.attendance.present')}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setStatus(st.studentGuid, false)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer ${
-                      !st.wasAttended
-                        ? 'bg-rose-600 text-white shadow-xs'
-                        : 'text-slate-500 hover:bg-slate-50'
-                    }`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    <span>{t('teacherDashboard.attendance.absent')}</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="p-8 text-center bg-[#f8fafc] rounded-xl border border-slate-100">

@@ -409,7 +409,16 @@
     "notGradedWarning": "⚠️ დავალება ჯერ არ არის შეფასებული. დააჭირეთ შეფასების ღილაკს.",
     "editGradeBtn": "შეფასების შეცვლა",
     "addGradeBtn": "შეფასების დამატება (+შეფასება)",
-    "noSubmissions": "სტუდენტების ნამუშევრები ჯერ არ არის მიღებული."
+    "noSubmissions": "სტუდენტების ნამუშევრები ჯერ არ არის მიღებული.",
+    "noCourses": "კურსები არ მოიძებნა",
+    "allLessonsOption": "ყველა გაკვეთილი",
+    "statusAll": "ყველა",
+    "statusSubmittedOnly": "ჩააბარეს",
+    "statusPendingOnly": "არ ჩაბარებულა",
+    "loadError": "დავალებების ჩატვირთვა ვერ მოხერხდა",
+    "rosterCount": "სულ კურსზე",
+    "statusNotSubmitted": "არ ჩაბარებულა",
+    "everyoneSubmitted": "ყველამ ჩააბარა დავალება"
   },
   "profile": {
     "editTitle": "პირადი პროფილის რედაქტირება",

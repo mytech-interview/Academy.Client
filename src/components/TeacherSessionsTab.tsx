@@ -51,7 +51,8 @@ export default function TeacherSessionsTab({
         setStudents(studentsRes.students ?? []);
         setLessons(lessonsRes.lessons ?? []);
       })
-      .catch(() => {
+      .catch((e) => {
+        console.error('Ошибка загрузки студентов/уроков:', e);
         if (!cancelled) {
           setStudents([]);
           setLessons([]);
@@ -158,23 +159,42 @@ export default function TeacherSessionsTab({
                 <p className="text-xs text-slate-400 font-medium">…</p>
               ) : lessons.length > 0 ? (
                 <div className="space-y-3">
-                  {lessons.map((lesson, idx) => (
-                    <div
-                      key={lesson.courseLessonId}
-                      className="p-4 rounded-xl bg-[#f8fafc] flex items-start justify-between gap-4"
-                    >
-                      <div>
-                        <p className="text-xs font-bold text-slate-900">
-                          {idx + 1}. {lesson.title}
-                        </p>
-                        {lesson.description && (
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                            {lesson.description}
+                  {lessons.map((lesson, idx) => {
+                    // Бэкенд пока не присылает title для уроков (приходит
+                    // пустой строкой), поэтому используем description
+                    // как основной текст, если title пустой.
+                    const heading = lesson.title?.trim()
+                      ? lesson.title
+                      : lesson.description?.trim()
+                      ? lesson.description
+                      : `${t('teacherDashboard.sessions.lessonPrefix') || 'Lesson'} ${
+                          lesson.lessonNumber ?? idx + 1
+                        }`;
+
+                    // Отдельную строку с описанием показываем только
+                    // если title реально заполнен (иначе получится
+                    // дублирование одного и того же текста).
+                    const showSeparateDescription =
+                      Boolean(lesson.title?.trim()) && Boolean(lesson.description?.trim());
+
+                    return (
+                      <div
+                        key={lesson.courseLessonId}
+                        className="p-4 rounded-xl bg-[#f8fafc] flex items-start justify-between gap-4"
+                      >
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">
+                            {idx + 1}. {heading}
                           </p>
-                        )}
+                          {showSeparateDescription && (
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                              {lesson.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-xs text-slate-400 font-medium">

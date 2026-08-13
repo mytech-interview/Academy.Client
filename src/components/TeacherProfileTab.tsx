@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Upload } from 'lucide-react';
 import { User } from '../types';
@@ -30,18 +30,43 @@ const AVATAR_PRESETS = [
   'https://api.dicebear.com/7.x/identicon/svg?seed=Id6&backgroundColor=14b8a6',
 ];
 
+// Бэкенд/модель User может называть телефон по-разному в зависимости
+// от того, откуда пришли данные (регистрация, обновление профиля и т.д.).
+// Проверяем самые вероятные варианты, чтобы поле не оставалось пустым.
+function getTeacherPhone(teacher: any): string {
+  return (
+    teacher?.telephone ??
+    teacher?.phone ??
+    teacher?.phoneNumber ??
+    teacher?.mobile ??
+    ''
+  );
+}
+
 export default function TeacherProfileTab({ teacher, onUpdateProfile }: TeacherProfileTabProps) {
   const { t } = useTranslation();
-
+console.log('teacher object:', teacher);
   const [profName, setProfName] = useState(teacher?.name || '');
   const [profEmail, setProfEmail] = useState(teacher?.email || '');
-  const [profPhone, setProfPhone] = useState((teacher as any)?.phone || '');
+  const [profPhone, setProfPhone] = useState(getTeacherPhone(teacher));
   const [profHeadline, setProfHeadline] = useState(teacher?.headline || '');
   const [profAvatar, setProfAvatar] = useState(teacher?.avatar || AVATAR_PRESETS[0]);
   const [profSuccess, setProfSuccess] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // ВАЖНО: useState берёт значение teacher только на момент первого
+  // рендера. Если teacher подгружается асинхронно чуть позже, либо
+  // обновляется после сохранения где-то выше по дереву — без этого
+  // эффекта поля формы останутся со старыми (пустыми) значениями.
+  useEffect(() => {
+    setProfName(teacher?.name || '');
+    setProfEmail(teacher?.email || '');
+    setProfPhone(getTeacherPhone(teacher));
+    setProfHeadline(teacher?.headline || '');
+    setProfAvatar(teacher?.avatar || AVATAR_PRESETS[0]);
+  }, [teacher]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
