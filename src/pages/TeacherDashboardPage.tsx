@@ -103,7 +103,7 @@ export default function TeacherDashboardPage({
   }
 
   if (loading) {
-    return <div className="p-10 text-center text-xs text-slate-400">Загрузка...</div>;
+    return <div className="p-10 text-center text-xs text-slate-400"> {t('courseDetailModal.loading')}...</div>;
   }
 
   if (error) {

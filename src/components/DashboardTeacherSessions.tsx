@@ -10,13 +10,13 @@ import TeacherProfileTab from './TeacherProfileTab';
 
 interface DashboardTeacherSessionsProps {
   teacher: User;
-  courses: any[]; // локальный справочник курсов, если используется для лейблов/описаний
+  courses: any[]; 
   sessions: TeacherSessionDto[];
   enrollments: Enrollment[];
   homeworks: TeacherHomeWorkDto[];
   registeredUsers: User[];
   onUpdateProfile?: (updatedFields: Partial<User>) => void;
-  onHomeworkAdded?: () => void; // вызывается после успешного добавления, чтобы родитель перезагрузил список
+  onHomeworkAdded?: () => void; 
 }
 
 type TabKey = 'sessions' | 'homeworks' | 'attendance' | 'profile';
@@ -35,9 +35,7 @@ export default function DashboardTeacherSessions({
 
   const [activeTab, setActiveTab] = useState<TabKey>('sessions');
 
-  // ВАЖНО: не полагаемся только на useState-инициализатор — на первом
-  // рендере sessions может быть ещё пустым массивом. Синхронизируем
-  // через useEffect каждый раз, когда sessions реально приходят/меняются.
+
   const [selectedSessionId, setSelectedSessionId] = useState<number>(0);
 
   useEffect(() => {
@@ -73,13 +71,6 @@ export default function DashboardTeacherSessions({
     setHwError(null);
 
     try {
-      // ⚠️ Временное решение: настоящего эндпоинта загрузки файлов на
-      // бэкенде пока нет, поэтому используем локальный blob-URL. Он
-      // работает только в текущей вкладке браузера и пропадает после
-      // перезагрузки страницы — файл никуда физически не загружается.
-      // Как появится эндпоинт загрузки (например /files/upload),
-      // нужно сначала аплоадить hwFile туда и передавать сюда
-      // полученный на сервере URL/путь.
       const filePath = hwFile ? URL.createObjectURL(hwFile) : '';
 
       await addHomeWork({
@@ -99,7 +90,7 @@ export default function DashboardTeacherSessions({
       setHwFile(null);
       onHomeworkAdded?.();
     } catch (err: any) {
-      setHwError(err.message || 'Не удалось добавить домашнее задание');
+      setHwError(err.message || 'An error occurred while adding homework.');
     } finally {
       setHwSubmitting(false);
     }

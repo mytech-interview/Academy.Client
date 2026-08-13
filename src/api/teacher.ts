@@ -1,4 +1,4 @@
-// src/lib/api.ts
+// src/api/teacher.ts
 
 export const API_BASE_URL = 'https://localhost:7197/api';
 
@@ -67,14 +67,9 @@ interface RawGetTeacherSessionsResponse {
 function mapRawSession(raw: RawTeacherSessionDto): TeacherSessionDto {
   return {
     sessionId: raw.sessionId,
-    // courseId бэк не присылает — используем courseCategoryId как заглушку,
-    // либо 0, если и его нет. Если courseId нужен по-настоящему,
-    // попроси бэкенд добавить его в ответ.
     courseId: raw.courseCategoryId ?? 0,
     title: raw.title,
     startDate: raw.startDate,
-    // city и lessonDaysDescription бэк не присылает вообще —
-    // подставляем пустую строку, чтобы UI не падал на undefined.
     lessonDaysDescription: '',
     city: '',
     maxStudents: raw.maxStudents,

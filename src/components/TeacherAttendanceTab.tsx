@@ -41,12 +41,29 @@ export default function TeacherAttendanceTab({
   // загрузка списка уроков при смене сессии
   useEffect(() => {
     if (!activeSession) return;
+
+    // ⬇️ ВРЕМЕННО: для диагностики, потом можно убрать
+    console.log('[Attendance] activeSession:', activeSession);
+
     let cancelled = false;
-    getLessonsForSession(activeSession.sessionId).then((res) => {
-      if (cancelled) return;
-      setLessons(res.lessons ?? []);
-      setSelectedLessonId(res.lessons?.[0]?.courseLessonId ?? null);
-    });
+    getLessonsForSession(activeSession.sessionId)
+      .then((res) => {
+        if (cancelled) return;
+
+        // ⬇️ ВРЕМЕННО
+        console.log('[Attendance] RAW lessons response:', res);
+
+        setLessons(res.lessons ?? []);
+        setSelectedLessonId(res.lessons?.[0]?.courseLessonId ?? null);
+      })
+      .catch((e) => {
+        // раньше здесь не было catch — ошибка проваливалась молча
+        console.error('[Attendance] Ошибка загрузки уроков:', e);
+        if (!cancelled) {
+          setLessons([]);
+          setSelectedLessonId(null);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -60,11 +77,18 @@ export default function TeacherAttendanceTab({
     }
     let cancelled = false;
     setLoading(true);
+
+    // ⬇️ ВРЕМЕННО
+    console.log('[Attendance] запрос посещаемости, sessionId:', activeSession.sessionId, 'lessonId:', selectedLessonId);
+
     getStudentAttendancesPerLesson(teacherGuid, activeSession.sessionId, selectedLessonId)
       .then((res) => {
+        // ⬇️ ВРЕМЕННО
+        console.log('[Attendance] RAW attendance response:', res);
         if (!cancelled) setStudents(res.students ?? []);
       })
-      .catch(() => {
+      .catch((e) => {
+        console.error('[Attendance] Ошибка загрузки посещаемости:', e); // раньше молчало
         if (!cancelled) setStudents([]);
       })
       .finally(() => {
@@ -125,6 +149,24 @@ export default function TeacherAttendanceTab({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
+
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
+              {t('teacherDashboard.courseTitle')}
+            </label>
+            <select
+              value={selectedSessionId}
+              onChange={(e) => onSelectSession(Number(e.target.value))}
+              className="bg-[#f8fafc] border border-slate-200 text-slate-900 text-xs font-bold rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-indigo-100 focus:outline-none cursor-pointer max-w-[220px] truncate"
+            >
+              {sessions.map((s) => (
+                <option key={s.sessionId} value={s.sessionId}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
               {t('teacherDashboard.attendance.whichLesson')}
