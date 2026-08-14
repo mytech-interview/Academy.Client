@@ -196,16 +196,6 @@ export function addHomeWork(payload: {
   return apiPost<{ homeworkId: number }>('/homeWorks/addHomeWork', payload);
 }
 
-// ⚠️ На бэке пока нет ручки оценки — добавь HomeWorksController.gradeHomeWorkSubmission
-export function gradeHomeWorkSubmission(payload: {
-  submissionId: number;
-  teacherGuid: string;
-  grade: string;
-  feedback: string;
-}) {
-  return apiPost<{ success: boolean }>('/homeWorks/gradeHomeWorkSubmission', payload);
-}
-
 // ---------- General ----------
 export function updateTeacher(payload: {
   teacherGuid: string;
@@ -219,23 +209,95 @@ export function updateTeacher(payload: {
   return apiPost<{ success: boolean }>('/general/updateTeacher', payload);
 }
 
-
-
+// ---------- Submissions ----------
 export interface HomeWorkSubmissionDto {
   submissionId: number;
   studentGuid: string;
   studentFirstName: string;
   studentLastName: string;
+  // NOTE(backend): бэк в getHomeworkSubmissionByHomework НЕ возвращает
+  // текст ответа ученика (StudentAnswer нигде не приходит в этом DTO,
+  // только FilePath). Поэтому content всегда пустой — это ограничение
+  // бэка, не баг маппинга. UI ниже это учитывает и не считает пустую
+  // строку "ученик ничего не написал".
   content: string;
+  hasTextContent: boolean; // false = бэк не отдаёт текст, а не "ученик не писал"
   filePath?: string;
   submittedAt: string;
   grade?: string;
+  // NOTE(backend): комментарий учителя (TeacherAnswer) отправляется
+  // ЧЕРЕЗ setTeacherHomeWorkGrade, но обратно в списке submissions НЕ
+  // возвращается бэком. Поэтому после сохранения оценки мы держим
+  // feedback локально в стейте компонента (optimistic), а после
+  // перезагрузки страницы/повторного открытия карточки он снова
+  // пропадёт, т.к. бэк его не хранит в этом ответе.
   feedback?: string;
 }
 
+// Реальная форма ответа бэкенда для getHomeworkSubmissionByHomework.
+// Метод называется по-другому (не getSubmissionsForHomeWork), корневое
+// поле называется "homeWorks" (а не "submissions"), Grade — number,
+// а имена студента разбиты как firstName/lastName вместо
+// studentFirstName/studentLastName.
+interface RawSubmissionDto {
+  submissionId: number;
+  filePath?: string;
+  submittedAt: string;
+  grade?: number | null;
+  studentGuid: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface RawGetSubmissionsResponse {
+  homeWorks: RawSubmissionDto[];
+  errMsg?: string | null;
+  errorCode?: string | null;
+  err?: number;
+}
+
+function mapRawSubmission(raw: RawSubmissionDto): HomeWorkSubmissionDto {
+  return {
+    submissionId: raw.submissionId,
+    studentGuid: raw.studentGuid,
+    studentFirstName: raw.firstName,
+    studentLastName: raw.lastName,
+    content: '',
+    hasTextContent: false,
+    filePath: raw.filePath,
+    submittedAt: raw.submittedAt,
+    grade: raw.grade != null ? String(raw.grade) : undefined,
+    feedback: undefined,
+  };
+}
+
 export function getSubmissionsForHomeWork(teacherGuid: string, homeworkId: number) {
-  return apiPost<{ submissions: HomeWorkSubmissionDto[] }>(
-    '/homeWorks/getSubmissionsForHomeWork',
-    { teacherGuid, homeworkId }
-  );
+  return apiPost<RawGetSubmissionsResponse>(
+    '/homeWorks/getHomeworkSubmissionByHomework',
+    { teacherGuid, homeWorkId: homeworkId }
+  ).then((res) => ({
+    submissions: (res.homeWorks ?? []).map(mapRawSubmission),
+  }));
+}
+
+// Реальная ручка называется setTeacherHomeWorkGrade, а не
+// gradeHomeWorkSubmission, и Grade там int, а не строка вида "100/100".
+// Формат "100/100" на фронте больше не подходит под int-поле бэка —
+// приводим к числу (parseInt отрежет всё после "/", т.е. "85/100" -> 85).
+// Если нужен именно дробный вид оценки — это уже требует менять тип
+// Grade на бэке, а бэк трогать нельзя, так что пока только целое число.
+export function gradeHomeWorkSubmission(payload: {
+  submissionId: number;
+  teacherGuid: string;
+  grade: string;
+  feedback: string;
+}) {
+  const numericGrade = parseInt(payload.grade, 10);
+  return apiPost<{ success: boolean }>('/homeWorks/setTeacherHomeWorkGrade', {
+    teacherGuid: payload.teacherGuid,
+    submissionId: payload.submissionId,
+    grade: Number.isNaN(numericGrade) ? 0 : numericGrade,
+    teacherAnswer: payload.feedback,
+  });
 }

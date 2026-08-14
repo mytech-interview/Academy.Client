@@ -167,15 +167,6 @@ export default function DashboardTeacherSessions({
                 >
                   {tab.icon}
                   <span>{t(tab.labelKey)}</span>
-                  {tab.key === 'homeworks' && (
-                    <span
-                      className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                        isActive ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {homeworks.length}
-                    </span>
-                  )}
                 </button>
               );
             })}

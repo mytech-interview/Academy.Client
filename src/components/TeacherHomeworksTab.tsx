@@ -167,21 +167,18 @@ export default function TeacherHomeworksTab({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log('[submissions effect] selectedHwId =', selectedHwId, 'teacherGuid =', teacherGuid);
     if (!selectedHwId) {
       setSubmissions([]);
       return;
     }
     let cancelled = false;
     setLoading(true);
-    console.log('[submissions effect] calling getSubmissionsForHomeWork', { teacherGuid, selectedHwId });
     getSubmissionsForHomeWork(teacherGuid, selectedHwId)
       .then((res) => {
-        console.log('[submissions effect] response:', res);
         if (!cancelled) setSubmissions(res.submissions ?? []);
       })
       .catch((err) => {
-        console.error('[submissions effect] getSubmissionsForHomeWork failed:', err);
+        console.error('getSubmissionsForHomeWork failed:', err);
         if (!cancelled) setSubmissions([]);
       })
       .finally(() => {
@@ -196,19 +193,18 @@ export default function TeacherHomeworksTab({
   // клик по другой — закрывает предыдущую и открывает новую
   // (т.к. state selectedHwId один на всех карточках)
   const toggleHomework = (hwId: number) => {
-    console.log('[toggleHomework] clicked hwId =', hwId, 'current selectedHwId =', selectedHwId);
     setSelectedHwId((prev) => (prev === hwId ? null : hwId));
   };
 
   // Modal State (оценка)
   const [gradingSubId, setGradingSubId] = useState<number | null>(null);
-  const [gradeValue, setGradeValue] = useState('100/100');
+  const [gradeValue, setGradeValue] = useState('100');
   const [feedbackValue, setFeedbackValue] = useState('');
   const [gradeSubmitting, setGradeSubmitting] = useState(false);
 
   const openGrade = (sub: HomeWorkSubmissionDto) => {
     setGradingSubId(sub.submissionId);
-    setGradeValue(sub.grade || '100/100');
+    setGradeValue(sub.grade || '100');
     setFeedbackValue(sub.feedback || '');
   };
 
@@ -224,6 +220,13 @@ export default function TeacherHomeworksTab({
         grade: gradeValue,
         feedback: feedbackValue,
       });
+      // NOTE(backend): бэк не возвращает feedback обратно в списке
+      // submissions (getHomeworkSubmissionByHomework его не отдаёт),
+      // поэтому здесь мы держим его в стейте оптимистично — только
+      // чтобы не пропадал сразу после сохранения в рамках текущей
+      // сессии страницы. После перезагрузки/повторного открытия
+      // карточки текст снова будет пустым, т.к. бэк его не хранит
+      // в этом ответе.
       setSubmissions((prev) =>
         prev.map((s) =>
           s.submissionId === gradingSubId
@@ -257,6 +260,12 @@ export default function TeacherHomeworksTab({
   // названия урока в заголовок/описание домашки — это эвристика. Как только
   // на бэке появится homework.courseLessonId, заменить на строгое сравнение id.
   const selectedLessonTitle = lessons.find((l) => l.courseLessonId === selectedLessonId)?.title;
+
+  // Название реального курса выбранной сессии — раньше вместо него
+  // всегда показывался статичный лейбл из переводов
+  // (teacherDashboard.homeworks.fullCourseTag), никак не связанный
+  // с тем, какой курс реально выбран.
+  const selectedCourseTitle = sessions.find((s) => s.sessionId === selectedSessionId)?.title;
 
   const filteredHomeworks = homeworksList.filter((hw) => {
     const q = searchQuery.toLowerCase();
@@ -511,7 +520,7 @@ export default function TeacherHomeworksTab({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-bold">
                       <BookOpen className="h-3.5 w-3.5 text-indigo-600" />
-                      <span>{t('teacherDashboard.homeworks.fullCourseTag')}</span>
+                      <span>{selectedCourseTitle || t('teacherDashboard.homeworks.fullCourseTag')}</span>
                     </div>
 
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-700 text-xs font-bold">
@@ -644,14 +653,27 @@ export default function TeacherHomeworksTab({
                                   </div>
                                 </div>
 
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-700 space-y-1">
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    {t('teacherDashboard.homeworks.studentWorkLabel')}
-                                  </p>
-                                  <p className="font-medium text-slate-800 whitespace-pre-wrap">
-                                    {sub.content}
-                                  </p>
-                                </div>
+                                {/* NOTE(backend): бэк не отдаёт текст ответа ученика
+                                    в этой ручке (только файл). Раньше здесь пустая
+                                    строка выглядела как "ученик ничего не написал" —
+                                    показываем честный placeholder вместо этого. */}
+                                {sub.hasTextContent ? (
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-700 space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                      {t('teacherDashboard.homeworks.studentWorkLabel')}
+                                    </p>
+                                    <p className="font-medium text-slate-800 whitespace-pre-wrap">
+                                      {sub.content}
+                                    </p>
+                                  </div>
+                                ) : !sub.filePath ? (
+                                  <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200/60 text-[11px] text-slate-400 font-medium">
+                                    {t(
+                                      'teacherDashboard.homeworks.noTextAvailable',
+                                      'ტექსტური პასუხი მიუწვდომელია'
+                                    )}
+                                  </div>
+                                ) : null}
 
                                 {sub.filePath && (
                                   <div className="p-3 bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between">
@@ -780,8 +802,13 @@ export default function TeacherHomeworksTab({
                 <label className="text-xs font-bold text-slate-700 block mb-1">
                   {t('teacherDashboard.modals.gradeLabel')}
                 </label>
+                {/* NOTE(backend): бэк принимает Grade как int, не строку
+                    "100/100" — поле оценки сделано числовым инпутом,
+                    чтобы значение сразу совпадало с ожиданиями бэка. */}
                 <input
-                  type="text"
+                  type="number"
+                  min={0}
+                  max={100}
                   value={gradeValue}
                   onChange={(e) => setGradeValue(e.target.value)}
                   className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
