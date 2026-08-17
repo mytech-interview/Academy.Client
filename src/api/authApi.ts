@@ -30,37 +30,38 @@ export interface RegisterUserRequest {
 
 
 async function apiFetch(path: string, body: unknown) {
-  const token = localStorage.getItem("academy_token");
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && {
-        Authorization: `Bearer ${token}`
-      })
+    headers:{
+      "Content-Type":"application/json"
     },
     body: JSON.stringify(body)
   });
 
-  if (!response.ok) {
+
+  if(!response.ok){
+
     let message = "Request failed";
 
-    try {
+    try{
       const data = await response.json();
       message =
         data?.message ||
         data?.title ||
         message;
-    } catch {}
+
+    }catch{}
 
     throw new Error(message);
   }
+
 
   const text = await response.text();
 
   return text ? JSON.parse(text) : null;
 }
+
 
 
 export function createOtp(
