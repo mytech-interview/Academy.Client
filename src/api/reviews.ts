@@ -1,6 +1,5 @@
 // api/reviews.ts
-const API_BASE_URL = 'https://localhost:7197';
-
+const API_BASE_URL = "https://localhost:5188";
 interface ApiEnvelope {
   errMsg: string | null;
   errorCode: string | null;
@@ -32,9 +31,15 @@ export interface ReviewUpsertRequest {
 export interface ReviewUpsertResponse extends ApiEnvelope {}
 
 export async function upsertReview(request: ReviewUpsertRequest): Promise<ReviewUpsertResponse> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/reviews/upsertReview`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+ headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(request),
   });
   return parseResponse<ReviewUpsertResponse>(response);
@@ -62,9 +67,15 @@ export interface ReviewsBySessionResponse extends ApiEnvelope {
 }
 
 export async function getReviewsBySession(sessionId: number): Promise<ReviewItem[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/reviews/getReviewsBySession`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ sessionId } as ReviewsBySessionRequest),
   });
   const data = await parseResponse<ReviewsBySessionResponse>(response);

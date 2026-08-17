@@ -1,6 +1,5 @@
 // api/students.ts
-const API_BASE_URL = 'https://localhost:7197';
-
+const API_BASE_URL = "https://localhost:5188";
 interface ApiEnvelope {
   errMsg: string | null;
   errorCode: string | null;
@@ -28,9 +27,15 @@ export interface AddEnrollmentRequest {
 }
 
 export async function addEnrollment(request: AddEnrollmentRequest) {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/enrollments/addEnrollment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(request),
   });
   return parseResponse(response);
@@ -50,11 +55,17 @@ export interface EditStudentRequest {
 export interface EditStudentResponse extends ApiEnvelope {}
 
 export async function editStudent(request: EditStudentRequest) {
+  const token = localStorage.getItem("academy_token");
   // ВАЖНО: бэкенд-эндпоинт называется /api/general/updateStudent (POST),
   // а не /api/students/editStudent (PUT), как было раньше.
   const response = await fetch(`${API_BASE_URL}/api/general/updateStudent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(request),
   });
   return parseResponse<EditStudentResponse>(response);
@@ -67,8 +78,14 @@ export interface StudentSession {
 }
 
 export async function getStudentSessions(userGuid: string): Promise<StudentSession[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/students/${userGuid}/sessions`, {
     method: 'GET',
+    headers: {
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    }
   });
   const data = await parseResponse<{ sessions: StudentSession[] } & ApiEnvelope>(response);
   return data.sessions ?? [];

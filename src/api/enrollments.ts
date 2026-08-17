@@ -1,5 +1,4 @@
-const API_BASE_URL = 'https://localhost:7197';
-
+const API_BASE_URL = "https://localhost:5188";
 export interface AddEnrollmentRequest {
   studentGuid: string;
   sessionId: number;
@@ -15,9 +14,15 @@ interface AddEnrollmentResponse {
 export async function addEnrollment(
   request: AddEnrollmentRequest
 ): Promise<AddEnrollmentResponse> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/enrollments/addEnrollment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+     headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(request),
   });
 

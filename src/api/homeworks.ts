@@ -1,5 +1,4 @@
-const API_BASE_URL = 'https://localhost:7197';
-
+const API_BASE_URL = "https://localhost:5188";
 // Mirrors Academy.CoreApi.Entities.HomeWorks.GetHomeWorksForStudentResponse
 export interface StudentHomeWork {
   homeWorkId: number;
@@ -18,9 +17,15 @@ interface GetHomeWorksForStudentResponse {
 }
 
 export async function getHomeWorksForStudent(studentGuid: string): Promise<StudentHomeWork[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/homeWorks/getHomeWorksForStudent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ studentGuid }),
   });
 
@@ -56,9 +61,15 @@ interface AddHomeWorkSubmissionResponse {
 }
 
 export async function submitHomeWork(payload: AddHomeWorkSubmissionPayload): Promise<void> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/homeWorks/addHomeWorkSubmission`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(payload),
   });
 

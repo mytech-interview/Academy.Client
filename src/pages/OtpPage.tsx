@@ -219,154 +219,159 @@ export default function OtpPage() {
       ================================================= */
 
       if (otpMode === 'login') {
-  /*
-   * Backend returns the authentication object directly.
-   * In some versions it may be wrapped inside authResponse.
-   */
-  const auth =
-    (result as any)?.authResponse ??
-    result;
-
-  console.log('================ LOGIN DEBUG ================');
-  console.log('FULL OTP RESULT:', result);
-  console.log('AUTH RESPONSE:', auth);
-  console.log('ROLE ID:', auth?.roleId);
-  console.log('ROLE:', auth?.role);
-  console.log('USER ROLE:', auth?.userRole);
-  console.log('OTP PENDING USER:', otpPendingUser);
-  console.log('=============================================');
+        /*
+         * Backend returns the authentication object directly.
+         * In some versions it may be wrapped inside authResponse.
+         */
+        const auth =
+          (result as any)?.authResponse ??
+          result;
 
 
-  /*
-   * Backend roles:
-   *
-   * 1 = student
-   * 2 = teacher
-   * 3 = admin
-   */
-
-  const roleMap: Record<
-    number,
-    'student' | 'teacher' | 'admin'
-  > = {
-    1: 'student',
-    2: 'teacher',
-    3: 'admin',
-  };
+        localStorage.setItem(
+          'academy_token',
+          (result as any)?.token ??
+          ''
+        );
+        console.log('================ LOGIN DEBUG ================');
+        console.log('FULL OTP RESULT:', result);
+        console.log('AUTH RESPONSE:', auth);
+        console.log('ROLE ID:', auth?.roleId);
+        console.log('ROLE:', auth?.role);
+        console.log('USER ROLE:', auth?.userRole);
+        console.log('OTP PENDING USER:', otpPendingUser);
+        console.log('=============================================');
 
 
-  const resolvedRole =
-    roleMap[Number(auth?.roleId)] ??
-    'student';
+        /*
+         * Backend roles:
+         *
+         * 1 = student
+         * 2 = teacher
+         * 3 = admin
+         */
+
+        const roleMap: Record<
+          number,
+          'student' | 'teacher' | 'admin'
+        > = {
+          1: 'student',
+          2: 'teacher',
+          3: 'admin',
+        };
 
 
-  console.log(
-    'LOGIN ROLE ID:',
-    auth?.roleId
-  );
-
-  console.log(
-    'RESOLVED ROLE:',
-    resolvedRole
-  );
+        const resolvedRole =
+          roleMap[Number(auth?.roleId)] ??
+          'student';
 
 
-  /*
-   * Create the logged-in user.
-   *
-   * IMPORTANT:
-   * Role always comes from backend.
-   */
+        console.log(
+          'LOGIN ROLE ID:',
+          auth?.roleId
+        );
 
-  const loggedInUser: User = {
-    id:
-      auth?.userGuid ??
-      auth?.userId?.toString() ??
-      otpPendingUser?.id ??
-      `user-${Date.now()}`,
-
-    email:
-      auth?.email ??
-      otpPendingUser?.email ??
-      otpEmail,
-
-    name:
-      `${auth?.firstName ?? ''} ${
-        auth?.lastName ?? ''
-      }`.trim() ||
-      otpPendingUser?.name ||
-      otpEmail,
-
-    role: resolvedRole,
-
-    avatar:
-      auth?.picture ??
-      otpPendingUser?.avatar,
-
-    headline:
-      otpPendingUser?.headline,
-
-    createdAt:
-      otpPendingUser?.createdAt ??
-      new Date().toISOString(),
-  };
+        console.log(
+          'RESOLVED ROLE:',
+          resolvedRole
+        );
 
 
-  console.log(
-    'FINAL LOGGED USER:',
-    loggedInUser
-  );
+        /*
+         * Create the logged-in user.
+         *
+         * IMPORTANT:
+         * Role always comes from backend.
+         */
+
+        const loggedInUser: User = {
+          id:
+            auth?.userGuid ??
+            auth?.userId?.toString() ??
+            otpPendingUser?.id ??
+            `user-${Date.now()}`,
+
+          email:
+            auth?.email ??
+            otpPendingUser?.email ??
+            otpEmail,
+
+          name:
+            `${auth?.firstName ?? ''} ${auth?.lastName ?? ''
+              }`.trim() ||
+            otpPendingUser?.name ||
+            otpEmail,
+
+          role: resolvedRole,
+
+          avatar:
+            auth?.picture ??
+            otpPendingUser?.avatar,
+
+          headline:
+            otpPendingUser?.headline,
+
+          createdAt:
+            otpPendingUser?.createdAt ??
+            new Date().toISOString(),
+        };
 
 
-  /*
-   * Save token
-   */
-
-  if ((result as any)?.token) {
-    localStorage.setItem(
-      'academy_token',
-      (result as any).token
-    );
-  }
+        console.log(
+          'FINAL LOGGED USER:',
+          loggedInUser
+        );
 
 
-  /*
-   * Save active user
-   */
+        /*
+         * Save token
+         */
 
-  handleLoginSuccess(
-    loggedInUser
-  );
+        if ((result as any)?.token) {
+          localStorage.setItem(
+            'academy_token',
+            (result as any).token
+          );
+        }
 
 
-  /*
-   * Redirect according to backend role
-   */
+        /*
+         * Save active user
+         */
 
-  switch (resolvedRole) {
-    case 'teacher':
-      navigate(
-        '/teacher-sessions',
-        { replace: true }
-      );
-      break;
+        handleLoginSuccess(
+          loggedInUser
+        );
 
-    case 'admin':
-      navigate(
-        '/admin-dashboard',
-        { replace: true }
-      );
-      break;
 
-    case 'student':
-    default:
-      navigate(
-        '/dashboard',
-        { replace: true }
-      );
-      break;
-  }
-} else {
+        /*
+         * Redirect according to backend role
+         */
+
+        switch (resolvedRole) {
+          case 'teacher':
+            navigate(
+              '/teacher-sessions',
+              { replace: true }
+            );
+            break;
+
+          case 'admin':
+            navigate(
+              '/admin-dashboard',
+              { replace: true }
+            );
+            break;
+
+          case 'student':
+          default:
+            navigate(
+              '/dashboard',
+              { replace: true }
+            );
+            break;
+        }
+      } else {
 
         /* =================================================
            REGISTER
@@ -474,19 +479,19 @@ export default function OtpPage() {
   const modeLabel =
     otpMode === 'login'
       ? (
-          lang === 'ka'
-            ? 'შესვლის დადასტურება'
-            : lang === 'ru'
+        lang === 'ka'
+          ? 'შესვლის დადასტურება'
+          : lang === 'ru'
             ? 'Подтверждение входа'
             : 'Verify Login'
-        )
+      )
       : (
-          lang === 'ka'
-            ? 'ანგარიშის შექმნა'
-            : lang === 'ru'
+        lang === 'ka'
+          ? 'ანგარიშის შექმნა'
+          : lang === 'ru'
             ? 'Создание аккаунта'
             : 'Create Account'
-        );
+      );
 
 
   /* =====================================================
@@ -540,8 +545,8 @@ export default function OtpPage() {
               {lang === 'ka'
                 ? 'უკან'
                 : lang === 'ru'
-                ? 'Назад'
-                : 'Back'}
+                  ? 'Назад'
+                  : 'Back'}
             </Link>
 
 
@@ -564,11 +569,10 @@ export default function OtpPage() {
 
 
               <span
-                className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border ${
-                  otpMode === 'login'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                }`}
+                className={`inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border ${otpMode === 'login'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }`}
               >
                 {modeLabel}
               </span>
@@ -579,8 +583,8 @@ export default function OtpPage() {
                 {lang === 'ka'
                   ? 'კოდი გაიგზავნა: '
                   : lang === 'ru'
-                  ? 'Код отправлен на: '
-                  : 'Code sent to: '}
+                    ? 'Код отправлен на: '
+                    : 'Code sent to: '}
 
                 <strong className="text-slate-700">
                   {otpEmail}
@@ -661,11 +665,10 @@ export default function OtpPage() {
 
                     onPaste={onPaste}
 
-                    className={`h-14 w-11 sm:w-12 rounded-2xl border text-center text-lg font-black text-slate-900 focus:outline-none focus:ring-2 transition ${
-                      digit
-                        ? 'border-indigo-400 bg-indigo-50 focus:ring-indigo-200'
-                        : 'border-slate-200/80 bg-slate-50/50 focus:ring-indigo-100 focus:border-indigo-500'
-                    }`}
+                    className={`h-14 w-11 sm:w-12 rounded-2xl border text-center text-lg font-black text-slate-900 focus:outline-none focus:ring-2 transition ${digit
+                      ? 'border-indigo-400 bg-indigo-50 focus:ring-indigo-200'
+                      : 'border-slate-200/80 bg-slate-50/50 focus:ring-indigo-100 focus:border-indigo-500'
+                      }`}
                   />
 
                 ))}
@@ -710,8 +713,8 @@ export default function OtpPage() {
                   {lang === 'ka'
                     ? `${cooldown} წმ-ში ხელახლა`
                     : lang === 'ru'
-                    ? `Повторная отправка через ${cooldown}с`
-                    : `Resend in ${cooldown}s`}
+                      ? `Повторная отправка через ${cooldown}с`
+                      : `Resend in ${cooldown}s`}
 
                 </span>
 
@@ -754,8 +757,8 @@ export default function OtpPage() {
             {lang === 'ka'
               ? 'მთავარ გვერდზე'
               : lang === 'ru'
-              ? 'На главную'
-              : 'Back to home'}
+                ? 'На главную'
+                : 'Back to home'}
 
           </Link>
 

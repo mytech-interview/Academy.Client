@@ -1,11 +1,16 @@
 // src/api/teacher.ts
 
-export const API_BASE_URL = 'https://localhost:7197/api';
-
+const API_BASE_URL = "https://localhost:5188";
 async function apiPost<TResponse>(path: string, body: unknown): Promise<TResponse> {
+  const token = localStorage.getItem("academy_token");
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(body),
   });
 

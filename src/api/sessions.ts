@@ -1,7 +1,6 @@
 import { ActiveSession } from '../types';
 
-const API_BASE_URL = 'https://localhost:7197';
-
+const API_BASE_URL = "https://localhost:5188/api";
 interface HomeActiveSessionsResponse {
   activeSessions: ActiveSession[];
   errMsg: string | null;
@@ -12,9 +11,15 @@ interface HomeActiveSessionsResponse {
 export async function getHomeActiveSessions(
   courseCategoryId: number
 ): Promise<ActiveSession[]> {
-  const response = await fetch(`${API_BASE_URL}/Home/getHomeActiveSessions`, {
+  const token = localStorage.getItem("academy_token");
+  const response = await fetch(`${API_BASE_URL}/home/getHomeActiveSessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ courseCategoryId }),
   });
 
@@ -57,9 +62,15 @@ interface GetStudentSessionsResponse {
 }
 
 export async function getStudentSessions(studentGuid: string): Promise<StudentSession[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentSessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ studentGuid }),
   });
 
@@ -112,9 +123,15 @@ export async function getCourseSessionDetailsForStudent(
   sessionId: number,
   studentGuid: string
 ): Promise<CourseSessionDetailsForStudent> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/sessions/getCourseSessionDetailsForStudent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ sessionId, studentGuid }),
   });
 
@@ -151,9 +168,15 @@ export async function getCourseLibrarySessionId(
   sessionId: number,
   userGuid: string
 ): Promise<CourseLibraryItem[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/sessions/getCourseLibrarySessionId`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ sessionId, userGuid }),
   });
 
@@ -204,9 +227,15 @@ interface GetCourseDetailsBySessionIdResponse extends CourseDetailsBySessionId {
 export async function getCourseDetailsBySessionId(
   sessionId: number
 ): Promise<CourseDetailsBySessionId> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/Home/getCourseDetailsBySessionId`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ sessionId }),
   });
 
@@ -252,9 +281,15 @@ interface GetLessonsForSessionResponse {
 }
 
 export async function getLessonsForSession(sessionId: number): Promise<SessionLesson[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/sessions/getLessonsForSession`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+     headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ sessionId }),
   });
 
@@ -301,9 +336,15 @@ interface GetHomeWorksForStudentResponse {
 }
 
 export async function getHomeWorksForStudent(studentGuid: string, sessionId: number): Promise<StudentHomeWork[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/homeWorks/getHomeWorksForStudent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ studentGuid, sessionId }),
   });
 
@@ -338,9 +379,15 @@ interface AddHomeWorkSubmissionResponse {
 }
 
 export async function submitHomeWork(payload: AddHomeWorkSubmissionPayload): Promise<void> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/homeWorks/addHomeWorkSubmission`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify(payload),
   });
 
@@ -383,9 +430,15 @@ export async function getStudentAttendanceForSession(
   studentGuid: string,
   sessionId: number
 ): Promise<GetStudentAttendanceApiItem[]> {
+  const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentAttendance`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && {
+        Authorization: `Bearer ${token}`
+      })
+    },
     body: JSON.stringify({ studentGuid, sessionId }),
   });
 
