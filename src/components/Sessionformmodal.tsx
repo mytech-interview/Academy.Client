@@ -5,12 +5,10 @@ import { SessionItem } from '../types';
 export interface SessionFormValues {
   courseId: number;
   teacherGuid: string;
-  weeks: number;
-  startDate: string; // yyyy-mm-dd
-  endDate: string; // yyyy-mm-dd
-  cityId: number;
-  attendanceModeId: number;
-  isActive: boolean;
+  maxStudents: number;
+  schedule: string;
+  location: string;
+  isActive?: boolean;
 }
 
 interface SessionFormModalProps {
@@ -21,151 +19,135 @@ interface SessionFormModalProps {
   onSubmit: (values: SessionFormValues) => void;
 }
 
-function toDateInputValue(iso: string): string {
-  if (!iso) return '';
-  return iso.slice(0, 10);
-}
-
 export default function SessionFormModal({ mode, initial, submitting, onClose, onSubmit }: SessionFormModalProps) {
-  const [courseId, setCourseId] = useState(initial ? String(initial.courseId) : '');
-  const [teacherGuid, setTeacherGuid] = useState(initial?.teacherGuid ?? '');
-  const [weeks, setWeeks] = useState('4');
-  const [startDate, setStartDate] = useState(initial ? toDateInputValue(initial.startDate) : '');
-  const [endDate, setEndDate] = useState(initial ? toDateInputValue(initial.endDate) : '');
-  const [cityId, setCityId] = useState('0');
-  const [attendanceModeId, setAttendanceModeId] = useState('0');
-  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [courseId, setCourseId] = useState(initial ? String(initial.courseId ?? 1) : '1');
+  const [teacherGuid, setTeacherGuid] = useState(initial?.teacherGuid ?? '1');
+  const [maxStudents, setMaxStudents] = useState(initial?.maxStudents ? String(initial.maxStudents) : '30');
+  const [schedule, setSchedule] = useState(initial?.schedule ?? 'ორშაბათი, ოთხშაბათი 19:00');
+  const [location, setLocation] = useState(initial?.location ?? 'თბილისი, ცენტრალური ფილიალი / ონლაინ');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!courseId.trim() || !teacherGuid.trim() || !startDate || !endDate) {
-      alert('შეავსეთ სავალდებულო ველები: კურსის ID, ლექტორის GUID, დაწყების და დასრულების თარიღები.');
-      return;
-    }
-
     onSubmit({
-      courseId: Number(courseId),
+      courseId: Number(courseId) || 1,
       teacherGuid: teacherGuid.trim(),
-      weeks: Number(weeks) || 0,
-      startDate,
-      endDate,
-      cityId: Number(cityId) || 0,
-      attendanceModeId: Number(attendanceModeId) || 0,
-      isActive,
+      maxStudents: Number(maxStudents) || 0,
+      schedule: schedule.trim(),
+      location: location.trim(),
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 className="font-black text-slate-800 text-base">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <h3 className="font-extrabold text-slate-900 text-base">
             {mode === 'add' ? 'ახალი სესიის დამატება' : 'სესიის რედაქტირება'}
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <Field label="კურსის ID *">
-            <input
-              type="number"
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4 overflow-y-auto flex-1 text-slate-800">
+          <Field label="აირჩიეთ კურსი">
+            <select
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
-              className="input"
-              required
-            />
+              className="styled-input"
+            >
+              <option value="1">ვებ დეველოპმენტის სრული კურსი (React & Node.js)</option>
+              <option value="2">UX/UI დიზაინის საფუძვლები Figma-ში</option>
+              <option value="3">ციფრული მარკეტინგი და SEO ოპტიმიზაცია</option>
+            </select>
+            <p className="text-[11px] text-purple-600 font-medium mt-1.5 flex items-center gap-1">
+              <span>💡</span> სესიის სახელი ავტომატურად განისაზღვრება არჩეული კურსის მიხედვით.
+            </p>
           </Field>
 
-          <Field label="ლექტორის GUID * (TODO: ჯერ არ არსებობს ლექტორის picker — backend-მა GetAllTeachers-ში UserGuid უნდა დააბრუნოს)">
-            <input
-              type="text"
+          <Field label="მიჩენილი ლექტორი">
+            <select
               value={teacherGuid}
               onChange={(e) => setTeacherGuid(e.target.value)}
-              placeholder="00000000-0000-0000-0000-000000000000"
-              className="input"
-              required
+              className="styled-input"
+            >
+              <option value="1">მარიამ ბერიძე</option>
+              <option value="2">გიორგი კალანდაძე</option>
+              <option value="3">ნინო შენგელია</option>
+            </select>
+          </Field>
+
+          <Field label="მაქს. სტუდენტები">
+            <input
+              type="number"
+              value={maxStudents}
+              onChange={(e) => setMaxStudents(e.target.value)}
+              className="styled-input"
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="დაწყების თარიღი *">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="input"
-                required
-              />
-            </Field>
-            <Field label="დასრულების თარიღი *">
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="input"
-                required
-              />
-            </Field>
-          </div>
+          <Field label="განრიგი">
+            <input
+              type="text"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+              placeholder="მაგ: ორშაბათი, ოთხშაბათი 19:00"
+              className="styled-input"
+            />
+          </Field>
 
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="კვირები">
-              <input type="number" value={weeks} onChange={(e) => setWeeks(e.target.value)} className="input" />
-            </Field>
-            <Field label="ქალაქის ID">
-              <input type="number" value={cityId} onChange={(e) => setCityId(e.target.value)} className="input" />
-            </Field>
-            <Field label="დასწრების რეჟიმის ID">
-              <input
-                type="number"
-                value={attendanceModeId}
-                onChange={(e) => setAttendanceModeId(e.target.value)}
-                className="input"
-              />
-            </Field>
-          </div>
+          <Field label="🏢 ქალაქი / ლოკაცია (City)">
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="თბილისი, ცენტრალური ფილიალი"
+              className="styled-input"
+            />
+          </Field>
 
-          {mode === 'edit' && (
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-              აქტიურია
-            </label>
-          )}
-
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2.5 rounded-xl text-xs font-bold transition"
-            >
-              {submitting ? 'ინახება...' : mode === 'add' ? 'დამატება' : 'შენახვა'}
-            </button>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+              className="px-6 py-2.5 rounded-2xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
             >
               გაუქმება
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-7 py-2.5 rounded-2xl text-xs font-bold bg-[#8b5cf6] hover:bg-[#7c3aed] text-white transition shadow-md disabled:opacity-50"
+            >
+              {submitting ? 'ინახება...' : 'შენახვა'}
             </button>
           </div>
         </form>
       </div>
 
       <style>{`
-        .input {
+        .styled-input {
           width: 100%;
-          padding: 0.5rem 0.75rem;
-          border-radius: 0.75rem;
+          padding: 0.625rem 0.875rem;
+          border-radius: 0.85rem;
           border: 1px solid #e2e8f0;
-          font-size: 0.75rem;
-          font-weight: 600;
-        }
-        .input:focus {
+          background-color: #ffffff;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: #0f172a;
           outline: none;
-          box-shadow: 0 0 0 2px #a855f7;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .styled-input:focus {
+          border-color: #a855f7;
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
         }
       `}</style>
     </div>
@@ -174,8 +156,8 @@ export default function SessionFormModal({ mode, initial, submitting, onClose, o
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-xs font-bold text-slate-700 mb-1.5">{label}</label>
+    <div className="space-y-1">
+      <label className="block text-xs font-bold text-slate-800">{label}</label>
       {children}
     </div>
   );
