@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Mail, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import { LecturerItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
+import LecturerModal from './LecturerModal'; // Импортируем модалку
 
 interface LecturersTabProps {
   lecturers: LecturerItem[];
@@ -9,7 +10,7 @@ interface LecturersTabProps {
   error: string | null;
   searchQuery: string;
   onRetry: () => void;
-  onAdd: () => void;
+  onAdd: (newLecturer: Partial<LecturerItem>) => void;
   onEdit: (lecturer: LecturerItem) => void;
   onDelete: (lecturer: LecturerItem) => void;
   onTogglePin: (id: string) => void;
@@ -26,6 +27,9 @@ export default function LecturersTab({
   onDelete,
   onTogglePin,
 }: LecturersTabProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLecturer, setSelectedLecturer] = useState<LecturerItem | null>(null);
+
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return lecturers;
     const q = searchQuery.toLowerCase();
@@ -38,6 +42,24 @@ export default function LecturersTab({
     );
   }, [lecturers, searchQuery]);
 
+  const handleOpenAddModal = () => {
+    setSelectedLecturer(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (lecturer: LecturerItem) => {
+    setSelectedLecturer(lecturer);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveLecturer = (data: Partial<LecturerItem>) => {
+    if (selectedLecturer) {
+      onEdit({ ...selectedLecturer, ...data } as LecturerItem);
+    } else {
+      onAdd(data);
+    }
+  };
+
   return (
     <>
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
@@ -46,7 +68,7 @@ export default function LecturersTab({
           <p className="text-xs text-slate-400 mt-0.5">აკადემიის მასწავლებელთა სია</p>
         </div>
         <button
-          onClick={onAdd}
+          onClick={handleOpenAddModal}
           className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition"
         >
           <Plus className="w-4 h-4" /> ახალი ლექტორის დამატება
@@ -114,7 +136,7 @@ export default function LecturersTab({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => onEdit(lec)}
+                    onClick={() => handleOpenEditModal(lec)}
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                   >
                     <Pencil className="w-3.5 h-3.5" /> ლექტორის რედაქტირება
@@ -132,6 +154,14 @@ export default function LecturersTab({
           ))}
         </div>
       )}
+
+      {/* Modal */}
+      <LecturerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveLecturer}
+        initialData={selectedLecturer}
+      />
     </>
   );
 }

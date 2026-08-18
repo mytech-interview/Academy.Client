@@ -17,6 +17,7 @@ import SettingsTab from '../components/Settingstab';
 import InProgressTab from '../components/Inprogresstab';
 import SessionFormModal, { SessionFormValues } from '../components/Sessionformmodal';
 import CourseFormModal, { CourseFormValues } from '../components/Coursesformmodal';
+import StudentFormModal, { StudentFormValues } from '../components/StudentFormModal';
 import {
   AdminTab,
   CourseItem,
@@ -35,14 +36,12 @@ import {
   mapTeacherToLecturer,
   studentToSystemUser,
 } from '../types';
-// activeUser.id holds the user's GUID — same convention AppContext already
-// uses for studentGuid in handleEnrollInCourse. If that ever changes, this
-// is the only place to update.
+
 function useAdminGuid(): string {
   const { activeUser } = useApp() as { activeUser?: { id?: string } };
   return activeUser?.id ?? '';
 }
- 
+
 const EMPTY_SETTINGS: SiteSettings = {
   studentsCount: '',
   lecturersCount: '',
@@ -59,50 +58,54 @@ const EMPTY_SETTINGS: SiteSettings = {
   aboutDescription: '',
   videoUrl: '',
 };
- 
+
 type SessionModalState = { mode: 'add' } | { mode: 'edit'; session: SessionItem } | null;
 type CourseModalState = { mode: 'add' } | { mode: 'edit'; course: CourseItem } | null;
- 
+type StudentModalState = { mode: 'edit'; student: StudentItem } | null;
+
 export default function AdminDashboardPage() {
   const { activeUser } = useApp() as { activeUser?: { name?: string; email?: string } };
   const userGuid = useAdminGuid();
- 
+
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [searchQuery, setSearchQuery] = useState('');
- 
-  // ── Lecturers (backed by GetAllTeachers / EditTeacher / DeleteTeacher) ──
+
+  // ── Lecturers ──
   const [lecturers, setLecturers] = useState<LecturerItem[]>([]);
   const [lecturersLoading, setLecturersLoading] = useState(true);
   const [lecturersError, setLecturersError] = useState<string | null>(null);
- 
-  // ── Students (backed by GetAllStudents / EditStudent / DeleteStudent) ──
+
+  // ── Students ──
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [studentsError, setStudentsError] = useState<string | null>(null);
- 
-  // ── Sessions (backed by GetAllSessions + addSession/updateSession/deleteSession) ──
+  const [studentModal, setStudentModal] = useState<StudentModalState>(null);
+  const [studentSubmitting, setStudentSubmitting] = useState(false);
+  const [lecturerSubmitting, setLecturerSubmitting] = useState(false); 
+
+  // ── Sessions ──
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [sessionModal, setSessionModal] = useState<SessionModalState>(null);
   const [sessionSubmitting, setSessionSubmitting] = useState(false);
- 
-  // ── Courses (backed by GetAllCourses + addCourse/updateCourse — no delete yet) ──
+
+  // ── Courses ──
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [coursesError, setCoursesError] = useState<string | null>(null);
   const [courseModal, setCourseModal] = useState<CourseModalState>(null);
   const [courseSubmitting, setCourseSubmitting] = useState(false);
- 
-  // ── Categories — still local-only, no backend endpoint (see Coursescategoriestab) ──
+
+  // ── Categories ──
   const [categories, setCategories] = useState<string[]>([]);
- 
-  // ── Sections with no backend endpoint yet — local-only state ──
+
+  // ── Local Sections ──
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(EMPTY_SETTINGS);
- 
+
   const fetchLecturers = useCallback(async () => {
     setLecturersLoading(true);
     setLecturersError(null);
@@ -115,7 +118,7 @@ export default function AdminDashboardPage() {
       setLecturersLoading(false);
     }
   }, [userGuid]);
- 
+
   const fetchStudents = useCallback(async () => {
     setStudentsLoading(true);
     setStudentsError(null);
@@ -128,13 +131,7 @@ export default function AdminDashboardPage() {
       setStudentsLoading(false);
     }
   }, [userGuid]);
- 
-  // Fetches enrolled-student counts per session and patches them into
-  // `sessions` state as they arrive. Best-effort: getAllStudentsOfSpecificSession
-  // requires a teacherGuid, and it's unconfirmed whether the backend lets an
-  // admin call it for a teacher that isn't themselves — if it 401/403s per
-  // session, that session's count is silently left at 0 instead of breaking
-  // the whole list. TODO(api): confirm admin access on this endpoint.
+
   const fetchSessionStudentCounts = useCallback((sessionList: SessionItem[]) => {
     sessionList.forEach((session) => {
       sessionsApi
@@ -146,12 +143,10 @@ export default function AdminDashboardPage() {
           const count = res.students?.length ?? 0;
           setSessions((prev) => prev.map((s) => (s.id === session.id ? { ...s, currentStudents: count } : s)));
         })
-        .catch(() => {
-          // ignore per-session failure — see TODO above
-        });
+        .catch(() => {});
     });
   }, []);
- 
+
   const fetchSessions = useCallback(async () => {
     setSessionsLoading(true);
     setSessionsError(null);
@@ -166,7 +161,7 @@ export default function AdminDashboardPage() {
       setSessionsLoading(false);
     }
   }, [userGuid, fetchSessionStudentCounts]);
- 
+
   const fetchCourses = useCallback(async () => {
     setCoursesLoading(true);
     setCoursesError(null);
@@ -179,38 +174,84 @@ export default function AdminDashboardPage() {
       setCoursesLoading(false);
     }
   }, [userGuid]);
- 
+
   useEffect(() => {
     fetchLecturers();
     fetchStudents();
     fetchSessions();
     fetchCourses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
- 
+  }, [fetchLecturers, fetchStudents, fetchSessions, fetchCourses]);
+
   // ── Lecturer mutations ──
-  const handleDeleteLecturer = async (lecturer: LecturerItem) => {
-    const prev = lecturers;
-    setLecturers((list) => list.filter((l) => l.id !== lecturer.id));
-    try {
-      await adminApi.deleteTeacher({ teacherId: lecturer.userId, userGuid });
-    } catch (err) {
-      setLecturers(prev);
-      alert(err instanceof Error ? err.message : 'ლექტორის წაშლა ვერ მოხერხდა');
-    }
+// ── Lecturer mutations ──
+const handleDeleteLecturer = async (lecturer: LecturerItem) => {
+  const prev = lecturers;
+  setLecturers((list) => list.filter((l) => l.id !== lecturer.id));
+  try {
+    await adminApi.deleteTeacher({ teacherId: lecturer.userId, userGuid });
+  } catch (err) {
+    setLecturers(prev);
+    alert(err instanceof Error ? err.message : 'ლექტორის წაშლა ვერ მოხერხდა');
+  }
+};
+
+const handleTogglePinLecturer = (id: string) => {
+  setLecturers((list) => list.map((l) => (l.id === id ? { ...l, isPinned: !l.isPinned } : l)));
+};
+
+// Разбивает "Имя Фамилия" на firstName/lastName — так же, как в StudentFormModal
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(' ');
+  return {
+    firstName: parts[0] || '',
+    lastName: parts.slice(1).join(' ') || '',
   };
- 
-  const handleTogglePinLecturer = (id: string) => {
-    // TODO(api): "pinned" isn't persisted anywhere — UI-only for now.
-    setLecturers((list) => list.map((l) => (l.id === id ? { ...l, isPinned: !l.isPinned } : l)));
-  };
- 
-  const handleEditLecturer = (_lecturer: LecturerItem) => {
-    // TODO: no edit form/modal built yet — EditTeacher API is wired in
-    // api/adminapi.ts and ready to call once there's a form to collect input.
-    alert('ლექტორის რედაქტირების ფორმა ჯერ არ არის აწყობილი.');
-  };
- 
+}
+
+const handleAddLecturer = async (data: Partial<LecturerItem> & Record<string, any>) => {
+  setLecturerSubmitting(true);
+  try {
+    const { firstName, lastName } = splitFullName(data.name ?? '');
+    await adminApi.addTeacher({
+      userGuid,
+      firstName,
+      lastName,
+      email: data.email ?? '',
+      telephone: data.phone ?? '',
+      password: data.password ?? '',
+      picture: data.avatarIcon ?? '',
+      isActive: true,
+    } as any); // ← см. примечание про типы ниже
+    await fetchLecturers();
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'ლექტორის დამატება ვერ მოხერხდა');
+  } finally {
+    setLecturerSubmitting(false);
+  }
+};
+
+const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) => {
+  setLecturerSubmitting(true);
+  try {
+    const { firstName, lastName } = splitFullName(lecturer.name ?? '');
+    await adminApi.editTeacher({
+      teacherId: lecturer.userId,
+      userGuid,
+      firstName,
+      lastName,
+      email: lecturer.email ?? '',
+      telephone: lecturer.phone ?? '',
+      picture: lecturer.avatarIcon ?? '',
+      isActive: true,
+    } as any); // ← см. примечание про типы ниже
+    await fetchLecturers();
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'ლექტორის რედაქტირება ვერ მოხერხდა');
+  } finally {
+    setLecturerSubmitting(false);
+  }
+};
+
   // ── Student mutations ──
   const handleDeleteStudent = async (student: StudentItem) => {
     const prev = students;
@@ -222,29 +263,40 @@ export default function AdminDashboardPage() {
       alert(err instanceof Error ? err.message : 'სტუდენტის წაშლა ვერ მოხერხდა');
     }
   };
- 
-  const handleEditStudent = (_student: StudentItem) => {
-    // TODO: no edit form/modal built yet — EditStudent API is wired in
-    // api/adminapi.ts and ready to call once there's a form to collect input.
-    alert('სტუდენტის რედაქტირების ფორმა ჯერ არ არის აწყობილი.');
+
+  const handleOpenEditStudent = (student: StudentItem) => {
+    setStudentModal({ mode: 'edit', student });
   };
- 
-  const handleAddStudent = () => {
-    // TODO(api): AdminController has no addStudent endpoint yet.
-    alert('სტუდენტის დამატება ჯერ შეუძლებელია — backend-ს არ აქვს შესაბამისი endpoint.');
+
+  const handleCloseStudentModal = () => setStudentModal(null);
+
+  const handleSubmitStudentForm = async (values: StudentFormValues) => {
+    setStudentSubmitting(true);
+    try {
+      await adminApi.editStudent({
+        studentId: values.studentId,
+        userGuid,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        telephone: values.telephone,
+        picture: values.picture ?? '',
+        isActive: values.isActive,
+      });
+      setStudentModal(null);
+      await fetchStudents();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'სტუდენტის მონაცემების შენახვა ვერ მოხერხდა');
+    } finally {
+      setStudentSubmitting(false);
+    }
   };
- 
-  const handleAddLecturer = () => {
-    // addTeacher IS wired in api/adminapi.ts — only the form/modal to
-    // collect firstName/lastName/email/telephone/password is missing.
-    alert('ლექტორის დამატების ფორმა ჯერ არ არის აწყობილი (API უკვე მზადაა).');
-  };
- 
+
   // ── Session mutations ──
   const handleOpenAddSession = () => setSessionModal({ mode: 'add' });
   const handleOpenEditSession = (session: SessionItem) => setSessionModal({ mode: 'edit', session });
   const handleCloseSessionModal = () => setSessionModal(null);
- 
+
   const handleSubmitSessionForm = async (values: SessionFormValues) => {
     setSessionSubmitting(true);
     try {
@@ -280,25 +332,24 @@ export default function AdminDashboardPage() {
       setSessionSubmitting(false);
     }
   };
- 
+
   const handleDeleteSession = async (session: SessionItem) => {
     if (!confirm(`წავშალოთ სესია "${session.sessionName}"?`)) return;
     const prev = sessions;
     setSessions((list) => list.filter((s) => s.id !== session.id));
     try {
-      // ASSUMPTION: DeleteSessionRequest shape — see TODO in types.ts.
       await sessionsApi.deleteSession({ sessionId: Number(session.id), userGuid });
     } catch (err) {
       setSessions(prev);
       alert(err instanceof Error ? err.message : 'სესიის წაშლა ვერ მოხერხდა');
     }
   };
- 
+
   // ── Course mutations ──
   const handleOpenAddCourse = () => setCourseModal({ mode: 'add' });
   const handleOpenEditCourse = (course: CourseItem) => setCourseModal({ mode: 'edit', course });
   const handleCloseCourseModal = () => setCourseModal(null);
- 
+
   const handleSubmitCourseForm = async (values: CourseFormValues) => {
     setCourseSubmitting(true);
     try {
@@ -336,12 +387,27 @@ export default function AdminDashboardPage() {
       setCourseSubmitting(false);
     }
   };
- 
-  // ── Combined "users" tab (teachers + students; no admin source yet) ──
-  const combinedUsers: SystemUserItem[] = [...lecturers.map(lecturerToSystemUser), ...students.map(studentToSystemUser)];
+
+  const handleDeleteCourse = async (course: CourseItem) => {
+    if (!confirm(`ნამდვილად გსურთ კურსის "${course.title}" წაშლა?`)) return;
+    const prev = courses;
+    setCourses((list) => list.filter((c) => c.id !== course.id));
+    try {
+      await coursesApi.deleteCourse({ courseId: course.courseId, userGuid });
+    } catch (err) {
+      setCourses(prev);
+      alert(err instanceof Error ? err.message : 'კურსის წაშლა ვერ მოხერხდა');
+    }
+  };
+
+  // ── Combined Users ──
+  const combinedUsers: SystemUserItem[] = [
+    ...lecturers.map(lecturerToSystemUser),
+    ...students.map(studentToSystemUser),
+  ];
   const usersLoading = lecturersLoading || studentsLoading;
   const usersError = lecturersError || studentsError;
- 
+
   const handleDeleteUser = async (user: SystemUserItem) => {
     if (user.id.startsWith('teacher-')) {
       const lecturer = lecturers.find((l) => `teacher-${l.id}` === user.id);
@@ -351,24 +417,23 @@ export default function AdminDashboardPage() {
       if (student) await handleDeleteStudent(student);
     }
   };
- 
-  // ── Categories (local-only — see Coursescategoriestab NOTE) ──
+
+  // ── Categories ──
   const handleAddCategory = (category: string) => setCategories((list) => [...list, category]);
   const handleRemoveCategory = (category: string) => setCategories((list) => list.filter((c) => c !== category));
- 
-  // ── Other local-only sections ──
+
+  // ── Other Local Sections ──
   const handleDeleteProject = (id: string) => setProjects((list) => list.filter((p) => p.id !== id));
   const handleDeleteVideo = (id: string) => setVideos((list) => list.filter((v) => v.id !== id));
   const handleDeleteMedia = (id: string) => setMedia((list) => list.filter((m) => m.id !== id));
- 
+
   const handleSettingsChange = (field: keyof SiteSettings, value: string) =>
     setSiteSettings((prev) => ({ ...prev, [field]: value }));
- 
+
   const handleSaveSettings = () => {
-    // TODO(api): no endpoint to persist site settings yet — this is a no-op.
     alert('პარამეტრები ლოკალურად შეინახა — backend-ს ჯერ არ აქვს შესანახი endpoint.');
   };
- 
+
   const knownTabs: AdminTab[] = [
     'courses_categories',
     'sessions',
@@ -380,11 +445,11 @@ export default function AdminDashboardPage() {
     'media',
     'settings',
   ];
- 
+
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-slate-800">
       <AdminHeader adminName={activeUser?.name} adminEmail={activeUser?.email} />
- 
+
       <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8 -mt-4">
         <AdminSidebar
           activeTab={activeTab}
@@ -403,7 +468,7 @@ export default function AdminDashboardPage() {
             media: media.length,
           }}
         />
- 
+
         <main className="flex-1 space-y-6">
           {activeTab === 'users' && (
             <UsersTab
@@ -418,7 +483,7 @@ export default function AdminDashboardPage() {
               onDelete={handleDeleteUser}
             />
           )}
- 
+
           {activeTab === 'courses_categories' && (
             <CoursesCategoriesTab
               courses={courses}
@@ -431,9 +496,10 @@ export default function AdminDashboardPage() {
               onRemoveCategory={handleRemoveCategory}
               onAdd={handleOpenAddCourse}
               onEdit={handleOpenEditCourse}
+              onDelete={handleDeleteCourse}
             />
           )}
- 
+
           {activeTab === 'sessions' && (
             <SessionsTab
               sessions={sessions}
@@ -446,7 +512,7 @@ export default function AdminDashboardPage() {
               onDelete={handleDeleteSession}
             />
           )}
- 
+
           {activeTab === 'lecturers' && (
             <LecturersTab
               lecturers={lecturers}
@@ -460,7 +526,7 @@ export default function AdminDashboardPage() {
               onTogglePin={handleTogglePinLecturer}
             />
           )}
- 
+
           {activeTab === 'students' && (
             <StudentsTab
               students={students}
@@ -469,25 +535,25 @@ export default function AdminDashboardPage() {
               searchQuery={searchQuery}
               onRetry={fetchStudents}
               onAdd={handleAddStudent}
-              onEdit={handleEditStudent}
+              onEdit={handleOpenEditStudent}
               onDelete={handleDeleteStudent}
             />
           )}
- 
+
           {activeTab === 'projects' && <ProjectsTab projects={projects} onDelete={handleDeleteProject} />}
- 
+
           {activeTab === 'videos' && <VideosTab videos={videos} searchQuery={searchQuery} onDelete={handleDeleteVideo} />}
- 
+
           {activeTab === 'media' && <MediaTab media={media} searchQuery={searchQuery} onDelete={handleDeleteMedia} />}
- 
+
           {activeTab === 'settings' && (
             <SettingsTab settings={siteSettings} onChange={handleSettingsChange} onSave={handleSaveSettings} />
           )}
- 
+
           {!knownTabs.includes(activeTab) && <InProgressTab label={activeTab} />}
         </main>
       </div>
- 
+
       {sessionModal && (
         <SessionFormModal
           mode={sessionModal.mode}
@@ -497,7 +563,7 @@ export default function AdminDashboardPage() {
           onSubmit={handleSubmitSessionForm}
         />
       )}
- 
+
       {courseModal && (
         <CourseFormModal
           mode={courseModal.mode}
@@ -507,7 +573,15 @@ export default function AdminDashboardPage() {
           onSubmit={handleSubmitCourseForm}
         />
       )}
+
+      {studentModal && (
+        <StudentFormModal
+          initial={studentModal.student}
+          submitting={studentSubmitting}
+          onClose={handleCloseStudentModal}
+          onSubmit={handleSubmitStudentForm}
+        />
+      )}
     </div>
   );
 }
- 
