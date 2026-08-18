@@ -6,7 +6,7 @@ import { User, Course, Enrollment, ActiveSession } from '../types';
 import CourseCard from '../components/CourseCard';
 import { mockCategories } from '../data/mockData';
 import { Language, translateCategory } from '../lib/translations';
-import { getHomeActiveSessions } from '../api/courseApi'; // Adjust the import path according to your structure
+import { getHomeActiveSessions } from '../api/sessions'; // Adjust the import path according to your structure
 
 interface CoursesPageProps {
   lang: Language;
