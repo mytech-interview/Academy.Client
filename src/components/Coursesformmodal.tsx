@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { Calendar, X } from 'lucide-react';
 import { CourseItem } from '../types';
 
+export interface CourseCategoryOption {
+  id: number;
+  name: string;
+}
+
 export interface CourseFormValues {
   title: string;
   description: string;
@@ -19,6 +24,7 @@ interface CourseFormModalProps {
   mode: 'add' | 'edit';
   initial?: CourseItem;
   submitting?: boolean;
+  categories: CourseCategoryOption[];
   onClose: () => void;
   onSubmit: (values: CourseFormValues) => void;
 }
@@ -28,20 +34,37 @@ function toDateInputValue(iso?: string): string {
   return iso.slice(0, 10);
 }
 
-export default function CourseFormModal({ mode, initial, submitting, onClose, onSubmit }: CourseFormModalProps) {
+// NOTE: `format`, `city`, `guide` fields were removed — they were never part
+// of CourseFormValues and were never actually submitted anywhere (dead UI).
+// The `lecturer` select was also removed: courses aren't assigned a teacher
+// in AddCourseRequestDto/UpdateCourseRequestDto — teachers get assigned per
+// *session*, not per course (see SessionFormModal / teacherGuid there).
+// If it turns out courses DO need a teacher field, confirm the DTO first —
+// don't re-add a hardcoded list.
+export default function CourseFormModal({
+  mode,
+  initial,
+  submitting,
+  categories,
+  onClose,
+  onSubmit,
+}: CourseFormModalProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
-  const [category, setCategory] = useState(initial?.categoryId ? String(initial.categoryId) : '1');
+  const [category, setCategory] = useState(
+    initial?.categoryId ? String(initial.categoryId) : String(categories[0]?.id ?? '')
+  );
+  // TODO(api): no confirmed CourseEntryLevels lookup table/endpoint seen yet
+  // (unlike Categories, which we verified against the DB). Keeping this as
+  // a manual field until that's confirmed — don't treat these labels as real.
   const [level, setLevel] = useState('1');
-  const [lecturer, setLecturer] = useState('1');
   const [price, setPrice] = useState(initial ? (initial.price === 0 ? 'უფასო' : String(initial.price)) : 'უფასო');
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-12-25');
-  const [format, setFormat] = useState('hybrid');
-  const [city, setCity] = useState('თბილისი');
-  const [status, setStatus] = useState('ongoing');
-  const [guide, setGuide] = useState('აკადემიის LMS პლატფორმის გამოყენების ინსტრუქცია...');
-  const [picture, setPicture] = useState(initial?.pictureUrl ?? 'https://images.unsplash.com/...');
+  const [status, setStatus] = useState(initial?.isActive === false ? 'completed' : 'ongoing');
+  const [picture, setPicture] = useState(
+    initial?.pictureUrl ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,12 +74,17 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
       return;
     }
 
+    if (!category) {
+      alert('აირჩიეთ კატეგორია.');
+      return;
+    }
+
     const parsedPrice = price === 'უფასო' || price === '' ? 0 : Number(price) || 0;
 
     onSubmit({
       title: title.trim(),
       description: description.trim(),
-      courseCategoryId: Number(category) || 1,
+      courseCategoryId: Number(category),
       courseEntryLevelId: Number(level) || 1,
       price: parsedPrice,
       maxStudents: initial?.maxStudents ?? 20,
@@ -67,7 +95,9 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
             picture: picture.trim(),
             isActive: status === 'ongoing',
           }
-        : {}),
+        : {
+            picture: picture.trim(),
+          }),
     });
   };
 
@@ -83,7 +113,7 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
             <p className="text-xs text-slate-400 mt-0.5 font-medium">
               {mode === 'add'
                 ? 'ახალი კურსის ძირითადი ინფორმაციის შევსება'
-                : 'კურსის მონაცემების, თარიღების და სილაბუსის განახლება'}
+                : 'კურსის მონაცემების და თარიღების განახლება'}
             </p>
           </div>
           <button
@@ -120,11 +150,17 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="კატეგორია">
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="styled-input">
-                <option value="1">პროგრამირება</option>
-                <option value="2">დიზაინი</option>
-                <option value="3">მარკეტინგი</option>
-              </select>
+              {categories.length === 0 ? (
+                <p className="text-xs text-slate-400 font-medium py-2">კატეგორიები არ არის ჩატვირთული</p>
+              ) : (
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="styled-input">
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </Field>
 
             <Field label="დონე">
@@ -136,24 +172,15 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="მიჩენილი ლექტორი">
-              <select value={lecturer} onChange={(e) => setLecturer(e.target.value)} className="styled-input">
-                <option value="1">მარიამ ბერიძე (m.beridze@academy.ge)</option>
-                <option value="2">გიორგი გელაშვილი (g.gelashvili@academy.ge)</option>
-              </select>
-            </Field>
-
-            <Field label="ფასი">
-              <input
-                type="text"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="უფასო"
-                className="styled-input"
-              />
-            </Field>
-          </div>
+          <Field label="ფასი">
+            <input
+              type="text"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="უფასო"
+              className="styled-input"
+            />
+          </Field>
 
           {/* Special date box in Edit mode */}
           {mode === 'edit' && (
@@ -165,7 +192,7 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="დაწყების თარიღი (Start Date)">
                   <input
-                    type="text"
+                    type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="styled-input bg-white"
@@ -173,7 +200,7 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
                 </Field>
                 <Field label="დასრულების თარიღი (End Date)">
                   <input
-                    type="text"
+                    type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="styled-input bg-white"
@@ -183,40 +210,11 @@ export default function CourseFormModal({ mode, initial, submitting, onClose, on
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="კურსის ფორმატი">
-              <select value={format} onChange={(e) => setFormat(e.target.value)} className="styled-input">
-                <option value="hybrid">🏢 / 🌐 ჰიბრიდული (Hybrid)</option>
-                <option value="online">🌐 ონლაინ (Online)</option>
-                <option value="offline">🏢 აუდიტორიაში (Offline)</option>
-              </select>
-            </Field>
-
-            <Field label="მდებარეობა / ქალაქი">
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="styled-input"
-              />
-            </Field>
-          </div>
-
-          <Field label="კურსის სტატუსი (დინამიური)">
+          <Field label="კურსის სტატუსი">
             <select value={status} onChange={(e) => setStatus(e.target.value)} className="styled-input">
               <option value="ongoing">🟢 მიმდინარე (Ongoing)</option>
-              <option value="planned">🟡 დაგეგმილი (Planned)</option>
               <option value="completed">🔴 დასრულებული (Completed)</option>
             </select>
-          </Field>
-
-          <Field label="სტუდენტის გზამკვლევი (Process Guide)">
-            <textarea
-              value={guide}
-              onChange={(e) => setGuide(e.target.value)}
-              rows={2}
-              className="styled-input resize-y"
-            />
           </Field>
 
           <Field label="გარეკანის ფოტო (URL)">

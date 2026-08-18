@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { SessionItem } from '../types';
+import { CourseItem, LecturerItem, SessionItem } from '../types';
 
 export interface SessionFormValues {
   courseId: number;
@@ -17,6 +17,8 @@ interface SessionFormModalProps {
   mode: 'add' | 'edit';
   initial?: SessionItem;
   submitting?: boolean;
+  courses: CourseItem[];
+  lecturers: LecturerItem[];
   onClose: () => void;
   onSubmit: (values: SessionFormValues) => void;
 }
@@ -26,12 +28,37 @@ function toDateInputValue(iso?: string): string {
   return iso.slice(0, 10);
 }
 
-export default function SessionFormModal({ mode, initial, submitting, onClose, onSubmit }: SessionFormModalProps) {
-  const [courseId, setCourseId] = useState(initial ? String(initial.courseId ?? 1) : '1');
-  const [teacherGuid, setTeacherGuid] = useState(initial?.teacherGuid ?? '1');
+// NOTE: courses/lecturers must come from real API data (AdminDashboardPage's
+// `courses` / `lecturers` state, already fetched via coursesApi.getAllCourses
+// and adminApi.getAllTeachers) — never hardcode option lists here again,
+// that's exactly what produced the "teachers that don't exist" bug.
+//
+// teacherGuid: needs LecturerItem.userGuid (the real GUID from the Users
+// table), NOT userId. If your LecturerItem/GetAllTeachersResponseDto don't
+// have userGuid yet, this form cannot submit a valid teacherGuid — that's
+// a backend blocker, add userGuid to GetAllTeachersResponseDto first.
+export default function SessionFormModal({
+  mode,
+  initial,
+  submitting,
+  courses,
+  lecturers,
+  onClose,
+  onSubmit,
+}: SessionFormModalProps) {
+  const [courseId, setCourseId] = useState(
+    initial ? String(initial.courseId ?? '') : String(courses[0]?.courseId ?? '')
+  );
+  const [teacherGuid, setTeacherGuid] = useState(
+    initial?.teacherGuid ?? lecturers[0]?.userGuid ?? ''
+  );
   const [weeks, setWeeks] = useState(initial?.weeks ? String(initial.weeks) : '8');
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-11-15');
+  // TODO: no cities/attendance-mode API confirmed yet. Cities table in the
+  // DB currently has only Id=1 თბილისი, Id=2 ახალციხე (per the screenshot) —
+  // hardcoded to match that for now, but this should become a real
+  // getAllCities() call once that endpoint exists, same as courses/lecturers.
   const [cityId, setCityId] = useState(initial?.cityId ? String(initial.cityId) : '1');
   const [attendanceModeId, setAttendanceModeId] = useState(
     initial?.attendanceModeId ? String(initial.attendanceModeId) : '1'
@@ -41,11 +68,16 @@ export default function SessionFormModal({ mode, initial, submitting, onClose, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!courseId || !teacherGuid) {
+      alert('აირჩიეთ კურსი და ლექტორი.');
+      return;
+    }
+
     const parsedWeeks = Math.min(255, Math.max(0, Number(weeks) || 0));
 
     onSubmit({
-      courseId: Number(courseId) || 1,
-      teacherGuid: teacherGuid.trim(),
+      courseId: Number(courseId),
+      teacherGuid,
       weeks: parsedWeeks,
       startDate,
       endDate,
@@ -58,7 +90,6 @@ export default function SessionFormModal({ mode, initial, submitting, onClose, o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
           <h3 className="font-extrabold text-slate-900 text-base">
             {mode === 'add' ? 'ახალი სესიის დამატება' : 'სესიის რედაქტირება'}
@@ -71,33 +102,36 @@ export default function SessionFormModal({ mode, initial, submitting, onClose, o
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4 overflow-y-auto flex-1 text-slate-800">
           <Field label="აირჩიეთ კურსი">
-            <select
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-              className="styled-input"
-            >
-              <option value="1">ვებ დეველოპმენტის სრული კურსი (React & Node.js)</option>
-              <option value="2">UX/UI დიზაინის საფუძვლები Figma-ში</option>
-              <option value="3">ციფრული მარკეტინგი და SEO ოპტიმიზაცია</option>
-            </select>
+            {courses.length === 0 ? (
+              <p className="text-xs text-slate-400 font-medium py-2">კურსები არ არის ჩატვირთული</p>
+            ) : (
+              <select value={courseId} onChange={(e) => setCourseId(e.target.value)} className="styled-input">
+                {courses.map((c) => (
+                  <option key={c.courseId} value={c.courseId}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            )}
             <p className="text-[11px] text-purple-600 font-medium mt-1.5 flex items-center gap-1">
               <span>💡</span> სესიის სახელი ავტომატურად განისაზღვრება არჩეული კურსის მიხედვით.
             </p>
           </Field>
 
           <Field label="მიჩენილი ლექტორი">
-            <select
-              value={teacherGuid}
-              onChange={(e) => setTeacherGuid(e.target.value)}
-              className="styled-input"
-            >
-              <option value="1">მარიამ ბერიძე</option>
-              <option value="2">გიორგი კალანდაძე</option>
-              <option value="3">ნინო შენგელია</option>
-            </select>
+            {lecturers.length === 0 ? (
+              <p className="text-xs text-slate-400 font-medium py-2">ლექტორები არ არის ჩატვირთული</p>
+            ) : (
+              <select value={teacherGuid} onChange={(e) => setTeacherGuid(e.target.value)} className="styled-input">
+                {lecturers.map((l) => (
+                  <option key={l.userGuid} value={l.userGuid}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,8 +181,7 @@ export default function SessionFormModal({ mode, initial, submitting, onClose, o
           <Field label="🏢 ქალაქი (City)">
             <select value={cityId} onChange={(e) => setCityId(e.target.value)} className="styled-input">
               <option value="1">თბილისი</option>
-              <option value="2">ბათუმი</option>
-              <option value="3">ქუთაისი</option>
+              <option value="2">ახალციხე</option>
             </select>
           </Field>
 
@@ -165,7 +198,6 @@ export default function SessionFormModal({ mode, initial, submitting, onClose, o
             </Field>
           )}
 
-          {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"

@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   Star,
-  Trash2,
   X,
 } from 'lucide-react';
 import { CourseItem } from '../types';
@@ -27,6 +26,10 @@ interface CoursesCategoriesTabProps {
   onRemoveCategory: (category: string) => void;
   onAdd: () => void;
   onEdit: (course: CourseItem) => void;
+  // Paused: no deleteCourse endpoint on the backend yet. Kept optional so
+  // AdminDashboardPage can keep passing handleDeleteCourse without a TS
+  // error, but this tab doesn't call it until the endpoint exists.
+  onDelete?: (course: CourseItem) => void | Promise<void>;
 }
 
 function LoadingState({ label }: { label: string }) {
@@ -62,60 +65,11 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-// ── Обновленное модальное окно подтверждения удаления ──
-function DeleteConfirmModal({
-  courseTitle,
-  onClose,
-  onConfirm,
-}: {
-  courseTitle: string;
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95">
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-slate-900 text-sm">წაშლის დადასტურება</h3>
-            <p className="text-xs text-slate-500 mt-0.5">ეს მოქმედება შეუქცევადია.</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed text-center">
-          დარწმუნებული ხართ რომ გსურთ წაშალოთ: <br />
-          <strong className="font-bold text-rose-600">{`"${courseTitle}"`}</strong>?
-        </div>
-
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2 rounded-xl text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition text-slate-700"
-          >
-            გაუქმება
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition flex items-center justify-center gap-1.5 shadow-sm"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> წაშლა
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Обновленное модальное окно прикрепленных уроков ──
+// ── Модальное окно прикрепленных уроков ──
+// NOTE: still fully mock data (sampleLessons below) — courseApi.ts has
+// addCourseLesson/updateCourseLesson wired but no getAllCourseLessons/list
+// endpoint was provided, so this can't be made real yet. Flagging so it's
+// not mistaken for live data.
 function LessonsModal({
   courseTitle,
   onClose,
@@ -219,7 +173,6 @@ export default function CoursesCategoriesTab({
 }: CoursesCategoriesTabProps) {
   const [newCategory, setNewCategory] = useState('');
   const [selectedCourseForLessons, setSelectedCourseForLessons] = useState<CourseItem | null>(null);
-  const [selectedCourseForDelete, setSelectedCourseForDelete] = useState<CourseItem | null>(null);
 
   const filteredCourses = useMemo(() => {
     if (!searchQuery.trim()) return courses;
@@ -327,9 +280,9 @@ export default function CoursesCategoriesTab({
                   alt={c.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 />
-                <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-xl">
-                  პროგრამირება
-                </div>
+                {/* Category badge removed: GetAllCoursesResponseDto doesn't
+                    return courseCategoryId/name yet, so there's no real
+                    data to show here. Re-add once the backend includes it. */}
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-800 text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-sm">
                   {c.price ? `${c.price} ₾` : 'უფასო'}
                 </div>
@@ -347,24 +300,28 @@ export default function CoursesCategoriesTab({
                   <div className="flex items-center justify-between text-[11px]">
                     <div className="flex items-center gap-1.5 text-purple-700 font-bold bg-purple-50 px-2.5 py-1 rounded-xl">
                       <Calendar className="w-3.5 h-3.5" />
-                      <span>{c.startDate ? c.startDate.slice(0, 10) : '15 სექტემბერი'}</span>
+                      <span>{c.startDate ? c.startDate.slice(0, 10) : '—'}</span>
                     </div>
-                    <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
-                      მიმდინარე
+                    <span
+                      className={
+                        c.isActive
+                          ? 'text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100'
+                          : 'text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200'
+                      }
+                    >
+                      {c.isActive ? 'მიმდინარე' : 'დასრულებული'}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-600">
-                        МБ
-                      </div>
-                      <span className="font-semibold text-xs text-slate-700">მარიამ ბერიძე</span>
-                    </div>
+                  {/* Instructor row removed: courses have no assigned
+                      teacher in the API (teachers are assigned per session,
+                      not per course) — "მარიამ ბერიძე" was hardcoded UI text
+                      with no real data source at all. */}
 
+                  <div className="flex items-center justify-end text-xs text-slate-600 pt-1">
                     <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
                       <Star className="w-3.5 h-3.5 fill-amber-400" />
-                      <span>{c.averageReviewMark ? c.averageReviewMark.toFixed(1) : '4.8'}</span>
+                      <span>{c.averageReviewMark != null ? c.averageReviewMark.toFixed(1) : '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -373,11 +330,11 @@ export default function CoursesCategoriesTab({
                 <div className="grid grid-cols-2 gap-2 text-center text-xs">
                   <div className="bg-purple-50/60 border border-purple-100/80 p-2 rounded-xl">
                     <span className="block text-[10px] text-purple-600 font-semibold">გაკვეთილები</span>
-                    <span className="font-extrabold text-purple-700">{c.lessonsAmount ?? 5}</span>
+                    <span className="font-extrabold text-purple-700">{c.lessonsAmount ?? 0}</span>
                   </div>
                   <div className="bg-emerald-50/60 border border-emerald-100/80 p-2 rounded-xl">
                     <span className="block text-[10px] text-emerald-600 font-semibold">სტუდენტები</span>
-                    <span className="font-extrabold text-emerald-700">{c.enrolledStudentsAmount ?? 143}</span>
+                    <span className="font-extrabold text-emerald-700">{c.enrolledStudentsAmount ?? 0}</span>
                   </div>
                 </div>
 
@@ -397,13 +354,6 @@ export default function CoursesCategoriesTab({
                     <Pencil className="w-3.5 h-3.5" />
                     რედაქტირება
                   </button>
-                  <button
-                    onClick={() => setSelectedCourseForDelete(c)}
-                    title="წაშლა"
-                    className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             </div>
@@ -419,15 +369,9 @@ export default function CoursesCategoriesTab({
         />
       )}
 
-      {selectedCourseForDelete && (
-        <DeleteConfirmModal
-          courseTitle={selectedCourseForDelete.title}
-          onClose={() => setSelectedCourseForDelete(null)}
-          onConfirm={() => {
-            setSelectedCourseForDelete(null);
-          }}
-        />
-      )}
+      {/* Delete flow paused: no deleteCourse endpoint on the backend yet.
+          Re-enable selectedCourseForDelete + DeleteConfirmModal once
+          coursesApi.deleteCourse exists. */}
     </>
   );
 }

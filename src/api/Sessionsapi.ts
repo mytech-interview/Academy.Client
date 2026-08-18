@@ -13,7 +13,7 @@ import {
 // `err`-based convention used by the separate CoreApi sessions.ts file.
 const API_BASE_URL = 'https://localhost:5188/api';
 
-async function apiFetch<T>(path: string, body: unknown): Promise<T> {
+async function apiFetch<T extends BaseResponseDto>(path: string, body: unknown): Promise<T> {
   const token = localStorage.getItem('academy_token');
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -37,7 +37,18 @@ async function apiFetch<T>(path: string, body: unknown): Promise<T> {
   }
 
   const text = await response.text();
-  return (text ? JSON.parse(text) : null) as T;
+  const data = (text ? JSON.parse(text) : null) as T;
+
+  // Body can be 200 OK but still carry a backend error via errorCode/errMsg
+  // (that's what BaseResponseDto is for), so HTTP success alone doesn't mean
+  // the operation actually succeeded. This is very likely why "session
+  // не добавляются" showed no visible error before — the promise resolved
+  // fine, fetchSessions() ran, but the row was never actually created.
+  if (data && data.errorCode) {
+    throw new Error(data.errMsg || `Request to ${path} returned errorCode ${data.errorCode}`);
+  }
+
+  return data;
 }
 
 export function addSession(payload: AddSessionRequestDto): Promise<BaseResponseDto> {

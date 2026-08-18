@@ -16,8 +16,8 @@ import VideosTab from '../components/Videostab';
 import SettingsTab from '../components/Settingstab';
 import InProgressTab from '../components/Inprogresstab';
 import SessionFormModal, { SessionFormValues } from '../components/Sessionformmodal';
-import CourseFormModal, { CourseFormValues } from '../components/Coursesformmodal';
 import StudentFormModal, { StudentFormValues } from '../components/StudentFormModal';
+import CourseFormModal, { CourseFormValues, CourseCategoryOption } from '../components/Coursesformmodal';
 import {
   AdminTab,
   CourseItem,
@@ -105,6 +105,11 @@ export default function AdminDashboardPage() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(EMPTY_SETTINGS);
+  const TEMP_COURSE_CATEGORIES: CourseCategoryOption[] = [
+  { id: 1, name: 'პროგრამირება' },
+  { id: 2, name: 'დიზაინი' },
+  { id: 3, name: 'ბიზნესი და მარკეტინგი' },
+];
 
   const fetchLecturers = useCallback(async () => {
     setLecturersLoading(true);
@@ -496,7 +501,7 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
               onRemoveCategory={handleRemoveCategory}
               onAdd={handleOpenAddCourse}
               onEdit={handleOpenEditCourse}
-              onDelete={handleDeleteCourse}
+              // onDelete={handleDeleteCourse}
             />
           )}
 
@@ -556,23 +561,26 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
 
       {sessionModal && (
         <SessionFormModal
-          mode={sessionModal.mode}
-          initial={sessionModal.mode === 'edit' ? sessionModal.session : undefined}
-          submitting={sessionSubmitting}
-          onClose={handleCloseSessionModal}
-          onSubmit={handleSubmitSessionForm}
-        />
+  mode={sessionModal.mode}
+  initial={sessionModal.mode === 'edit' ? sessionModal.session : undefined}
+  submitting={sessionSubmitting}
+  courses={courses}
+  lecturers={lecturers}
+  onClose={handleCloseSessionModal}
+  onSubmit={handleSubmitSessionForm}
+/>
       )}
 
-      {courseModal && (
-        <CourseFormModal
-          mode={courseModal.mode}
-          initial={courseModal.mode === 'edit' ? courseModal.course : undefined}
-          submitting={courseSubmitting}
-          onClose={handleCloseCourseModal}
-          onSubmit={handleSubmitCourseForm}
-        />
-      )}
+{courseModal && (
+  <CourseFormModal
+    mode={courseModal.mode}
+    initial={courseModal.mode === 'edit' ? courseModal.course : undefined}
+    submitting={courseSubmitting}
+    categories={TEMP_COURSE_CATEGORIES}
+    onClose={handleCloseCourseModal}
+    onSubmit={handleSubmitCourseForm}
+  />
+)}
 
       {studentModal && (
         <StudentFormModal
