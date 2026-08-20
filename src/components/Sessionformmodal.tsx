@@ -49,9 +49,9 @@ export default function SessionFormModal({
   const [courseId, setCourseId] = useState(
     initial ? String(initial.courseId ?? '') : String(courses[0]?.courseId ?? '')
   );
-    const [teacherId, setTeacherId] = useState(
-    initial?.teacherId ? String(initial.teacherId) : String(lecturers[0]?.userId ?? '')
-  );
+const [teacherId, setTeacherId] = useState(
+  initial ? String(initial.teacherId ?? '') : String(lecturers[0]?.userId ?? '')
+);
   const [weeks, setWeeks] = useState(initial?.weeks ? String(initial.weeks) : '8');
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-11-15');

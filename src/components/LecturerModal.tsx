@@ -21,9 +21,9 @@ export default function LecturerModal({
     password: '',
     phone: '+995 ',
     role: 'Teacher / Lecturer',
-    isLeadMentor: false,
-    title: 'აკადემიის ლექტორი',
-    bio: '',
+    // isLeadMentor: false,
+    // title: 'აკადემიის ლექტორი',
+    // bio: '',
     avatarBg: 'bg-purple-600',
     avatarIcon: '🎓',
   });
@@ -163,7 +163,7 @@ export default function LecturerModal({
           </div>
 
           {/* Role Select */}
-          <div className="space-y-1.5">
+          {/* <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               როლი
             </label>
@@ -176,10 +176,10 @@ export default function LecturerModal({
               <option value="Senior Lecturer">Senior Lecturer</option>
               <option value="Assistant">Assistant</option>
             </select>
-          </div>
+          </div> */}
 
           {/* Lead Mentor Status Checkbox Box */}
-          <label className="flex items-center gap-2.5 p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-2xl cursor-pointer select-none transition hover:bg-amber-50">
+          {/* <label className="flex items-center gap-2.5 p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-2xl cursor-pointer select-none transition hover:bg-amber-50">
             <input
               type="checkbox"
               checked={formData.isLeadMentor}
@@ -190,10 +190,10 @@ export default function LecturerModal({
               <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
               წამყვანი მენტორის (Lead Mentor) სტატუსი
             </span>
-          </label>
+          </label> */}
 
           {/* Title / Profession */}
-          <div className="space-y-1.5">
+          {/* <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               სათაური / პროფესია
             </label>
@@ -204,10 +204,10 @@ export default function LecturerModal({
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300"
             />
-          </div>
+          </div> */}
 
           {/* Bio */}
-          <div className="space-y-1.5">
+          {/* <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               ბიოგრაფია / გამოცდილება
             </label>
@@ -218,7 +218,7 @@ export default function LecturerModal({
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300 resize-none"
             />
-          </div>
+          </div> */}
 
           {/* Avatar / Photo selection section */}
           <div className="space-y-2 pt-1">

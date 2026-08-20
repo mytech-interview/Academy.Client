@@ -35,6 +35,25 @@ export default function StudentsTab({
         st.phone.toLowerCase().includes(q)
     );
   }, [students, searchQuery]);
+  
+  function isImageUrl(value: string): boolean {
+  return /^https?:\/\//.test(value) || value.startsWith('data:image');
+}
+
+function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
+  if (value && isImageUrl(value)) {
+    return (
+      <div className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center`}>
+        <img src={value} alt="avatar" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm`}>
+      {value || '🎓'}
+    </div>
+  );
+}
 
   return (
     <>
@@ -72,11 +91,7 @@ export default function StudentsTab({
               className="bg-white rounded-[2rem] p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition"
             >
               <div className="flex items-start gap-4">
-                <div
-                  className={`w-14 h-14 rounded-2xl ${st.avatarBg} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm`}
-                >
-                  {st.avatarIcon}
-                </div>
+                <AvatarDisplay value={st.avatarIcon} bgClass={st.avatarBg} />
                 <div className="min-w-0">
                   <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase">
                     STUDENT

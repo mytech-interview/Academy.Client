@@ -25,6 +25,24 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
         u.role.toLowerCase().includes(q)
     );
   }, [users, searchQuery]);
+  function isImageUrl(value: string): boolean {
+  return /^https?:\/\//.test(value) || value.startsWith('data:image');
+}
+
+function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
+  if (value && isImageUrl(value)) {
+    return (
+      <div className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center`}>
+        <img src={value} alt="avatar" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm`}>
+      {value || '🎓'}
+    </div>
+  );
+}
 
   return (
     <div className="bg-white rounded-[2rem] p-6 border border-slate-200/80 shadow-sm space-y-6">
@@ -55,11 +73,7 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
                   <tr key={u.id} className="hover:bg-slate-50/80 transition">
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <div
-                          className={`w-11 h-11 rounded-2xl ${u.avatarBg} text-white text-xl flex items-center justify-center shrink-0 shadow-sm`}
-                        >
-                          {u.avatarIcon}
-                        </div>
+                        <AvatarDisplay value={u.avatarIcon} bgClass={u.avatarBg} />
                         <div className="min-w-0">
                           <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
                           <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{u.subText}</p>

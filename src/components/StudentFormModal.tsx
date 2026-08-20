@@ -37,6 +37,7 @@ export default function StudentFormModal({
   const [title, setTitle] = useState('');
   const [bio, setBio] = useState('');
   const [picture, setPicture] = useState('');
+  
 
   useEffect(() => {
     if (initial) {
@@ -88,6 +89,7 @@ export default function StudentFormModal({
       isActive: true,
     });
   };
+  
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
@@ -136,7 +138,7 @@ export default function StudentFormModal({
           </div>
 
           {/* პაროლი */}
-          <div>
+          {/* <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-amber-500" />
@@ -160,7 +162,7 @@ export default function StudentFormModal({
             <p className="text-[10px] text-slate-400 font-medium mt-1">
               ლექტორს/სტუდენტს შეეძლება ამ პაროლით სისტემაში ავტორიზაცია.
             </p>
-          </div>
+          </div> */}
 
           {/* ტელეფონი */}
           <div>
@@ -177,7 +179,7 @@ export default function StudentFormModal({
           </div>
 
           {/* როლი */}
-          <div>
+          {/* <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               როლი
             </label>
@@ -190,10 +192,10 @@ export default function StudentFormModal({
               <option value="Teacher">Teacher</option>
               <option value="Admin">Admin</option>
             </select>
-          </div>
+          </div> */}
 
           {/* სათაური / პროფესია */}
-          <div>
+          {/* <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               სათაური / პროფესია
             </label>
@@ -204,7 +206,7 @@ export default function StudentFormModal({
               placeholder="სტუდენტი - UI/UX Design"
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
             />
-          </div>
+          </div> */}
 
           {/* ბიოგრაფია */}
           <div>

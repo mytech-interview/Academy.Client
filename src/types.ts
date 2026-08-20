@@ -193,10 +193,12 @@ export interface SessionItem {
   maxStudents: number;
   instructor: string;
   teacherGuid: string;
+  teacherId: number;
   lessonDaysDescription: string | null;
   schedule: string;
   location: string;
   isActive: boolean;
+  weeks: number;
   startDate: string;
   endDate: string;
 }
@@ -319,6 +321,7 @@ export interface GetAllSessionsResponseDto {
   courseId: number;
   courseTitle: string;
   teacherGuid: string;
+  teacherId: number;
   teacherFirstName: string;
   teacherLastName: string;
   weeks: number;
@@ -462,15 +465,15 @@ export function mapTeacherToLecturer(dto: GetAllTeachersResponseDto): LecturerIt
     userId: dto.userId,
     userGuid: dto.userGuid,
     name: `${dto.firstName} ${dto.lastName}`.trim(),
-    role: '', // TODO(api): backend has no lecturer title/specialty field yet
+    role: '',
     email: dto.email,
     phone: dto.telephone,
-    bio: '', // TODO(api): backend has no lecturer bio field yet
+    bio: '',
     picture: dto.picture,
     avatarBg: avatarColorFor(dto.userId),
-    avatarIcon: '🤖',
+    avatarIcon: dto.picture || '🎓', 
     isActive: dto.isActive,
-    isPinned: false, // TODO(api): "pinned" is UI-only right now, not persisted
+    isPinned: false,
   };
 }
 
@@ -479,12 +482,12 @@ export function mapStudentToStudentItem(dto: GetAllStudentsResponseDto): Student
     id: String(dto.userId),
     userId: dto.userId,
     name: `${dto.firstName} ${dto.lastName}`.trim(),
-    role: '', // TODO(api): backend has no student track/program field yet
+    role: '',
     email: dto.email,
     phone: dto.telephone,
     picture: dto.picture,
     avatarBg: avatarColorFor(dto.userId),
-    avatarIcon: '🤖',
+    avatarIcon: dto.picture || '🎓', // ← было: '🤖'
     isActive: dto.isActive,
   };
 }
@@ -498,9 +501,11 @@ export function mapSessionDtoToSessionItem(dto: GetAllSessionsResponseDto): Sess
     currentStudents: 0, // TODO(api)
     maxStudents: 0, // TODO(api)
     instructor: `${dto.teacherFirstName} ${dto.teacherLastName}`.trim(),
+    teacherId: dto.teacherId,  
     teacherGuid: dto.teacherGuid,
     schedule: dto.lessonDaysDescription || '',
     lessonDaysDescription: dto.lessonDaysDescription,
+    weeks: dto.weeks,
     location: dto.cityName
       ? `${dto.cityName}${dto.attendanceModeName ? ' · ' + dto.attendanceModeName : ''}`
       : '',
