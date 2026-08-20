@@ -5,7 +5,7 @@ import {
   GetAllSessionsResponseDto,
   GetAllStudentsResponseDto,
   GetAllTeachersResponseDto,
-} from '../components/admin/types';
+} from '../types';
 
 // Same host/convention as sessions.ts — includes /api, so call sites below
 // only add the controller-relative path (e.g. "/admin/getAllTeachers").
@@ -55,7 +55,7 @@ export interface GetAllTeachersRequest {
 
 export function getAllTeachers(
   payload: GetAllTeachersRequest
-): Promise<{ lessons: GetAllTeachersResponseDto[] } & BaseResponseDto> {
+): Promise<{ teachers: GetAllTeachersResponseDto[] } & BaseResponseDto> {
   return apiFetch('/admin/getAllTeachers', payload);
 }
 

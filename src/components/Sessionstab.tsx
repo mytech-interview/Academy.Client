@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Calendar, Clock, MapPin, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { AlertTriangle, Calendar, Clock, MapPin, Pencil, Plus, Trash2, User, Users } from 'lucide-react';
 import { SessionItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 
@@ -113,18 +113,18 @@ export default function SessionsTab({
               {/* Session Details */}
               <div className="space-y-2 text-xs font-semibold text-slate-600">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-xs shrink-0">
-                    🐸
-                  </span>
-                  <span>
-                    მიჩენილი ლექტორი: <strong className="text-slate-800">{s.instructor || '—'}</strong>
-                  </span>
+                 <User className="w-4 h-4 text-emerald-600 shrink-0" />
+  <span>
+    მიჩენილი ლექტორი: <strong className="text-slate-800">{s.instructor || '—'}</strong>
+  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>
-                    განრიგი: <strong className="text-slate-700">{s.schedule || '—'}</strong>
-                  </span>
+                  {/* <div className="flex items-center gap-2">
+  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+  <span>
+    განრიგი: <strong className="text-slate-700">{s.lessonDaysDescription || '—'}</strong>
+  </span>
+</div> */}
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />

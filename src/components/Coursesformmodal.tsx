@@ -8,6 +8,7 @@ export interface CourseCategoryOption {
 }
 
 export interface CourseFormValues {
+  courseId?: number; // нужен для update — без него бэкенд не знает, какой курс редактировать
   title: string;
   description: string;
   courseCategoryId: number;
@@ -59,6 +60,9 @@ export default function CourseFormModal({
   // a manual field until that's confirmed — don't treat these labels as real.
   const [level, setLevel] = useState('1');
   const [price, setPrice] = useState(initial ? (initial.price === 0 ? 'უფასო' : String(initial.price)) : 'უფასო');
+  const [maxStudents, setMaxStudents] = useState(
+    initial?.maxStudents != null ? String(initial.maxStudents) : '20'
+  );
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-12-25');
   const [status, setStatus] = useState(initial?.isActive === false ? 'completed' : 'ongoing');
@@ -80,14 +84,16 @@ export default function CourseFormModal({
     }
 
     const parsedPrice = price === 'უფასო' || price === '' ? 0 : Number(price) || 0;
+    const parsedMaxStudents = Number(maxStudents) || 0;
 
     onSubmit({
+      ...(mode === 'edit' && initial ? { courseId: initial.id } : {}),
       title: title.trim(),
       description: description.trim(),
       courseCategoryId: Number(category),
       courseEntryLevelId: Number(level) || 1,
       price: parsedPrice,
-      maxStudents: initial?.maxStudents ?? 20,
+      maxStudents: parsedMaxStudents,
       ...(mode === 'edit'
         ? {
             startDate,
@@ -172,15 +178,28 @@ export default function CourseFormModal({
             </Field>
           </div>
 
-          <Field label="ფასი">
-            <input
-              type="text"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="უფასო"
-              className="styled-input"
-            />
-          </Field>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="ფასი">
+              <input
+                type="text"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="უფასო"
+                className="styled-input"
+              />
+            </Field>
+
+            <Field label="სტუდენტების მაქსიმალური რაოდენობა">
+              <input
+                type="number"
+                min={0}
+                value={maxStudents}
+                onChange={(e) => setMaxStudents(e.target.value)}
+                placeholder="20"
+                className="styled-input"
+              />
+            </Field>
+          </div>
 
           {/* Special date box in Edit mode */}
           {mode === 'edit' && (

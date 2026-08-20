@@ -5,7 +5,7 @@ import {
   GetAllStudentsOfSpecificSessionRequestDto,
   GetAllStudentsOfSpecificSessionResponseDto,
   UpdateSessionRequestDto,
-} from '../components/admin/types';
+} from '../types';
 
 // Same host/convention as adminApi.ts — these entities live in
 // Academy.Api.Entities.Sessions and extend the same BaseResponse

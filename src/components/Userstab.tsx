@@ -33,10 +33,6 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
         <p className="text-xs text-slate-400 mt-1">
           სისტემის ყველა რეგისტრირებული მომხმარებელი შესაბამისი როლებითა და მოქმედებებით
         </p>
-        <p className="text-[11px] text-amber-600 mt-1">
-          ეს ცხრილი აერთიანებს ლექტორებსა და სტუდენტებს. ADMIN როლის მომხმარებლები ჯერ არ ჩანს — backend-ს ჯერ არ
-          აქვს ცალკე admin-ების endpoint (იხ. მესიჯი ჩატში).
-        </p>
       </div>
 
       {loading && <LoadingState label="მომხმარებლები იტვირთება..." />}
@@ -50,7 +46,7 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
                 <th className="py-3 px-4">ელ-ფოსტა</th>
                 <th className="py-3 px-4">ტელეფონის ნომერი</th>
                 <th className="py-3 px-4">როლი</th>
-                <th className="py-3 px-4 text-center">მოქმედება</th>
+                {/* <th className="py-3 px-4 text-center">მოქმედება</th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -92,7 +88,7 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
                       )}
                     </td>
 
-                    <td className="py-4 px-4">
+                    {/* <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition flex items-center justify-center"
@@ -108,7 +104,7 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               ) : (

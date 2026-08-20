@@ -96,9 +96,7 @@ export function updateCourse(payload: UpdateCourseRequestDto): Promise<BaseRespo
 // TODO(api): no deleteCourse endpoint exists yet — the delete button in the
 // UI is disabled until one is added.
 
-// ── Course lessons ──────────────────────────────────────────────────────
-// Wired but no admin form built yet (see chat) — call these once there's a
-// lesson editor UI.
+
 
 export interface AddCourseLessonRequestDto {
   courseId: number;
@@ -117,6 +115,25 @@ export interface UpdateCourseLessonRequestDto {
   description: string;
   userGuid: string;
   title: string;
+  lessonNumber: number;
+}// ── Course lessons: fetch ───────────────────────────────────────────────
+
+export interface GetAllCourseLessonsRequest {
+  userGuid: string;
+  courseId: number;
+}
+
+export interface GetAllCourseLessonsResponseDto {
+  courseLessonId: number;
+  lessonNumber: number;
+  lessonTitle: string;
+  description: string;
+}
+
+export function getAllCourseLessons(
+  payload: GetAllCourseLessonsRequest
+): Promise<{ courseLessons: GetAllCourseLessonsResponseDto[] } & BaseResponseDto> {
+  return apiFetch('/courses/getAllCourseLessons', payload);
 }
 
 export function updateCourseLesson(payload: UpdateCourseLessonRequestDto): Promise<BaseResponseDto> {

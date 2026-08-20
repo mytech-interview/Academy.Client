@@ -43,13 +43,13 @@ export default function StudentsTab({
           <h2 className="text-base font-black text-slate-800">სტუდენტების მართვა</h2>
           <p className="text-xs text-slate-400 mt-0.5">სტუდენტთა სია, პროფილების განახლება</p>
         </div>
-        <button
+        {/* <button
           onClick={onAdd}
           title="ეს ღილაკი ჯერ არააქტიურია — იხ. მესიჯი ჩატში"
           className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition"
         >
           <Plus className="w-4 h-4" /> ახალი სტუდენტის დამატება
-        </button>
+        </button> */}
       </div>
 
       {loading && <LoadingState label="სტუდენტები იტვირთება..." />}
@@ -106,13 +106,13 @@ export default function StudentsTab({
                 >
                   <Pencil className="w-3.5 h-3.5" /> სტუდენტის რედაქტირება
                 </button>
-                <button
+                {/* <button
                   onClick={() => onDelete(st)}
                   className="bg-rose-50 hover:bg-rose-100 text-rose-500 p-2.5 rounded-xl transition flex items-center justify-center"
                   title="წაშლა"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </button> */}
               </div>
             </div>
           ))}

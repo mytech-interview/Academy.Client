@@ -141,214 +141,6 @@ export interface EditStudentRequest {
   telephone: string;
   userGuid: string;
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// UI VIEW-MODELS
-// These are the shapes the components render. They stay stable even if the
-// underlying API DTOs change — only the mapper functions below need updates.
-// ─────────────────────────────────────────────────────────────────────────
-
-export type AdminTab =
-  | 'courses_categories'
-  | 'sessions'
-  | 'lecturers'
-  | 'students'
-  | 'users'
-  | 'projects'
-  | 'videos'
-  | 'gallery'
-  | 'media'
-  | 'settings';
-
-export interface CourseItem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  price: string;
-  image: string;
-  startDate: string;
-  status: 'active' | 'upcoming' | 'postponed';
-  statusText: string;
-  instructor: string;
-  rating: number;
-}
-
-export interface SessionItem {
-  id: string;
-  courseId: number;
-  courseTitle: string;
-  sessionName: string;
-  currentStudents: number;
-  maxStudents: number;
-  instructor: string;
-  teacherGuid: string;
-  schedule: string;
-  location: string;
-  isActive: boolean;
-  startDate: string;
-  endDate: string;
-}
-
-export interface LecturerItem {
-  id: string;
-  userId: number;
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  bio: string;
-  picture: string;
-  avatarBg: string;
-  avatarIcon: string;
-  isActive: boolean;
-  isPinned?: boolean;
-}
-
-export interface StudentItem {
-  id: string;
-  userId: number;
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  picture: string;
-  avatarBg: string;
-  avatarIcon: string;
-  isActive: boolean;
-}
-
-export interface ProjectItem {
-  id: string;
-  title: string;
-  author: string;
-  image: string;
-}
-
-export interface VideoItem {
-  id: string;
-  category: string;
-  title: string;
-  instructor: string;
-  image: string;
-  duration: string;
-}
-
-export interface MediaItem {
-  id: string;
-  type: 'PDF' | 'DOC' | 'BOOK';
-  size: string;
-  title: string;
-  description: string;
-  category: string;
-  date: string;
-}
-
-export interface SystemUserItem {
-  id: string;
-  name: string;
-  subText: string;
-  email: string;
-  phone: string;
-  role: 'TEACHER' | 'STUDENT' | 'ADMIN';
-  avatarBg: string;
-  avatarIcon: string;
-}
-
-export interface SiteSettings {
-  studentsCount: string;
-  lecturersCount: string;
-  branchesCount: string;
-  countriesCount: string;
-  graduatesCount: string;
-  promoTitle: string;
-  promoPrice: string;
-  phone: string;
-  email: string;
-  address: string;
-  workHours: string;
-  aboutTitle: string;
-  aboutDescription: string;
-  videoUrl: string;
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// API DTOs — mirror the C# entities in Academy.Api.Entities.Admin exactly.
-// ─────────────────────────────────────────────────────────────────────────
-
-export interface BaseResponseDto {
-  errorCode?: string | null;
-  errMsg?: string | null;
-}
-
-export interface GetAllTeachersResponseDto {
-  userId: number;
-  isActive: boolean;
-  firstName: string;
-  lastName: string;
-  email: string;
-  telephone: string;
-  picture: string;
-}
-
-export interface GetAllStudentsResponseDto {
-  userId: number;
-  isActive: boolean;
-  firstName: string;
-  lastName: string;
-  email: string;
-  telephone: string;
-  picture: string;
-}
-
-export interface GetAllSessionsResponseDto {
-  sessionId: number;
-  courseId: number;
-  courseTitle: string;
-  teacherGuid: string;
-  teacherFirstName: string;
-  teacherLastName: string;
-  weeks: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  cityId: number;
-  attendanceModeId: number;
-  lessonDaysDescription: string;
-}
-
-export interface AddTeacherRequestDto {
-  userGuid: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  telephone: string;
-  picture: string;
-  password: string;
-}
-
-export interface EditTeacherRequestDto {
-  teacherId: number;
-  userGuid: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  telephone: string;
-  picture: string;
-  isActive: boolean;
-}
-
-export interface EditStudentRequestDto {
-  studentId: number;
-  userGuid: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  telephone: string;
-  picture: string;
-  isActive: boolean;
-}
-
 // ─────────────────────────────────────────────────────────────────────────
 // Mappers: API DTO → UI view-model
 //
@@ -401,6 +193,7 @@ export interface SessionItem {
   maxStudents: number;
   instructor: string;
   teacherGuid: string;
+  lessonDaysDescription: string | null;
   schedule: string;
   location: string;
   isActive: boolean;
@@ -411,6 +204,7 @@ export interface SessionItem {
 export interface LecturerItem {
   id: string;
   userId: number;
+  userGuid: string;
   name: string;
   role: string;
   email: string;
@@ -501,6 +295,7 @@ export interface BaseResponseDto {
 
 export interface GetAllTeachersResponseDto {
   userId: number;
+  userGuid: string;
   isActive: boolean;
   firstName: string;
   lastName: string;
@@ -573,6 +368,7 @@ export interface AddSessionRequestDto {
   weeks: number;
   startDate: string; // ISO date
   endDate: string; // ISO date
+  lessonDaysDescription: string | null;
   cityId: number;
   attendanceModeId: number;
 }
@@ -588,6 +384,7 @@ export interface UpdateSessionRequestDto {
   isActive: boolean;
   userGuid: string;
   attendanceModeId: number;
+   lessonDaysDescription: string | null;
 }
 
 // ASSUMPTION: DeleteSessionRequest wasn't provided — mirrors the
@@ -663,6 +460,7 @@ export function mapTeacherToLecturer(dto: GetAllTeachersResponseDto): LecturerIt
   return {
     id: String(dto.userId),
     userId: dto.userId,
+    userGuid: dto.userGuid,
     name: `${dto.firstName} ${dto.lastName}`.trim(),
     role: '', // TODO(api): backend has no lecturer title/specialty field yet
     email: dto.email,
@@ -696,13 +494,16 @@ export function mapSessionDtoToSessionItem(dto: GetAllSessionsResponseDto): Sess
     id: String(dto.sessionId),
     courseId: dto.courseId,
     courseTitle: dto.courseTitle,
-    sessionName: dto.lessonDaysDescription || `სესია #${dto.sessionId}`,
-    currentStudents: 0, // TODO(api): backend doesn't return enrolled-count yet
-    maxStudents: 0, // TODO(api): backend doesn't return capacity yet
+    sessionName: dto.lessonDaysDescription, // было: сюда мог попасть lessonDaysDescription
+    currentStudents: 0, // TODO(api)
+    maxStudents: 0, // TODO(api)
     instructor: `${dto.teacherFirstName} ${dto.teacherLastName}`.trim(),
     teacherGuid: dto.teacherGuid,
-    schedule: dto.lessonDaysDescription,
-    location: '', // TODO(api): backend doesn't return room/location yet (only cityId/attendanceModeId)
+    schedule: dto.lessonDaysDescription || '',
+    lessonDaysDescription: dto.lessonDaysDescription,
+    location: dto.cityName
+      ? `${dto.cityName}${dto.attendanceModeName ? ' · ' + dto.attendanceModeName : ''}`
+      : '',
     isActive: dto.isActive,
     startDate: dto.startDate,
     endDate: dto.endDate,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   AlertTriangle,
   BookOpen,
@@ -14,6 +14,12 @@ import {
   X,
 } from 'lucide-react';
 import { CourseItem } from '../types';
+import {
+  getAllCourseLessons,
+  addCourseLesson,
+  updateCourseLesson,
+  GetAllCourseLessonsResponseDto,
+} from '../api/Coursesapi';
 
 interface CoursesCategoriesTabProps {
   courses: CourseItem[];
@@ -21,6 +27,7 @@ interface CoursesCategoriesTabProps {
   error: string | null;
   categories: string[];
   searchQuery: string;
+  userGuid: string;
   onRetry: () => void;
   onAddCategory: (category: string) => void;
   onRemoveCategory: (category: string) => void;
@@ -66,25 +73,184 @@ function EmptyState({ message }: { message: string }) {
 }
 
 // ── Модальное окно прикрепленных уроков ──
-// NOTE: still fully mock data (sampleLessons below) — courseApi.ts has
-// addCourseLesson/updateCourseLesson wired but no getAllCourseLessons/list
-// endpoint was provided, so this can't be made real yet. Flagging so it's
-// not mistaken for live data.
+// Now wired to the real getAllCourseLessons endpoint. "Selected" checkbox
+// state below is still local/UI-only — there's no addCourseLesson-to-course
+// "attach" concept confirmed on the backend, so checking a box doesn't
+// persist anywhere yet. Wire it up once that flow exists.
+//
+// Editing is now wired to updateCourseLesson: clicking the pencil icon on a
+// lesson row swaps that row for an inline form (same styling as the "add
+// lesson" form) instead of opening a separate nested modal.
+//
+// lessonNumber is now an editable field in both the add and edit forms
+// (pre-filled with a sensible default: next number for add, current
+// number for edit) so the sequence/order of lessons can be controlled
+// manually instead of always being auto-appended.
 function LessonsModal({
-  courseTitle,
+  course,
+  userGuid,
   onClose,
 }: {
-  courseTitle: string;
+  course: CourseItem;
+  userGuid: string;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
+  const [lessons, setLessons] = useState<GetAllCourseLessonsResponseDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const sampleLessons = [
-    { id: '1', title: 'გაკვეთილი #1: HTML5 & CSS3 სემანტიკა და Flexbox', desc: 'სემანტიკური ტეგები, flexbox განლაგება და responsive დიზაინი.', duration: 'ვიდეო (45 წთ)', checked: true },
-    { id: '2', title: 'გაკვეთილი #2: JavaScript ES6+ Async/Await და API Calls', desc: 'Promises, Async/Await, Fetch API და მონაცემების დამუშავება.', duration: 'ვიდეო (60 წთ)', checked: true },
-    { id: '3', title: 'გაკვეთილი #3: React.js Component Architecture & Hooks', desc: 'useState, useEffect, custom hooks და კომპონენტების ოპტიმიზაცია.', duration: 'ვიდეო (50 წთ)', checked: true },
-    { id: '4', title: 'გაკვეთილი #4: State Management & Context API', desc: 'გლობალური მდგომარეობის მართვა პროექტში.', duration: 'სტატია (40 წთ)', checked: false },
-  ];
+  // ── Add-lesson form state ──
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newLessonNumber, setNewLessonNumber] = useState<number>(1);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  // ── Edit-lesson form state ──
+  const [editingLessonId, setEditingLessonId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLessonNumber, setEditLessonNumber] = useState<number>(1);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const fetchLessons = () => {
+    setLoading(true);
+    setError(null);
+
+    return getAllCourseLessons({ userGuid, courseId: course.id })
+      .then((res) => {
+        // NOTE: backend currently returns an errorCode when the course
+        // simply has zero lessons (empty-result-as-error), instead of
+        // ErrorCode = None + an empty list. Until that's fixed server-side,
+        // treat "no lessons" as an empty list rather than a real error —
+        // only surface it as an error if we also got no data back at all.
+        setLessons(res.courseLessons ?? []);
+        if (res.errorCode && (res.courseLessons?.length ?? 0) === 0) {
+          // swallow: this is "no lessons found", not a real failure
+        } else if (res.errorCode) {
+          setError(res.errMsg || 'ვერ ჩაიტვირთა გაკვეთილები');
+        }
+      })
+      .catch((e) => {
+        setError(e?.message ?? 'ვერ ჩაიტვირთა გაკვეთილები');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLessons().then(() => {
+      if (cancelled) return;
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course.id, userGuid]);
+
+  const filteredLessons = useMemo(() => {
+    if (!search.trim()) return lessons;
+    const q = search.toLowerCase();
+    return lessons.filter(
+      (l) => l.lessonTitle.toLowerCase().includes(q) || l.description.toLowerCase().includes(q)
+    );
+  }, [lessons, search]);
+
+  const handleAddLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newDescription.trim()) {
+      setAddError('შეავსეთ სათაური და აღწერა.');
+      return;
+    }
+    if (!newLessonNumber || newLessonNumber < 1) {
+      setAddError('მიუთითეთ გაკვეთილის ნომერი.');
+      return;
+    }
+
+    setAddSubmitting(true);
+    setAddError(null);
+
+    try {
+      const res = await addCourseLesson({
+        courseId: course.id,
+        userGuid,
+        lessonTitle: newTitle.trim(),
+        description: newDescription.trim(),
+        lessonNumber: newLessonNumber,
+      });
+
+      if (res.errorCode) {
+        setAddError(res.errMsg || 'გაკვეთილის დამატება ვერ მოხერხდა');
+        return;
+      }
+
+      setNewTitle('');
+      setNewDescription('');
+      setShowAddForm(false);
+      await fetchLessons();
+    } catch (err: any) {
+      setAddError(err?.message ?? 'გაკვეთილის დამატება ვერ მოხერხდა');
+    } finally {
+      setAddSubmitting(false);
+    }
+  };
+
+  const startEdit = (lesson: GetAllCourseLessonsResponseDto) => {
+    setEditingLessonId(lesson.courseLessonId);
+    setEditTitle(lesson.lessonTitle);
+    setEditDescription(lesson.description);
+    setEditLessonNumber(lesson.lessonNumber);
+    setEditError(null);
+    // Close the add form so only one editor is open at a time.
+    setShowAddForm(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingLessonId(null);
+    setEditError(null);
+  };
+
+  const handleUpdateLesson = async (e: React.FormEvent, lesson: GetAllCourseLessonsResponseDto) => {
+    e.preventDefault();
+    if (!editTitle.trim() || !editDescription.trim()) {
+      setEditError('შეავსეთ სათაური და აღწერა.');
+      return;
+    }
+    if (!editLessonNumber || editLessonNumber < 1) {
+      setEditError('მიუთითეთ გაკვეთილის ნომერი.');
+      return;
+    }
+
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const res = await updateCourseLesson({
+        courseLessonId: lesson.courseLessonId,
+        userGuid,
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        lessonNumber: editLessonNumber,
+      });
+
+      if (res.errorCode) {
+        setEditError(res.errMsg || 'გაკვეთილის განახლება ვერ მოხერხდა');
+        return;
+      }
+
+      setEditingLessonId(null);
+      await fetchLessons();
+    } catch (err: any) {
+      setEditError(err?.message ?? 'გაკვეთილის განახლება ვერ მოხერხდა');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
@@ -94,7 +260,7 @@ function LessonsModal({
             <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-100">
               მიმაგრებული გაკვეთილების არჩევა
             </span>
-            <h3 className="font-bold text-slate-800 text-sm mt-2">{courseTitle}</h3>
+            <h3 className="font-bold text-slate-800 text-sm mt-2">{course.title}</h3>
             <p className="text-xs text-slate-500 mt-0.5">
               მონიშნეთ გაკვეთილები, რომლებიც უნდა შედიოდეს ამ კურსის პროგრამაში
             </p>
@@ -116,34 +282,210 @@ function LessonsModal({
         </div>
 
         <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1">
-          <span>არჩეულია 3 გაკვეთილი</span>
-          <button className="text-purple-600 hover:underline flex items-center gap-1 font-semibold">
-            <Plus className="w-3.5 h-3.5" /> ახალი გაკვეთილის შექმნა
+          <span>სულ {lessons.length} გაკვეთილი</span>
+          <button
+            onClick={() => {
+              setShowAddForm((v) => {
+                const next = !v;
+                if (next) setNewLessonNumber(lessons.length + 1);
+                return next;
+              });
+              setAddError(null);
+              setEditingLessonId(null);
+            }}
+            title="ახალი გაკვეთილის შექმნა"
+            aria-label="ახალი გაკვეთილის შექმნა"
+            className="text-purple-600 hover:bg-purple-50 p-1.5 rounded-lg transition"
+          >
+            <Plus className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-          {sampleLessons.map((item) => (
-            <div
-              key={item.id}
-              className="p-3 rounded-xl border border-slate-200/80 bg-white flex items-center justify-between gap-3 hover:border-purple-200 transition"
-            >
-              <div className="flex items-start gap-3">
+        {showAddForm && (
+          <form
+            onSubmit={handleAddLesson}
+            className="bg-purple-50/40 border border-purple-100 rounded-2xl p-4 space-y-3"
+          >
+            <div className="flex gap-3">
+              <div className="space-y-1 w-28 shrink-0">
+                <label className="block text-xs font-bold text-slate-800">ნომერი</label>
                 <input
-                  type="checkbox"
-                  defaultChecked={item.checked}
-                  className="mt-0.5 w-4 h-4 accent-purple-600 rounded border-slate-300"
+                  type="number"
+                  min={1}
+                  value={newLessonNumber}
+                  onChange={(e) => setNewLessonNumber(Number(e.target.value))}
+                  className="lesson-input bg-white"
                 />
-                <div>
-                  <h4 className="text-xs font-semibold text-slate-800">{item.title}</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
-                </div>
               </div>
-              <span className="shrink-0 text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
-                {item.duration}
-              </span>
+
+              <div className="space-y-1 flex-1">
+                <label className="block text-xs font-bold text-slate-800">გაკვეთილის სათაური</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="მაგ: React.js Component Architecture & Hooks"
+                  className="lesson-input bg-white"
+                  autoFocus
+                />
+              </div>
             </div>
-          ))}
+
+            <div className="space-y-1">
+              <label className="block text-xs font-bold text-slate-800">აღწერა</label>
+              <textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="გაკვეთილის მოკლე აღწერა..."
+                rows={2}
+                className="lesson-input bg-white resize-y min-h-[60px]"
+              />
+            </div>
+
+            {addError && <p className="text-xs font-semibold text-rose-600">{addError}</p>}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddForm(false);
+                  setAddError(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-white transition"
+              >
+                გაუქმება
+              </button>
+              <button
+                type="submit"
+                disabled={addSubmitting}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition shadow-sm disabled:opacity-50"
+              >
+                {addSubmitting ? 'ინახება...' : 'დამატება'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="space-y-2 overflow-y-auto flex-1 pr-1">
+          {loading && (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+              <p className="text-xs font-semibold">გაკვეთილები იტვირთება...</p>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              <p className="text-xs font-semibold text-rose-600">{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && filteredLessons.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-400">
+              <Inbox className="w-5 h-5" />
+              <p className="text-xs font-semibold text-center">
+                {search.trim() ? `გაკვეთილი ვერ მოიძებნა: "${search}"` : 'გაკვეთილები ჯერ არ დამატებულა'}
+              </p>
+            </div>
+          )}
+
+          {!loading &&
+            !error &&
+            filteredLessons.map((item) =>
+              editingLessonId === item.courseLessonId ? (
+                // ── Inline edit form (same styling as the add-lesson form) ──
+                <form
+                  key={item.courseLessonId}
+                  onSubmit={(e) => handleUpdateLesson(e, item)}
+                  className="bg-purple-50/40 border border-purple-100 rounded-2xl p-4 space-y-3"
+                >
+                  <div className="flex gap-3">
+                    <div className="space-y-1 w-28 shrink-0">
+                      <label className="block text-xs font-bold text-slate-800">ნომერი</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editLessonNumber}
+                        onChange={(e) => setEditLessonNumber(Number(e.target.value))}
+                        className="lesson-input bg-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1 flex-1">
+                      <label className="block text-xs font-bold text-slate-800">გაკვეთილის სათაური</label>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="მაგ: React.js Component Architecture & Hooks"
+                        className="lesson-input bg-white"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-800">აღწერა</label>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="გაკვეთილის მოკლე აღწერა..."
+                      rows={2}
+                      className="lesson-input bg-white resize-y min-h-[60px]"
+                    />
+                  </div>
+
+                  {editError && <p className="text-xs font-semibold text-rose-600">{editError}</p>}
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-white transition"
+                    >
+                      გაუქმება
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={editSubmitting}
+                      className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition shadow-sm disabled:opacity-50"
+                    >
+                      {editSubmitting ? 'ინახება...' : 'შენახვა'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                // ── Normal lesson row ──
+                <div
+                  key={item.courseLessonId}
+                  className="p-3 rounded-xl border border-slate-200/80 bg-white flex items-center justify-between gap-3 hover:border-purple-200 transition"
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="mt-0.5 w-4 h-4 accent-purple-600 rounded border-slate-300"
+                    />
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-800">
+                        გაკვეთილი #{item.lessonNumber}: {item.lessonTitle}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{item.description}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => startEdit(item)}
+                    title="გაკვეთილის რედაქტირება"
+                    aria-label="გაკვეთილის რედაქტირება"
+                    className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )
+            )}
         </div>
 
         <div className="pt-2 flex justify-end">
@@ -155,6 +497,24 @@ function LessonsModal({
           </button>
         </div>
       </div>
+
+      <style>{`
+        .lesson-input {
+          width: 100%;
+          padding: 0.5rem 0.75rem;
+          border-radius: 0.75rem;
+          border: 1px solid #e2e8f0;
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #0f172a;
+          outline: none;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .lesson-input:focus {
+          border-color: #a855f7;
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+        }
+      `}</style>
     </div>
   );
 }
@@ -165,6 +525,7 @@ export default function CoursesCategoriesTab({
   error,
   categories,
   searchQuery,
+  userGuid,
   onRetry,
   onAddCategory,
   onRemoveCategory,
@@ -364,7 +725,8 @@ export default function CoursesCategoriesTab({
       {/* Диалоги / Модальные окна */}
       {selectedCourseForLessons && (
         <LessonsModal
-          courseTitle={selectedCourseForLessons.title}
+          course={selectedCourseForLessons}
+          userGuid={userGuid}
           onClose={() => setSelectedCourseForLessons(null)}
         />
       )}

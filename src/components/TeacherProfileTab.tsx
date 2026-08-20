@@ -56,10 +56,7 @@ console.log('teacher object:', teacher);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // ВАЖНО: useState берёт значение teacher только на момент первого
-  // рендера. Если teacher подгружается асинхронно чуть позже, либо
-  // обновляется после сохранения где-то выше по дереву — без этого
-  // эффекта поля формы останутся со старыми (пустыми) значениями.
+
   useEffect(() => {
     setProfName(teacher?.name || '');
     setProfEmail(teacher?.email || '');

@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
   const [studentsError, setStudentsError] = useState<string | null>(null);
   const [studentModal, setStudentModal] = useState<StudentModalState>(null);
   const [studentSubmitting, setStudentSubmitting] = useState(false);
-  const [lecturerSubmitting, setLecturerSubmitting] = useState(false); 
+  const [lecturerSubmitting, setLecturerSubmitting] = useState(false);
 
   // ── Sessions ──
   const [sessions, setSessions] = useState<SessionItem[]>([]);
@@ -106,23 +106,23 @@ export default function AdminDashboardPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(EMPTY_SETTINGS);
   const TEMP_COURSE_CATEGORIES: CourseCategoryOption[] = [
-  { id: 1, name: 'პროგრამირება' },
-  { id: 2, name: 'დიზაინი' },
-  { id: 3, name: 'ბიზნესი და მარკეტინგი' },
-];
+    { id: 1, name: 'პროგრამირება' },
+    { id: 2, name: 'დიზაინი' },
+    { id: 3, name: 'ბიზნესი და მარკეტინგი' },
+  ];
 
-  const fetchLecturers = useCallback(async () => {
-    setLecturersLoading(true);
-    setLecturersError(null);
-    try {
-      const res = await adminApi.getAllTeachers({ userGuid });
-      setLecturers((res.lessons ?? []).map(mapTeacherToLecturer));
-    } catch (err) {
-      setLecturersError(err instanceof Error ? err.message : 'ლექტორების ჩატვირთვა ვერ მოხერხდა');
-    } finally {
-      setLecturersLoading(false);
-    }
-  }, [userGuid]);
+ const fetchLecturers = useCallback(async () => {
+  setLecturersLoading(true);
+  setLecturersError(null);
+  try {
+    const res = await adminApi.getAllTeachers({ userGuid });
+    setLecturers((res.teachers ?? []).map(mapTeacherToLecturer)); 
+  } catch (err) {
+    setLecturersError(err instanceof Error ? err.message : 'ლექტორების ჩატვირთვა ვერ მოხერხდა');
+  } finally {
+    setLecturersLoading(false);
+  }
+}, [userGuid]);
 
   const fetchStudents = useCallback(async () => {
     setStudentsLoading(true);
@@ -188,74 +188,76 @@ export default function AdminDashboardPage() {
   }, [fetchLecturers, fetchStudents, fetchSessions, fetchCourses]);
 
   // ── Lecturer mutations ──
-// ── Lecturer mutations ──
-const handleDeleteLecturer = async (lecturer: LecturerItem) => {
-  const prev = lecturers;
-  setLecturers((list) => list.filter((l) => l.id !== lecturer.id));
-  try {
-    await adminApi.deleteTeacher({ teacherId: lecturer.userId, userGuid });
-  } catch (err) {
-    setLecturers(prev);
-    alert(err instanceof Error ? err.message : 'ლექტორის წაშლა ვერ მოხერხდა');
-  }
-};
-
-const handleTogglePinLecturer = (id: string) => {
-  setLecturers((list) => list.map((l) => (l.id === id ? { ...l, isPinned: !l.isPinned } : l)));
-};
-
-// Разбивает "Имя Фамилия" на firstName/lastName — так же, как в StudentFormModal
-function splitFullName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(' ');
-  return {
-    firstName: parts[0] || '',
-    lastName: parts.slice(1).join(' ') || '',
+  const handleDeleteLecturer = async (lecturer: LecturerItem) => {
+    const prev = lecturers;
+    setLecturers((list) => list.filter((l) => l.id !== lecturer.id));
+    try {
+      await adminApi.deleteTeacher({ teacherId: lecturer.userId, userGuid });
+    } catch (err) {
+      setLecturers(prev);
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('ლექტორის წაშლა ვერ მოხერხდა', err);
+    }
   };
-}
 
-const handleAddLecturer = async (data: Partial<LecturerItem> & Record<string, any>) => {
-  setLecturerSubmitting(true);
-  try {
-    const { firstName, lastName } = splitFullName(data.name ?? '');
-    await adminApi.addTeacher({
-      userGuid,
-      firstName,
-      lastName,
-      email: data.email ?? '',
-      telephone: data.phone ?? '',
-      password: data.password ?? '',
-      picture: data.avatarIcon ?? '',
-      isActive: true,
-    } as any); // ← см. примечание про типы ниже
-    await fetchLecturers();
-  } catch (err) {
-    alert(err instanceof Error ? err.message : 'ლექტორის დამატება ვერ მოხერხდა');
-  } finally {
-    setLecturerSubmitting(false);
-  }
-};
+  const handleTogglePinLecturer = (id: string) => {
+    setLecturers((list) => list.map((l) => (l.id === id ? { ...l, isPinned: !l.isPinned } : l)));
+  };
 
-const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) => {
-  setLecturerSubmitting(true);
-  try {
-    const { firstName, lastName } = splitFullName(lecturer.name ?? '');
-    await adminApi.editTeacher({
-      teacherId: lecturer.userId,
-      userGuid,
-      firstName,
-      lastName,
-      email: lecturer.email ?? '',
-      telephone: lecturer.phone ?? '',
-      picture: lecturer.avatarIcon ?? '',
-      isActive: true,
-    } as any); // ← см. примечание про типы ниже
-    await fetchLecturers();
-  } catch (err) {
-    alert(err instanceof Error ? err.message : 'ლექტორის რედაქტირება ვერ მოხერხდა');
-  } finally {
-    setLecturerSubmitting(false);
+  // Разбивает "Имя Фамилия" на firstName/lastName — так же, как в StudentFormModal
+  function splitFullName(fullName: string): { firstName: string; lastName: string } {
+    const parts = fullName.trim().split(' ');
+    return {
+      firstName: parts[0] || '',
+      lastName: parts.slice(1).join(' ') || '',
+    };
   }
-};
+
+  const handleAddLecturer = async (data: Partial<LecturerItem> & Record<string, any>) => {
+    setLecturerSubmitting(true);
+    try {
+      const { firstName, lastName } = splitFullName(data.name ?? '');
+      await adminApi.addTeacher({
+        userGuid,
+        firstName,
+        lastName,
+        email: data.email ?? '',
+        telephone: data.phone ?? '',
+        password: data.password ?? '',
+        picture: data.avatarIcon ?? '',
+        isActive: true,
+      } as any); // ← см. примечание про типы ниже
+      await fetchLecturers();
+    } catch (err) {
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('ლექტორის დამატება ვერ მოხერხდა', err);
+    } finally {
+      setLecturerSubmitting(false);
+    }
+  };
+
+  const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) => {
+    setLecturerSubmitting(true);
+    try {
+      const { firstName, lastName } = splitFullName(lecturer.name ?? '');
+      await adminApi.editTeacher({
+        teacherId: lecturer.userId,
+        userGuid,
+        firstName,
+        lastName,
+        email: lecturer.email ?? '',
+        telephone: lecturer.phone ?? '',
+        picture: lecturer.avatarIcon ?? '',
+        isActive: true,
+      } as any); // ← см. примечание про типы ниже
+      await fetchLecturers();
+    } catch (err) {
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('ლექტორის რედაქტირება ვერ მოხერხდა', err);
+    } finally {
+      setLecturerSubmitting(false);
+    }
+  };
 
   // ── Student mutations ──
   const handleDeleteStudent = async (student: StudentItem) => {
@@ -265,7 +267,8 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
       await adminApi.deleteStudent({ studentId: student.userId, userGuid });
     } catch (err) {
       setStudents(prev);
-      alert(err instanceof Error ? err.message : 'სტუდენტის წაშლა ვერ მოხერხდა');
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('სტუდენტის წაშლა ვერ მოხერხდა', err);
     }
   };
 
@@ -291,7 +294,8 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
       setStudentModal(null);
       await fetchStudents();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'სტუდენტის მონაცემების შენახვა ვერ მოხერხდა');
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('სტუდენტის მონაცემების შენახვა ვერ მოხერხდა', err);
     } finally {
       setStudentSubmitting(false);
     }
@@ -303,50 +307,55 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
   const handleCloseSessionModal = () => setSessionModal(null);
 
   const handleSubmitSessionForm = async (values: SessionFormValues) => {
-    setSessionSubmitting(true);
-    try {
-      if (sessionModal?.mode === 'add') {
-        await sessionsApi.addSession({
-          courseId: values.courseId,
-          teacherGuid: values.teacherGuid,
-          weeks: values.weeks,
-          startDate: values.startDate,
-          endDate: values.endDate,
-          cityId: values.cityId,
-          attendanceModeId: values.attendanceModeId,
-        });
-      } else if (sessionModal?.mode === 'edit') {
-        await sessionsApi.updateSession({
-          sessionId: Number(sessionModal.session.id),
-          courseId: values.courseId,
-          teacherGuid: values.teacherGuid,
-          weeks: values.weeks,
-          startDate: values.startDate,
-          endDate: values.endDate,
-          cityId: values.cityId,
-          isActive: values.isActive,
-          userGuid,
-          attendanceModeId: values.attendanceModeId,
-        });
-      }
-      setSessionModal(null);
-      await fetchSessions();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'სესიის შენახვა ვერ მოხერხდა');
-    } finally {
-      setSessionSubmitting(false);
+  setSessionSubmitting(true);
+  try {
+    if (sessionModal?.mode === 'add') {
+      await sessionsApi.addSession({
+        courseId: values.courseId,
+        teacherId: values.teacherId,
+        weeks: values.weeks,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        cityId: values.cityId,
+        attendanceModeId: values.attendanceModeId,
+        lessonDaysDescription: values.lessonDaysDescription,
+      });
+    } else if (sessionModal?.mode === 'edit') {
+      await sessionsApi.updateSession({
+        sessionId: Number(sessionModal.session.id),
+        courseId: values.courseId,
+        teacherId: values.teacherId,
+        weeks: values.weeks,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        cityId: values.cityId,
+        attendanceModeId: values.attendanceModeId,
+        lessonDaysDescription: values.lessonDaysDescription,
+        isActive: values.isActive,
+        userGuid,
+      });
     }
-  };
+    setSessionModal(null);
+    await fetchSessions();
+  } catch (err) {
+    console.error('სესიის შენახვა ვერ მოხერხდა', err);
+  } finally {
+    setSessionSubmitting(false);
+  }
+};
 
+  // NOTE: убрал нативный confirm() — SessionsTab уже показывает свою модалку
+  // подтверждения перед вызовом onDelete, так что здесь двойное
+  // подтверждение было лишним/багом.
   const handleDeleteSession = async (session: SessionItem) => {
-    if (!confirm(`წავშალოთ სესია "${session.sessionName}"?`)) return;
     const prev = sessions;
     setSessions((list) => list.filter((s) => s.id !== session.id));
     try {
       await sessionsApi.deleteSession({ sessionId: Number(session.id), userGuid });
     } catch (err) {
       setSessions(prev);
-      alert(err instanceof Error ? err.message : 'სესიის წაშლა ვერ მოხერხდა');
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('სესიის წაშლა ვერ მოხერხდა', err);
     }
   };
 
@@ -387,21 +396,22 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
       setCourseModal(null);
       await fetchCourses();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'კურსის შენახვა ვერ მოხერხდა');
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('კურსის შენახვა ვერ მოხერხდა', err);
     } finally {
       setCourseSubmitting(false);
     }
   };
 
   const handleDeleteCourse = async (course: CourseItem) => {
-    if (!confirm(`ნამდვილად გსურთ კურსის "${course.title}" წაშლა?`)) return;
     const prev = courses;
     setCourses((list) => list.filter((c) => c.id !== course.id));
     try {
       await coursesApi.deleteCourse({ courseId: course.courseId, userGuid });
     } catch (err) {
       setCourses(prev);
-      alert(err instanceof Error ? err.message : 'კურსის წაშლა ვერ მოხერხდა');
+      // TODO: показать через модалку/тост вместо console.error
+      console.error('კურსის წაშლა ვერ მოხერხდა', err);
     }
   };
 
@@ -436,7 +446,7 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
     setSiteSettings((prev) => ({ ...prev, [field]: value }));
 
   const handleSaveSettings = () => {
-    alert('პარამეტრები ლოკალურად შეინახა — backend-ს ჯერ არ აქვს შესანახი endpoint.');
+    console.log('პარამეტრები ლოკალურად შეინახა — backend-ს ჯერ არ აქვს შესანახი endpoint.');
   };
 
   const knownTabs: AdminTab[] = [
@@ -501,6 +511,7 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
               onRemoveCategory={handleRemoveCategory}
               onAdd={handleOpenAddCourse}
               onEdit={handleOpenEditCourse}
+              userGuid={userGuid}
               // onDelete={handleDeleteCourse}
             />
           )}
@@ -539,7 +550,7 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
               error={studentsError}
               searchQuery={searchQuery}
               onRetry={fetchStudents}
-              onAdd={handleAddStudent}
+              
               onEdit={handleOpenEditStudent}
               onDelete={handleDeleteStudent}
             />
@@ -561,26 +572,26 @@ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) 
 
       {sessionModal && (
         <SessionFormModal
-  mode={sessionModal.mode}
-  initial={sessionModal.mode === 'edit' ? sessionModal.session : undefined}
-  submitting={sessionSubmitting}
-  courses={courses}
-  lecturers={lecturers}
-  onClose={handleCloseSessionModal}
-  onSubmit={handleSubmitSessionForm}
-/>
+          mode={sessionModal.mode}
+          initial={sessionModal.mode === 'edit' ? sessionModal.session : undefined}
+          submitting={sessionSubmitting}
+          courses={courses}
+          lecturers={lecturers}
+          onClose={handleCloseSessionModal}
+          onSubmit={handleSubmitSessionForm}
+        />
       )}
 
-{courseModal && (
-  <CourseFormModal
-    mode={courseModal.mode}
-    initial={courseModal.mode === 'edit' ? courseModal.course : undefined}
-    submitting={courseSubmitting}
-    categories={TEMP_COURSE_CATEGORIES}
-    onClose={handleCloseCourseModal}
-    onSubmit={handleSubmitCourseForm}
-  />
-)}
+      {courseModal && (
+        <CourseFormModal
+          mode={courseModal.mode}
+          initial={courseModal.mode === 'edit' ? courseModal.course : undefined}
+          submitting={courseSubmitting}
+          categories={TEMP_COURSE_CATEGORIES}
+          onClose={handleCloseCourseModal}
+          onSubmit={handleSubmitCourseForm}
+        />
+      )}
 
       {studentModal && (
         <StudentFormModal

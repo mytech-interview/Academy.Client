@@ -4,12 +4,13 @@ import { CourseItem, LecturerItem, SessionItem } from '../types';
 
 export interface SessionFormValues {
   courseId: number;
-  teacherGuid: string;
+  teacherId: number;
   weeks: number; // backend type is byte — keep 0-255
   startDate: string; // ISO date
   endDate: string; // ISO date
   cityId: number;
   attendanceModeId: number;
+  lessonDaysDescription: string; 
   isActive?: boolean;
 }
 
@@ -33,10 +34,9 @@ function toDateInputValue(iso?: string): string {
 // and adminApi.getAllTeachers) — never hardcode option lists here again,
 // that's exactly what produced the "teachers that don't exist" bug.
 //
-// teacherGuid: needs LecturerItem.userGuid (the real GUID from the Users
-// table), NOT userId. If your LecturerItem/GetAllTeachersResponseDto don't
-// have userGuid yet, this form cannot submit a valid teacherGuid — that's
-// a backend blocker, add userGuid to GetAllTeachersResponseDto first.
+// teacherId: backend confirmed it now takes LecturerItem.teacherId /
+// userId (numeric), not a GUID — the earlier userGuid requirement was
+// fixed on the backend side, so this form sends teacherId again.
 export default function SessionFormModal({
   mode,
   initial,
@@ -49,12 +49,15 @@ export default function SessionFormModal({
   const [courseId, setCourseId] = useState(
     initial ? String(initial.courseId ?? '') : String(courses[0]?.courseId ?? '')
   );
-  const [teacherGuid, setTeacherGuid] = useState(
-    initial?.teacherGuid ?? lecturers[0]?.userGuid ?? ''
+    const [teacherId, setTeacherId] = useState(
+    initial?.teacherId ? String(initial.teacherId) : String(lecturers[0]?.userId ?? '')
   );
   const [weeks, setWeeks] = useState(initial?.weeks ? String(initial.weeks) : '8');
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-11-15');
+  const [lessonDaysDescription, setLessonDaysDescription] = useState(
+  initial?.lessonDaysDescription ?? ''
+);
   // TODO: no cities/attendance-mode API confirmed yet. Cities table in the
   // DB currently has only Id=1 თბილისი, Id=2 ახალციხე (per the screenshot) —
   // hardcoded to match that for now, but this should become a real
@@ -68,7 +71,7 @@ export default function SessionFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!courseId || !teacherGuid) {
+    if (!courseId || !teacherId) {
       alert('აირჩიეთ კურსი და ლექტორი.');
       return;
     }
@@ -76,15 +79,16 @@ export default function SessionFormModal({
     const parsedWeeks = Math.min(255, Math.max(0, Number(weeks) || 0));
 
     onSubmit({
-      courseId: Number(courseId),
-      teacherGuid,
-      weeks: parsedWeeks,
-      startDate,
-      endDate,
-      cityId: Number(cityId) || 1,
-      attendanceModeId: Number(attendanceModeId) || 1,
-      ...(mode === 'edit' ? { isActive } : {}),
-    });
+  courseId: Number(courseId),
+  teacherId: Number(teacherId),
+  weeks: parsedWeeks,
+  startDate,
+  endDate,
+  cityId: Number(cityId) || 1,
+  attendanceModeId: Number(attendanceModeId) || 1,
+  lessonDaysDescription: lessonDaysDescription.trim(), // NEW
+  ...(mode === 'edit' ? { isActive } : {}),
+});
   };
 
   return (
@@ -120,13 +124,13 @@ export default function SessionFormModal({
             </p>
           </Field>
 
-          <Field label="მიჩენილი ლექტორი">
+                    <Field label="მიჩენილი ლექტორი">
             {lecturers.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium py-2">ლექტორები არ არის ჩატვირთული</p>
             ) : (
-              <select value={teacherGuid} onChange={(e) => setTeacherGuid(e.target.value)} className="styled-input">
+              <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)} className="styled-input">
                 {lecturers.map((l) => (
-                  <option key={l.userGuid} value={l.userGuid}>
+                  <option key={l.userId} value={l.userId}>
                     {l.name}
                   </option>
                 ))}
@@ -136,15 +140,15 @@ export default function SessionFormModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="ხანგრძლივობა (კვირები)">
-              <input
-                type="number"
-                min={0}
-                max={255}
-                value={weeks}
-                onChange={(e) => setWeeks(e.target.value)}
-                className="styled-input"
-              />
-            </Field>
+  <input
+    type="number"
+    min={1}
+    max={7}
+    value={weeks}
+    onChange={(e) => setWeeks(e.target.value)}
+    className="styled-input"
+  />
+</Field>
 
             <Field label="დასწრების ფორმატი">
               <select
@@ -177,6 +181,15 @@ export default function SessionFormModal({
               />
             </Field>
           </div>
+          <Field label="განრიგი (დღეები და საათები)">
+          <input
+            type="text"
+            value={lessonDaysDescription}
+            onChange={(e) => setLessonDaysDescription(e.target.value)}
+            placeholder="მაგ: ორშ/ოთხ/პარ 18:00–20:00"
+            className="styled-input"
+          />
+        </Field>
 
           <Field label="🏢 ქალაქი (City)">
             <select value={cityId} onChange={(e) => setCityId(e.target.value)} className="styled-input">
