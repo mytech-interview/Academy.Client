@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Mail, Pencil, Phone, Power, PowerOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { StudentItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 
@@ -49,6 +50,8 @@ export default function StudentsTab({
   onEdit,
   onDelete,
 }: StudentsTabProps) {
+  const { t } = useTranslation();
+
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return students;
     const q = searchQuery.toLowerCase();
@@ -65,19 +68,19 @@ export default function StudentsTab({
     <>
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
         <div>
-          <h2 className="text-base font-black text-slate-800">სტუდენტების მართვა</h2>
-          <p className="text-xs text-slate-400 mt-0.5">სტუდენტთა სია, პროფილების განახლება</p>
+          <h2 className="text-base font-black text-slate-800">{t('studentsTab.title')}</h2>
+          <p className="text-xs text-slate-400 mt-0.5">{t('studentsTab.subtitle')}</p>
         </div>
       </div>
 
-      {loading && <LoadingState label="სტუდენტები იტვირთება..." />}
+      {loading && <LoadingState label={t('studentsTab.loading')} />}
       {!loading && error && <ErrorState message={error} onRetry={onRetry} />}
       {!loading && !error && filtered.length === 0 && (
         <EmptyState
           message={
             searchQuery.trim()
-              ? `სტუდენტი ვერ მოიძებნა ძებნის კრიტერიუმით: "${searchQuery}"`
-              : 'სტუდენტები ჯერ არ დამატებულა'
+              ? t('studentsTab.emptySearch', { query: searchQuery })
+              : t('studentsTab.emptyList')
           }
         />
       )}
@@ -102,7 +105,7 @@ export default function StudentsTab({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase">
-                        STUDENT
+                        {t('studentsTab.studentBadge')}
                       </span>
                       <span
                         className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${
@@ -111,12 +114,12 @@ export default function StudentsTab({
                             : 'text-rose-600 bg-rose-100'
                         }`}
                       >
-                        {isActive ? 'აქტიური' : 'არააქტიური'}
+                        {isActive ? t('studentsTab.active') : t('studentsTab.inactive')}
                       </span>
                     </div>
                     <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{st.name}</h3>
                     <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                      {st.role || '— (პროგრამა მითითებული არაა)'}
+                      {st.role || t('studentsTab.noProgram')}
                     </p>
                   </div>
                 </div>
@@ -128,7 +131,7 @@ export default function StudentsTab({
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="truncate">{st.phone || 'N/A'}</span>
+                    <span className="truncate">{st.phone || t('studentsTab.notAvailable')}</span>
                   </div>
                 </div>
 
@@ -137,7 +140,7 @@ export default function StudentsTab({
                     onClick={() => onEdit(st)}
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                   >
-                    <Pencil className="w-3.5 h-3.5" /> სტუდენტის რედაქტირება
+                    <Pencil className="w-3.5 h-3.5" /> {t('studentsTab.editStudent')}
                   </button>
                   <button
                     onClick={() => onDelete(st)}
@@ -146,15 +149,15 @@ export default function StudentsTab({
                         ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
                         : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                     }`}
-                    title={isActive ? 'დეაქტივაცია' : 'გააქტიურება'}
+                    title={isActive ? t('studentsTab.deactivate') : t('studentsTab.activate')}
                   >
                     {isActive ? (
                       <>
-                        <PowerOff className="w-3.5 h-3.5" /> დეაქტივაცია
+                        <PowerOff className="w-3.5 h-3.5" /> {t('studentsTab.deactivate')}
                       </>
                     ) : (
                       <>
-                        <Power className="w-3.5 h-3.5" /> გააქტიურება
+                        <Power className="w-3.5 h-3.5" /> {t('studentsTab.activate')}
                       </>
                     )}
                   </button>

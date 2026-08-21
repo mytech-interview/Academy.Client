@@ -13,6 +13,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SessionItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 
@@ -71,6 +72,7 @@ export default function SessionsTab({
   onDelete,
   onViewStudents,
 }: SessionsTabProps) {
+  const { t } = useTranslation();
   const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -106,26 +108,26 @@ export default function SessionsTab({
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-black text-slate-800">აკადემიური სესიები / ნაკადები</h2>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">მართეთ აქტიური და დაგეგმილი ნაკადები</p>
+            <h2 className="text-base font-black text-slate-800">{t('sessionsTab.title')}</h2>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">{t('sessionsTab.subtitle')}</p>
           </div>
         </div>
         <button
           onClick={onAdd}
           className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition hover:shadow-lg active:scale-[0.98]"
         >
-          <Plus className="w-4 h-4" /> ახალი სესიის დამატება
+          <Plus className="w-4 h-4" /> {t('sessionsTab.addSession')}
         </button>
       </div>
 
-      {loading && <LoadingState label="სესიები იტვირთება..." />}
+      {loading && <LoadingState label={t('sessionsTab.loading')} />}
       {!loading && error && <ErrorState message={error} onRetry={onRetry} />}
       {!loading && !error && filtered.length === 0 && (
         <EmptyState
           message={
             searchQuery.trim()
-              ? `სესია ვერ მოიძებნა ძებნის კრიტერიუმით: "${searchQuery}"`
-              : 'სესიები ჯერ არ დამატებულა'
+              ? t('sessionsTab.notFoundWithQuery', { query: searchQuery })
+              : t('sessionsTab.noSessions')
           }
         />
       )}
@@ -154,7 +156,7 @@ export default function SessionsTab({
                     {!isActive && (
                       <div className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-2xl flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                        <span className="text-xs font-bold text-rose-600">არააქტიური</span>
+                        <span className="text-xs font-bold text-rose-600">{t('sessionsTab.inactive')}</span>
                       </div>
                     )}
                     <div className="bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-2xl flex items-center gap-1.5">
@@ -166,32 +168,27 @@ export default function SessionsTab({
                   </div>
                 </div>
 
-                {/* Session Title */}
-                {/* <div>
-                  <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{s.sessionName}</h3>
-                </div> */}
-
                 {/* Session Details — единый стиль иконка-чип + текст */}
                 <div className="space-y-2.5">
                   <DetailRow
                     icon={<User className="w-4 h-4" />}
                     iconBg="bg-emerald-50"
                     iconColor="text-emerald-600"
-                    label="ლექტორი"
+                    label={t('sessionsTab.instructor')}
                     value={s.instructor}
                   />
                   <DetailRow
                     icon={<Clock className="w-4 h-4" />}
                     iconBg="bg-amber-50"
                     iconColor="text-amber-600"
-                    label="განრიგი"
+                    label={t('sessionsTab.schedule')}
                     value={s.lessonDaysDescription}
                   />
                   <DetailRow
                     icon={<MapPin className="w-4 h-4" />}
                     iconBg="bg-sky-50"
                     iconColor="text-sky-600"
-                    label="ლოკაცია"
+                    label={t('sessionsTab.location')}
                     value={s.location}
                   />
                   {(s as any).weeks != null && (
@@ -199,8 +196,8 @@ export default function SessionsTab({
                       icon={<CalendarRange className="w-4 h-4" />}
                       iconBg="bg-teal-50"
                       iconColor="text-teal-600"
-                      label="ხანგრძლივობა"
-                      value={`${(s as any).weeks} კვირა`}
+                      label={t('sessionsTab.duration')}
+                      value={t('sessionsTab.weeksCount', { count: (s as any).weeks })}
                     />
                   )}
                   {(s.startDate || s.endDate) && (
@@ -208,7 +205,7 @@ export default function SessionsTab({
                       icon={<CalendarClock className="w-4 h-4" />}
                       iconBg="bg-violet-50"
                       iconColor="text-violet-600"
-                      label="ვადები"
+                      label={t('sessionsTab.dates')}
                       value={`${formatDateOnly(s.startDate)} → ${formatDateOnly(s.endDate)}`}
                     />
                   )}
@@ -221,24 +218,17 @@ export default function SessionsTab({
                     className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition"
                   >
                     <Users className="w-4 h-4" />
-                    <span>სტუდენტების სია ({s.currentStudents ?? 0})</span>
+                    <span>{t('sessionsTab.studentsList', { count: s.currentStudents ?? 0 })}</span>
                   </button>
 
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => onEdit(s)}
                       className="p-2.5 rounded-xl text-purple-600 bg-purple-50 hover:bg-purple-100 transition"
-                      title="რედაქტირება"
+                      title={t('sessionsTab.edit')}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
-                    {/* <button
-                      onClick={() => setSessionToDelete(s)}
-                      className="p-2.5 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition"
-                      title="წაშლა"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button> */}
                   </div>
                 </div>
               </div>
@@ -256,13 +246,13 @@ export default function SessionsTab({
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="pt-0.5">
-                <h3 className="font-extrabold text-slate-900 text-base">წაშლის დადასტურება</h3>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">ეს მოქმედება შეუქცევადია.</p>
+                <h3 className="font-extrabold text-slate-900 text-base">{t('sessionsTab.deleteConfirmTitle')}</h3>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">{t('sessionsTab.deleteConfirmSubtitle')}</p>
               </div>
             </div>
 
             <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 text-xs font-semibold text-slate-700 leading-relaxed">
-              დარწმუნებული ხართ რომ გსურთ წაშალოთ:{' '}
+              {t('sessionsTab.deleteConfirmText')}{' '}
               <span className="font-extrabold text-rose-600">
                 "{sessionToDelete.sessionName || sessionToDelete.courseTitle}"
               </span>
@@ -276,7 +266,7 @@ export default function SessionsTab({
                 disabled={isDeleting}
                 className="px-6 py-2.5 rounded-2xl text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 transition"
               >
-                გაუქმება
+                {t('sessionsTab.cancel')}
               </button>
               <button
                 type="button"
@@ -285,7 +275,7 @@ export default function SessionsTab({
                 className="px-6 py-2.5 rounded-2xl text-xs font-bold bg-[#ff004b] hover:bg-[#e00042] text-white flex items-center gap-2 shadow-md transition disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeleting ? 'იშლება...' : 'წაშლა'}</span>
+                <span>{isDeleting ? t('sessionsTab.deleting') : t('sessionsTab.delete')}</span>
               </button>
             </div>
           </div>

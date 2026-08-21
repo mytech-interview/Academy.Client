@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CourseItem } from '../types';
 
 export interface CourseCategoryOption {
@@ -50,6 +51,8 @@ export default function CourseFormModal({
   onClose,
   onSubmit,
 }: CourseFormModalProps) {
+  const { t } = useTranslation();
+
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [category, setCategory] = useState(
@@ -59,7 +62,9 @@ export default function CourseFormModal({
   // (unlike Categories, which we verified against the DB). Keeping this as
   // a manual field until that's confirmed — don't treat these labels as real.
   const [level, setLevel] = useState('1');
-  const [price, setPrice] = useState(initial ? (initial.price === 0 ? 'უფასო' : String(initial.price)) : 'უფასო');
+  const [price, setPrice] = useState(
+    initial ? (initial.price === 0 ? t('courseFormModal.freeValue') : String(initial.price)) : t('courseFormModal.freeValue')
+  );
   const [maxStudents, setMaxStudents] = useState(
     initial?.maxStudents != null ? String(initial.maxStudents) : '20'
   );
@@ -74,16 +79,17 @@ export default function CourseFormModal({
     e.preventDefault();
 
     if (!title.trim() || !description.trim()) {
-      alert('შეავსეთ სავალდებულო ველები: სათაური და აღწერა.');
+      alert(t('courseFormModal.validationTitleDesc'));
       return;
     }
 
     if (!category) {
-      alert('აირჩიეთ კატეგორია.');
+      alert(t('courseFormModal.validationCategory'));
       return;
     }
 
-    const parsedPrice = price === 'უფასო' || price === '' ? 0 : Number(price) || 0;
+    const freeValue = t('courseFormModal.freeValue');
+    const parsedPrice = price === freeValue || price.trim().toLowerCase() === 'უფასო' || price === '' ? 0 : Number(price) || 0;
     const parsedMaxStudents = Number(maxStudents) || 0;
 
     onSubmit({
@@ -114,12 +120,12 @@ export default function CourseFormModal({
         <div className="flex items-start justify-between px-8 pt-6 pb-4 border-b border-slate-100 bg-white">
           <div>
             <h3 className="font-bold text-slate-900 text-lg">
-              {mode === 'add' ? 'ახალი კურსის დამატება' : 'კურსის რედაქტირება'}
+              {mode === 'add' ? t('courseFormModal.addTitle') : t('courseFormModal.editTitle')}
             </h3>
             <p className="text-xs text-slate-400 mt-0.5 font-medium">
               {mode === 'add'
-                ? 'ახალი კურსის ძირითადი ინფორმაციის შევსება'
-                : 'კურსის მონაცემების და თარიღების განახლება'}
+                ? t('courseFormModal.addSubtitle')
+                : t('courseFormModal.editSubtitle')}
             </p>
           </div>
           <button
@@ -132,22 +138,22 @@ export default function CourseFormModal({
 
         {/* Form body */}
         <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5 overflow-y-auto flex-1 text-slate-800">
-          <Field label="კურსის დასახელება">
+          <Field label={t('courseFormModal.titleLabel')}>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="მაგ: Full-Stack Web Development"
+              placeholder={t('courseFormModal.titlePlaceholder')}
               className="styled-input"
               required
             />
           </Field>
 
-          <Field label="აღწერა">
+          <Field label={t('courseFormModal.descriptionLabel')}>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="კურსის მოკლე აღწერა..."
+              placeholder={t('courseFormModal.descriptionPlaceholder')}
               rows={3}
               className="styled-input resize-y min-h-[80px]"
               required
@@ -155,9 +161,9 @@ export default function CourseFormModal({
           </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="კატეგორია">
+            <Field label={t('courseFormModal.categoryLabel')}>
               {categories.length === 0 ? (
-                <p className="text-xs text-slate-400 font-medium py-2">კატეგორიები არ არის ჩატვირთული</p>
+                <p className="text-xs text-slate-400 font-medium py-2">{t('courseFormModal.noCategories')}</p>
               ) : (
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="styled-input">
                   {categories.map((c) => (
@@ -169,27 +175,27 @@ export default function CourseFormModal({
               )}
             </Field>
 
-            <Field label="დონე">
+            <Field label={t('courseFormModal.levelLabel')}>
               <select value={level} onChange={(e) => setLevel(e.target.value)} className="styled-input">
-                <option value="1">დამწყები / Beginner</option>
-                <option value="2">საშუალო / Intermediate</option>
-                <option value="3">მაღალი / Advanced</option>
+                <option value="1">{t('courseFormModal.levels.beginner')}</option>
+                <option value="2">{t('courseFormModal.levels.intermediate')}</option>
+                <option value="3">{t('courseFormModal.levels.advanced')}</option>
               </select>
             </Field>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="ფასი">
+            <Field label={t('courseFormModal.priceLabel')}>
               <input
                 type="text"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="უფასო"
+                placeholder={t('courseFormModal.freeValue')}
                 className="styled-input"
               />
             </Field>
 
-            <Field label="სტუდენტების მაქსიმალური რაოდენობა">
+            <Field label={t('courseFormModal.maxStudentsLabel')}>
               <input
                 type="number"
                 min={0}
@@ -206,10 +212,10 @@ export default function CourseFormModal({
             <div className="bg-purple-50/40 border border-purple-100 rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-purple-700">
                 <Calendar className="w-4 h-4 text-purple-600" />
-                <span>თარიღების მართვა (რედაქტირების რეჟიმი)</span>
+                <span>{t('courseFormModal.dateManagementTitle')}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="დაწყების თარიღი (Start Date)">
+                <Field label={t('courseFormModal.startDateLabel')}>
                   <input
                     type="date"
                     value={startDate}
@@ -217,7 +223,7 @@ export default function CourseFormModal({
                     className="styled-input bg-white"
                   />
                 </Field>
-                <Field label="დასრულების თარიღი (End Date)">
+                <Field label={t('courseFormModal.endDateLabel')}>
                   <input
                     type="date"
                     value={endDate}
@@ -229,14 +235,14 @@ export default function CourseFormModal({
             </div>
           )}
 
-          <Field label="კურსის სტატუსი">
+          <Field label={t('courseFormModal.statusLabel')}>
             <select value={status} onChange={(e) => setStatus(e.target.value)} className="styled-input">
-              <option value="ongoing">🟢 მიმდინარე (Ongoing)</option>
-              <option value="completed">🔴 დასრულებული (Completed)</option>
+              <option value="ongoing">🟢 {t('courseFormModal.statusOngoing')}</option>
+              <option value="completed">🔴 {t('courseFormModal.statusCompleted')}</option>
             </select>
           </Field>
 
-          <Field label="გარეკანის ფოტო (URL)">
+          <Field label={t('courseFormModal.pictureLabel')}>
             <input
               type="text"
               value={picture}
@@ -252,14 +258,14 @@ export default function CourseFormModal({
               onClick={onClose}
               className="px-6 py-2.5 rounded-2xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
             >
-              გაუქმება
+              {t('courseFormModal.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="px-8 py-2.5 rounded-2xl text-xs font-bold bg-[#8b5cf6] hover:bg-[#7c3aed] text-white transition shadow-md disabled:opacity-50"
             >
-              {submitting ? 'ინახება...' : 'შენახვა'}
+              {submitting ? t('courseFormModal.saving') : t('courseFormModal.save')}
             </button>
           </div>
         </form>

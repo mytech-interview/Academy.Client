@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Mail, Pencil, Plus, Power, PowerOff, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { LecturerItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 import LecturerModal from './LecturerModal'; // Импортируем модалку
@@ -54,6 +55,7 @@ export default function LecturersTab({
   onDelete,
   onTogglePin,
 }: LecturersTabProps) {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState<LecturerItem | null>(null);
 
@@ -91,25 +93,25 @@ export default function LecturersTab({
     <>
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
         <div>
-          <h2 className="text-base font-black text-slate-800">ლექტორების მართვა</h2>
-          <p className="text-xs text-slate-400 mt-0.5">აკადემიის მასწავლებელთა სია</p>
+          <h2 className="text-base font-black text-slate-800">{t('lecturers.title')}</h2>
+          <p className="text-xs text-slate-400 mt-0.5">{t('lecturers.subtitle')}</p>
         </div>
         <button
           onClick={handleOpenAddModal}
           className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition"
         >
-          <Plus className="w-4 h-4" /> ახალი ლექტორის დამატება
+          <Plus className="w-4 h-4" /> {t('lecturers.addLecturer')}
         </button>
       </div>
 
-      {loading && <LoadingState label="ლექტორები იტვირთება..." />}
+      {loading && <LoadingState label={t('lecturers.loading')} />}
       {!loading && error && <ErrorState message={error} onRetry={onRetry} />}
       {!loading && !error && filtered.length === 0 && (
         <EmptyState
           message={
             searchQuery.trim()
-              ? `ლექტორი ვერ მოიძებნა ძებნის კრიტერიუმით: "${searchQuery}"`
-              : 'ლექტორები ჯერ არ დამატებულა'
+              ? t('lecturers.notFound', { query: searchQuery })
+              : t('lecturers.empty')
           }
         />
       )}
@@ -143,12 +145,12 @@ export default function LecturersTab({
                             : 'text-rose-600 bg-rose-100'
                         }`}
                       >
-                        {isActive ? 'აქტიური' : 'არააქტიური'}
+                        {isActive ? t('lecturers.active') : t('lecturers.inactive')}
                       </span>
                     </div>
                     <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{lec.name}</h3>
                     <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                      {lec.role || '— (როლი მითითებული არაა)'}
+                      {lec.role || t('lecturers.noRole')}
                     </p>
                   </div>
                 </div>
@@ -159,7 +161,7 @@ export default function LecturersTab({
                     <span className="truncate">{lec.email}</span>
                   </div>
                   <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">
-                    {lec.bio || '— (ბიოგრაფია მითითებული არაა)'}
+                    {lec.bio || t('lecturers.noBio')}
                   </p>
                 </div>
 
@@ -173,7 +175,7 @@ export default function LecturersTab({
                     }`}
                   >
                     <Star className={`w-3.5 h-3.5 ${lec.isPinned ? 'fill-white' : 'fill-amber-400'}`} />
-                    {lec.isPinned ? 'მონიშნულია' : 'მონიშვნა'}
+                    {lec.isPinned ? t('lecturers.pinned') : t('lecturers.pin')}
                   </button>
 
                   <div className="flex items-center gap-2">
@@ -181,7 +183,7 @@ export default function LecturersTab({
                       onClick={() => handleOpenEditModal(lec)}
                       className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                     >
-                      <Pencil className="w-3.5 h-3.5" /> ლექტორის რედაქტირება
+                      <Pencil className="w-3.5 h-3.5" /> {t('lecturers.edit')}
                     </button>
                     <button
                       onClick={() => onDelete(lec)}
@@ -190,15 +192,15 @@ export default function LecturersTab({
                           ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
                           : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                       }`}
-                      title={isActive ? 'დეაქტივაცია' : 'გააქტიურება'}
+                      title={isActive ? t('lecturers.deactivate') : t('lecturers.activate')}
                     >
                       {isActive ? (
                         <>
-                          <PowerOff className="w-3.5 h-3.5" /> დეაქტივაცია
+                          <PowerOff className="w-3.5 h-3.5" /> {t('lecturers.deactivate')}
                         </>
                       ) : (
                         <>
-                          <Power className="w-3.5 h-3.5" /> გააქტიურება
+                          <Power className="w-3.5 h-3.5" /> {t('lecturers.activate')}
                         </>
                       )}
                     </button>

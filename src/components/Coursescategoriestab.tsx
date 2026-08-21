@@ -13,6 +13,7 @@ import {
   Star,
   X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CourseItem } from '../types';
 import {
   getAllCourseLessons,
@@ -49,6 +50,7 @@ function LoadingState({ label }: { label: string }) {
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-white rounded-2xl p-12 border border-rose-200/80 shadow-sm flex flex-col items-center justify-center gap-3 text-center">
       <AlertTriangle className="w-6 h-6 text-rose-500" />
@@ -57,7 +59,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         onClick={onRetry}
         className="mt-1 bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-xl text-xs font-bold transition"
       >
-        თავიდან ცდა
+        {t('coursesTab.retry')}
       </button>
     </div>
   );
@@ -72,7 +74,7 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-// ── Модальное окно прикрепленных уроков ──
+// ── Attached lessons modal ──
 // Now wired to the real getAllCourseLessons endpoint. "Selected" checkbox
 // state below is still local/UI-only — there's no addCourseLesson-to-course
 // "attach" concept confirmed on the backend, so checking a box doesn't
@@ -95,6 +97,7 @@ function LessonsModal({
   userGuid: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [lessons, setLessons] = useState<GetAllCourseLessonsResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,11 +134,11 @@ function LessonsModal({
         if (res.errorCode && (res.courseLessons?.length ?? 0) === 0) {
           // swallow: this is "no lessons found", not a real failure
         } else if (res.errorCode) {
-          setError(res.errMsg || 'ვერ ჩაიტვირთა გაკვეთილები');
+          setError(res.errMsg || t('coursesTab.lessonsModal.failedToLoad'));
         }
       })
       .catch((e) => {
-        setError(e?.message ?? 'ვერ ჩაიტვირთა გაკვეთილები');
+        setError(e?.message ?? t('coursesTab.lessonsModal.failedToLoad'));
       })
       .finally(() => {
         setLoading(false);
@@ -164,11 +167,11 @@ function LessonsModal({
   const handleAddLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDescription.trim()) {
-      setAddError('შეავსეთ სათაური და აღწერა.');
+      setAddError(t('coursesTab.lessonsModal.fillTitleAndDesc'));
       return;
     }
     if (!newLessonNumber || newLessonNumber < 1) {
-      setAddError('მიუთითეთ გაკვეთილის ნომერი.');
+      setAddError(t('coursesTab.lessonsModal.specifyLessonNumber'));
       return;
     }
 
@@ -185,7 +188,7 @@ function LessonsModal({
       });
 
       if (res.errorCode) {
-        setAddError(res.errMsg || 'გაკვეთილის დამატება ვერ მოხერხდა');
+        setAddError(res.errMsg || t('coursesTab.lessonsModal.failedToAdd'));
         return;
       }
 
@@ -194,7 +197,7 @@ function LessonsModal({
       setShowAddForm(false);
       await fetchLessons();
     } catch (err: any) {
-      setAddError(err?.message ?? 'გაკვეთილის დამატება ვერ მოხერხდა');
+      setAddError(err?.message ?? t('coursesTab.lessonsModal.failedToAdd'));
     } finally {
       setAddSubmitting(false);
     }
@@ -218,11 +221,11 @@ function LessonsModal({
   const handleUpdateLesson = async (e: React.FormEvent, lesson: GetAllCourseLessonsResponseDto) => {
     e.preventDefault();
     if (!editTitle.trim() || !editDescription.trim()) {
-      setEditError('შეავსეთ სათაური და აღწერა.');
+      setEditError(t('coursesTab.lessonsModal.fillTitleAndDesc'));
       return;
     }
     if (!editLessonNumber || editLessonNumber < 1) {
-      setEditError('მიუთითეთ გაკვეთილის ნომერი.');
+      setEditError(t('coursesTab.lessonsModal.specifyLessonNumber'));
       return;
     }
 
@@ -239,14 +242,14 @@ function LessonsModal({
       });
 
       if (res.errorCode) {
-        setEditError(res.errMsg || 'გაკვეთილის განახლება ვერ მოხერხდა');
+        setEditError(res.errMsg || t('coursesTab.lessonsModal.failedToUpdate'));
         return;
       }
 
       setEditingLessonId(null);
       await fetchLessons();
     } catch (err: any) {
-      setEditError(err?.message ?? 'გაკვეთილის განახლება ვერ მოხერხდა');
+      setEditError(err?.message ?? t('coursesTab.lessonsModal.failedToUpdate'));
     } finally {
       setEditSubmitting(false);
     }
@@ -258,11 +261,11 @@ function LessonsModal({
         <div className="flex items-start justify-between">
           <div>
             <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-100">
-              მიმაგრებული გაკვეთილების არჩევა
+              {t('coursesTab.lessonsModal.badge')}
             </span>
             <h3 className="font-bold text-slate-800 text-sm mt-2">{course.title}</h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              მონიშნეთ გაკვეთილები, რომლებიც უნდა შედიოდეს ამ კურსის პროგრამაში
+              {t('coursesTab.lessonsModal.subtitle')}
             </p>
           </div>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg transition">
@@ -274,7 +277,7 @@ function LessonsModal({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="ძიება გაკვეთილების ბანკში..."
+            placeholder={t('coursesTab.lessonsModal.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -282,7 +285,7 @@ function LessonsModal({
         </div>
 
         <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1">
-          <span>სულ {lessons.length} გაკვეთილი</span>
+          <span>{t('coursesTab.lessonsModal.totalLessons', { count: lessons.length })}</span>
           <button
             onClick={() => {
               setShowAddForm((v) => {
@@ -293,8 +296,8 @@ function LessonsModal({
               setAddError(null);
               setEditingLessonId(null);
             }}
-            title="ახალი გაკვეთილის შექმნა"
-            aria-label="ახალი გაკვეთილის შექმნა"
+            title={t('coursesTab.lessonsModal.createLesson')}
+            aria-label={t('coursesTab.lessonsModal.createLesson')}
             className="text-purple-600 hover:bg-purple-50 p-1.5 rounded-lg transition"
           >
             <Plus className="w-4 h-4" />
@@ -308,7 +311,7 @@ function LessonsModal({
           >
             <div className="flex gap-3">
               <div className="space-y-1 w-28 shrink-0">
-                <label className="block text-xs font-bold text-slate-800">ნომერი</label>
+                <label className="block text-xs font-bold text-slate-800">{t('coursesTab.lessonsModal.numberLabel')}</label>
                 <input
                   type="number"
                   min={1}
@@ -319,12 +322,12 @@ function LessonsModal({
               </div>
 
               <div className="space-y-1 flex-1">
-                <label className="block text-xs font-bold text-slate-800">გაკვეთილის სათაური</label>
+                <label className="block text-xs font-bold text-slate-800">{t('coursesTab.lessonsModal.titleLabel')}</label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="მაგ: React.js Component Architecture & Hooks"
+                  placeholder={t('coursesTab.lessonsModal.titlePlaceholder')}
                   className="lesson-input bg-white"
                   autoFocus
                 />
@@ -332,11 +335,11 @@ function LessonsModal({
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-800">აღწერა</label>
+              <label className="block text-xs font-bold text-slate-800">{t('coursesTab.lessonsModal.descriptionLabel')}</label>
               <textarea
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="გაკვეთილის მოკლე აღწერა..."
+                placeholder={t('coursesTab.lessonsModal.descriptionPlaceholder')}
                 rows={2}
                 className="lesson-input bg-white resize-y min-h-[60px]"
               />
@@ -353,14 +356,14 @@ function LessonsModal({
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-white transition"
               >
-                გაუქმება
+                {t('coursesTab.lessonsModal.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={addSubmitting}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition shadow-sm disabled:opacity-50"
               >
-                {addSubmitting ? 'ინახება...' : 'დამატება'}
+                {addSubmitting ? t('coursesTab.lessonsModal.saving') : t('coursesTab.lessonsModal.add')}
               </button>
             </div>
           </form>
@@ -370,7 +373,7 @@ function LessonsModal({
           {loading && (
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-400">
               <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-              <p className="text-xs font-semibold">გაკვეთილები იტვირთება...</p>
+              <p className="text-xs font-semibold">{t('coursesTab.lessonsModal.loadingLessons')}</p>
             </div>
           )}
 
@@ -385,7 +388,9 @@ function LessonsModal({
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-400">
               <Inbox className="w-5 h-5" />
               <p className="text-xs font-semibold text-center">
-                {search.trim() ? `გაკვეთილი ვერ მოიძებნა: "${search}"` : 'გაკვეთილები ჯერ არ დამატებულა'}
+                {search.trim()
+                  ? t('coursesTab.lessonsModal.noLessonsFoundQuery', { query: search })
+                  : t('coursesTab.lessonsModal.noLessonsYet')}
               </p>
             </div>
           )}
@@ -402,7 +407,7 @@ function LessonsModal({
                 >
                   <div className="flex gap-3">
                     <div className="space-y-1 w-28 shrink-0">
-                      <label className="block text-xs font-bold text-slate-800">ნომერი</label>
+                      <label className="block text-xs font-bold text-slate-800">{t('coursesTab.lessonsModal.numberLabel')}</label>
                       <input
                         type="number"
                         min={1}
@@ -413,12 +418,12 @@ function LessonsModal({
                     </div>
 
                     <div className="space-y-1 flex-1">
-                      <label className="block text-xs font-bold text-slate-800">გაკვეთილის სათაური</label>
+                      <label className="block text-xs font-bold text-slate-800">{t('coursesTab.lessonsModal.titleLabel')}</label>
                       <input
                         type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        placeholder="მაგ: React.js Component Architecture & Hooks"
+                        placeholder={t('coursesTab.lessonsModal.titlePlaceholder')}
                         className="lesson-input bg-white"
                         autoFocus
                       />
@@ -426,11 +431,11 @@ function LessonsModal({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-800">აღწერა</label>
+                    <label className="block text-xs font-bold text-slate-800">{t('coursesTab.lessonsModal.descriptionLabel')}</label>
                     <textarea
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
-                      placeholder="გაკვეთილის მოკლე აღწერა..."
+                      placeholder={t('coursesTab.lessonsModal.descriptionPlaceholder')}
                       rows={2}
                       className="lesson-input bg-white resize-y min-h-[60px]"
                     />
@@ -444,14 +449,14 @@ function LessonsModal({
                       onClick={cancelEdit}
                       className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-white transition"
                     >
-                      გაუქმება
+                      {t('coursesTab.lessonsModal.cancel')}
                     </button>
                     <button
                       type="submit"
                       disabled={editSubmitting}
                       className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition shadow-sm disabled:opacity-50"
                     >
-                      {editSubmitting ? 'ინახება...' : 'შენახვა'}
+                      {editSubmitting ? t('coursesTab.lessonsModal.saving') : t('coursesTab.lessonsModal.save')}
                     </button>
                   </div>
                 </form>
@@ -469,7 +474,10 @@ function LessonsModal({
                     />
                     <div>
                       <h4 className="text-xs font-semibold text-slate-800">
-                        გაკვეთილი #{item.lessonNumber}: {item.lessonTitle}
+                        {t('coursesTab.lessonsModal.lessonRowTitle', {
+                          number: item.lessonNumber,
+                          title: item.lessonTitle,
+                        })}
                       </h4>
                       <p className="text-[11px] text-slate-400 mt-0.5">{item.description}</p>
                     </div>
@@ -477,8 +485,8 @@ function LessonsModal({
 
                   <button
                     onClick={() => startEdit(item)}
-                    title="გაკვეთილის რედაქტირება"
-                    aria-label="გაკვეთილის რედაქტირება"
+                    title={t('coursesTab.lessonsModal.editLesson')}
+                    aria-label={t('coursesTab.lessonsModal.editLesson')}
                     className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -493,7 +501,7 @@ function LessonsModal({
             onClick={onClose}
             className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-sm transition"
           >
-            დასრულება / შენახვა
+            {t('coursesTab.lessonsModal.finishSave')}
           </button>
         </div>
       </div>
@@ -532,6 +540,7 @@ export default function CoursesCategoriesTab({
   onAdd,
   onEdit,
 }: CoursesCategoriesTabProps) {
+  const { t } = useTranslation();
   const [newCategory, setNewCategory] = useState('');
   const [selectedCourseForLessons, setSelectedCourseForLessons] = useState<CourseItem | null>(null);
 
@@ -550,23 +559,23 @@ export default function CoursesCategoriesTab({
 
   return (
     <>
-      {/* ── Блок управления категориями ── */}
+      {/* ── Category management section ── */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
               <FolderPlus className="w-5 h-5 text-purple-600" />
-              კურსების კატეგორიები
+              {t('coursesTab.categoriesTitle')}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              ააკადემიის არსებული კატეგორიების ჩამონათვალი და ახლის დამატება
+              {t('coursesTab.categoriesSubtitle')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="ახალი კატეგორია..."
+              placeholder={t('coursesTab.newCategoryPlaceholder')}
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 w-48 placeholder:text-slate-400"
@@ -576,14 +585,14 @@ export default function CoursesCategoriesTab({
               className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-purple-200 transition shrink-0"
             >
               <Plus className="w-4 h-4" />
-              კატეგორიის დამატება
+              {t('coursesTab.addCategory')}
             </button>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
           <button className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-sm">
-            ყველა
+            {t('coursesTab.allCategories')}
           </button>
           {categories.map((cat) => (
             <div
@@ -599,34 +608,38 @@ export default function CoursesCategoriesTab({
         </div>
       </div>
 
-      {/* ── Блок заголовка списка ── */}
+      {/* ── List header section ── */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-purple-600" />
-            კურსების სრული სია
+            {t('coursesTab.fullCourseList')}
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">დაამატეთ, ჩაასწორეთ ან წაშალეთ აკადემიის კურსები</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t('coursesTab.fullCourseListSubtitle')}</p>
         </div>
 
         <button
           onClick={onAdd}
           className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition shrink-0"
         >
-          <Plus className="w-4 h-4" /> ახალი კურსის დამატება
+          <Plus className="w-4 h-4" /> {t('coursesTab.addNewCourse')}
         </button>
       </div>
 
-      {/* ── Состояния загрузки и ошибок ── */}
-      {loading && <LoadingState label="კურსები იტვირთება..." />}
+      {/* ── Loading and error states ── */}
+      {loading && <LoadingState label={t('coursesTab.loadingCourses')} />}
       {!loading && error && <ErrorState message={error} onRetry={onRetry} />}
       {!loading && !error && filteredCourses.length === 0 && (
         <EmptyState
-          message={searchQuery.trim() ? `კურსი ვერ მოიძებნა: "${searchQuery}"` : 'კურსები ჯერ არ დამატებულა'}
+          message={
+            searchQuery.trim()
+              ? t('coursesTab.noCoursesFoundQuery', { query: searchQuery })
+              : t('coursesTab.noCoursesYet')
+          }
         />
       )}
 
-      {/* ── Сетка карточек курсов ── */}
+      {/* ── Course cards grid ── */}
       {!loading && !error && filteredCourses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCourses.map((c) => (
@@ -634,7 +647,7 @@ export default function CoursesCategoriesTab({
               key={c.id}
               className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col group hover:shadow-lg transition duration-200"
             >
-              {/* Превью / Баннер курса */}
+              {/* Course preview / banner */}
               <div className="relative h-44 bg-slate-100 overflow-hidden">
                 <img
                   src={c.picture || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800'}
@@ -645,18 +658,18 @@ export default function CoursesCategoriesTab({
                     return courseCategoryId/name yet, so there's no real
                     data to show here. Re-add once the backend includes it. */}
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-800 text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-sm">
-                  {c.price ? `${c.price} ₾` : 'უფასო'}
+                  {c.price ? `${c.price} ₾` : t('coursesTab.free')}
                 </div>
               </div>
 
-              {/* Содержимое карточки */}
+              {/* Card content */}
               <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
                 <div className="space-y-2">
                   <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-2">{c.title}</h3>
                   <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{c.description}</p>
                 </div>
 
-                {/* Мета-информация */}
+                {/* Meta information */}
                 <div className="space-y-2.5 pt-2 border-t border-slate-100">
                   <div className="flex items-center justify-between text-[11px]">
                     <div className="flex items-center gap-1.5 text-purple-700 font-bold bg-purple-50 px-2.5 py-1 rounded-xl">
@@ -670,7 +683,7 @@ export default function CoursesCategoriesTab({
                           : 'text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200'
                       }
                     >
-                      {c.isActive ? 'მიმდინარე' : 'დასრულებული'}
+                      {c.isActive ? t('coursesTab.statusActive') : t('coursesTab.statusCompleted')}
                     </span>
                   </div>
 
@@ -687,23 +700,23 @@ export default function CoursesCategoriesTab({
                   </div>
                 </div>
 
-                {/* Статистика */}
+                {/* Statistics */}
                 <div className="grid grid-cols-2 gap-2 text-center text-xs">
                   <div className="bg-purple-50/60 border border-purple-100/80 p-2 rounded-xl">
-                    <span className="block text-[10px] text-purple-600 font-semibold">გაკვეთილები</span>
+                    <span className="block text-[10px] text-purple-600 font-semibold">{t('coursesTab.statLessons')}</span>
                     <span className="font-extrabold text-purple-700">{c.lessonsAmount ?? 0}</span>
                   </div>
                   <div className="bg-emerald-50/60 border border-emerald-100/80 p-2 rounded-xl">
-                    <span className="block text-[10px] text-emerald-600 font-semibold">სტუდენტები</span>
+                    <span className="block text-[10px] text-emerald-600 font-semibold">{t('coursesTab.statStudents')}</span>
                     <span className="font-extrabold text-emerald-700">{c.enrolledStudentsAmount ?? 0}</span>
                   </div>
                 </div>
 
-                {/* Кнопки действий */}
+                {/* Action buttons */}
                 <div className="pt-2 flex items-center gap-2">
                   <button
                     onClick={() => setSelectedCourseForLessons(c)}
-                    title="გაკვეთილების მართვა"
+                    title={t('coursesTab.manageLessons')}
                     className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
                   >
                     <List className="w-4 h-4" />
@@ -713,7 +726,7 @@ export default function CoursesCategoriesTab({
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                   >
                     <Pencil className="w-3.5 h-3.5" />
-                    რედაქტირება
+                    {t('coursesTab.editCourse')}
                   </button>
                 </div>
               </div>
@@ -722,7 +735,7 @@ export default function CoursesCategoriesTab({
         </div>
       )}
 
-      {/* Диалоги / Модальные окна */}
+      {/* Dialogs / Modals */}
       {selectedCourseForLessons && (
         <LessonsModal
           course={selectedCourseForLessons}
