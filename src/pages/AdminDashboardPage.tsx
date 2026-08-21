@@ -332,7 +332,7 @@ export default function AdminDashboardPage() {
         attendanceModeId: values.attendanceModeId,
         lessonDaysDescription: values.lessonDaysDescription,
         isActive: values.isActive,
-        userGuid,
+        // userGuid,
       });
     }
     setSessionModal(null);
