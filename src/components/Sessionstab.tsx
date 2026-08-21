@@ -1,7 +1,26 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Calendar, Clock, MapPin, Pencil, Plus, Trash2, User, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  CalendarClock,
+  CalendarRange,
+  Clock,
+  GraduationCap,
+  MapPin,
+  Pencil,
+  Plus,
+  Trash2,
+  User,
+  Users,
+} from 'lucide-react';
 import { SessionItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
+
+// Убирает время из ISO-даты: "2026-10-10T00:00:00" → "2026-10-10"
+function formatDateOnly(value?: string | null): string {
+  if (!value) return '—';
+  return value.split('T')[0];
+}
 
 interface SessionsTabProps {
   sessions: SessionItem[];
@@ -13,6 +32,32 @@ interface SessionsTabProps {
   onEdit: (session: SessionItem) => void;
   onDelete: (session: SessionItem) => void | Promise<void>;
   onViewStudents?: (session: SessionItem) => void;
+}
+
+// Единый "чип" для строки с деталями сессии — иконка в цветном кружке + текст
+function DetailRow({
+  icon,
+  iconBg,
+  iconColor,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`w-8 h-8 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shrink-0`}>
+        {icon}
+      </div>
+      <span className="text-xs text-slate-500 font-semibold min-w-0 truncate">
+        {label}: <strong className="text-slate-800 font-bold">{value || '—'}</strong>
+      </span>
+    </div>
+  );
 }
 
 export default function SessionsTab({
@@ -67,7 +112,7 @@ export default function SessionsTab({
         </div>
         <button
           onClick={onAdd}
-          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md transition"
+          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition hover:shadow-lg active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" /> ახალი სესიის დამატება
         </button>
@@ -87,82 +132,118 @@ export default function SessionsTab({
 
       {!loading && !error && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filtered.map((s) => (
-            <div
-              key={s.id}
-              className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition"
-            >
-              {/* Header Badges */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-2xl max-w-[70%]">
-                  <p className="text-xs font-bold text-purple-700 truncate">{s.courseTitle || s.sessionName}</p>
-                </div>
-                <div className="bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shrink-0">
-                  <Users className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-xs font-bold text-emerald-700">
-                    {s.currentStudents ?? 0} / {s.maxStudents ?? 0} სტუდენტი
-                  </span>
-                </div>
-              </div>
+          {filtered.map((s) => {
+            const isActive = s.isActive !== false;
 
-              {/* Session Title */}
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base">{s.sessionName}</h3>
-              </div>
-
-              {/* Session Details */}
-              <div className="space-y-2 text-xs font-semibold text-slate-600">
-                <div className="flex items-center gap-2">
-                 <User className="w-4 h-4 text-emerald-600 shrink-0" />
-  <span>
-    მიჩენილი ლექტორი: <strong className="text-slate-800">{s.instructor || '—'}</strong>
-  </span>
+            return (
+              <div
+                key={s.id}
+                className={`bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-between space-y-5 transition hover:shadow-lg hover:-translate-y-0.5 ${
+                  isActive ? 'border-slate-100' : 'border-rose-200/70 bg-rose-50/20'
+                }`}
+              >
+                {/* Header Badges */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-2xl max-w-[65%]">
+                    <GraduationCap className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <p className="text-xs font-bold text-purple-700 truncate">
+                      {s.courseTitle || s.sessionName}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                    {!isActive && (
+                      <div className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-2xl flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        <span className="text-xs font-bold text-rose-600">არააქტიური</span>
+                      </div>
+                    )}
+                    <div className="bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-2xl flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-xs font-bold text-emerald-700">
+                        {s.currentStudents ?? 0} / {s.maxStudents ?? 0}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* <div className="flex items-center gap-2">
-  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-  <span>
-    განრიგი: <strong className="text-slate-700">{s.lessonDaysDescription || '—'}</strong>
-  </span>
-</div> */}
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>
-                    ლოკაცია: <strong className="text-slate-700">{s.location || '—'}</strong>
-                  </span>
-                </div>
-              </div>
 
-              {/* Footer Actions */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => onViewStudents && onViewStudents(s)}
-                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition"
-                >
-                  <Users className="w-4 h-4" />
-                  <span>სტუდენტების სია ({s.currentStudents ?? 0})</span>
-                </button>
+                {/* Session Title */}
+                {/* <div>
+                  <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{s.sessionName}</h3>
+                </div> */}
 
-                <div className="flex items-center gap-1.5">
+                {/* Session Details — единый стиль иконка-чип + текст */}
+                <div className="space-y-2.5">
+                  <DetailRow
+                    icon={<User className="w-4 h-4" />}
+                    iconBg="bg-emerald-50"
+                    iconColor="text-emerald-600"
+                    label="ლექტორი"
+                    value={s.instructor}
+                  />
+                  <DetailRow
+                    icon={<Clock className="w-4 h-4" />}
+                    iconBg="bg-amber-50"
+                    iconColor="text-amber-600"
+                    label="განრიგი"
+                    value={s.lessonDaysDescription}
+                  />
+                  <DetailRow
+                    icon={<MapPin className="w-4 h-4" />}
+                    iconBg="bg-sky-50"
+                    iconColor="text-sky-600"
+                    label="ლოკაცია"
+                    value={s.location}
+                  />
+                  {(s as any).weeks != null && (
+                    <DetailRow
+                      icon={<CalendarRange className="w-4 h-4" />}
+                      iconBg="bg-teal-50"
+                      iconColor="text-teal-600"
+                      label="ხანგრძლივობა"
+                      value={`${(s as any).weeks} კვირა`}
+                    />
+                  )}
+                  {(s.startDate || s.endDate) && (
+                    <DetailRow
+                      icon={<CalendarClock className="w-4 h-4" />}
+                      iconBg="bg-violet-50"
+                      iconColor="text-violet-600"
+                      label="ვადები"
+                      value={`${formatDateOnly(s.startDate)} → ${formatDateOnly(s.endDate)}`}
+                    />
+                  )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
                   <button
-                    onClick={() => onEdit(s)}
-                    className="p-2 rounded-xl text-purple-600 bg-purple-50 hover:bg-purple-100 transition"
-                    title="რედაქტირება"
+                    onClick={() => onViewStudents && onViewStudents(s)}
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Users className="w-4 h-4" />
+                    <span>სტუდენტების სია ({s.currentStudents ?? 0})</span>
                   </button>
-                  <button
-                    onClick={() => setSessionToDelete(s)}
-                    className="p-2 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition"
-                    title="წაშლა"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => onEdit(s)}
+                      className="p-2.5 rounded-xl text-purple-600 bg-purple-50 hover:bg-purple-100 transition"
+                      title="რედაქტირება"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    {/* <button
+                      onClick={() => setSessionToDelete(s)}
+                      className="p-2.5 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition"
+                      title="წაშლა"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button> */}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

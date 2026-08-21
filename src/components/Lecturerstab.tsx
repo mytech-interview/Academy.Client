@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Mail, Pencil, Plus, Star, Trash2 } from 'lucide-react';
+import { Mail, Pencil, Plus, Power, PowerOff, Star } from 'lucide-react';
 import { LecturerItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 import LecturerModal from './LecturerModal'; // Импортируем модалку
@@ -12,8 +12,35 @@ interface LecturersTabProps {
   onRetry: () => void;
   onAdd: (newLecturer: Partial<LecturerItem>) => void;
   onEdit: (lecturer: LecturerItem) => void;
-  onDelete: (lecturer: LecturerItem) => void;
+  onDelete: (lecturer: LecturerItem) => void; // ← фактически toggle isActive (см. AdminDashboardPage)
   onTogglePin: (id: string) => void;
+}
+
+function isImageUrl(value: string): boolean {
+  return /^https?:\/\//.test(value) || value.startsWith('data:image');
+}
+
+function AvatarDisplay({ value, bgClass, dimmed }: { value: string; bgClass: string; dimmed?: boolean }) {
+  if (value && isImageUrl(value)) {
+    return (
+      <div
+        className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${
+          dimmed ? 'grayscale opacity-60' : ''
+        }`}
+      >
+        <img src={value} alt="avatar" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm ${
+        dimmed ? 'grayscale opacity-60' : ''
+      }`}
+    >
+      {value || '🎓'}
+    </div>
+  );
 }
 
 export default function LecturersTab({
@@ -59,24 +86,6 @@ export default function LecturersTab({
       onAdd(data);
     }
   };
-  function isImageUrl(value: string): boolean {
-  return /^https?:\/\//.test(value) || value.startsWith('data:image');
-}
-
-function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
-  if (value && isImageUrl(value)) {
-    return (
-      <div className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center`}>
-        <img src={value} alt="avatar" className="w-full h-full object-cover" />
-      </div>
-    );
-  }
-  return (
-    <div className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-      {value || '🎓'}
-    </div>
-  );
-}
 
   return (
     <>
@@ -107,65 +116,97 @@ function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
 
       {!loading && !error && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filtered.map((lec) => (
-            <div
-              key={lec.id}
-              className="bg-white rounded-[2rem] p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition"
-            >
-              <div className="flex items-start gap-4">
-                <AvatarDisplay value={lec.avatarIcon} bgClass={lec.avatarBg} />
-                <div className="min-w-0">
-                  <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md uppercase">
-                    LECTURER
-                  </span>
-                  <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{lec.name}</h3>
-                  <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                    {lec.role || '— (როლი მითითებული არაა)'}
+          {filtered.map((lec) => {
+            // isActive может отсутствовать в типе — по умолчанию считаем активным
+            const isActive = (lec as any).isActive !== false;
+
+            return (
+              <div
+                key={lec.id}
+                className={`bg-white rounded-[2rem] p-6 border shadow-sm flex flex-col justify-between space-y-5 transition ${
+                  isActive
+                    ? 'border-slate-200/80 hover:shadow-md'
+                    : 'border-rose-200/70 bg-rose-50/30 opacity-80'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <AvatarDisplay value={lec.avatarIcon} bgClass={lec.avatarBg} dimmed={!isActive} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md uppercase">
+                        LECTURER
+                      </span>
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${
+                          isActive
+                            ? 'text-emerald-600 bg-emerald-50'
+                            : 'text-rose-600 bg-rose-100'
+                        }`}
+                      >
+                        {isActive ? 'აქტიური' : 'არააქტიური'}
+                      </span>
+                    </div>
+                    <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{lec.name}</h3>
+                    <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                      {lec.role || '— (როლი მითითებული არაა)'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-100/80">
+                  <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span className="truncate">{lec.email}</span>
+                  </div>
+                  <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">
+                    {lec.bio || '— (ბიოგრაფია მითითებული არაა)'}
                   </p>
                 </div>
-              </div>
 
-              <div className="space-y-3 pt-2 border-t border-slate-100/80">
-                <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
-                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">{lec.email}</span>
-                </div>
-                <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">
-                  {lec.bio || '— (ბიოგრაფია მითითებული არაა)'}
-                </p>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <button
-                  onClick={() => onTogglePin(lec.id)}
-                  className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
-                    lec.isPinned
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                      : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                  }`}
-                >
-                  <Star className={`w-3.5 h-3.5 ${lec.isPinned ? 'fill-white' : 'fill-amber-400'}`} />
-                  {lec.isPinned ? 'მონიშნულია' : 'მონიშვნა'}
-                </button>
-
-                <div className="flex items-center gap-2">
+                <div className="space-y-2 pt-2">
                   <button
-                    onClick={() => handleOpenEditModal(lec)}
-                    className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                    onClick={() => onTogglePin(lec.id)}
+                    className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
+                      lec.isPinned
+                        ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                        : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                    }`}
                   >
-                    <Pencil className="w-3.5 h-3.5" /> ლექტორის რედაქტირება
+                    <Star className={`w-3.5 h-3.5 ${lec.isPinned ? 'fill-white' : 'fill-amber-400'}`} />
+                    {lec.isPinned ? 'მონიშნულია' : 'მონიშვნა'}
                   </button>
-                  <button
-                    onClick={() => onDelete(lec)}
-                    className="bg-rose-50 hover:bg-rose-100 text-rose-500 p-2.5 rounded-xl transition flex items-center justify-center"
-                    title="წაშლა"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenEditModal(lec)}
+                      className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> ლექტორის რედაქტირება
+                    </button>
+                    <button
+                      onClick={() => onDelete(lec)}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                        isActive
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                      }`}
+                      title={isActive ? 'დეაქტივაცია' : 'გააქტიურება'}
+                    >
+                      {isActive ? (
+                        <>
+                          <PowerOff className="w-3.5 h-3.5" /> დეაქტივაცია
+                        </>
+                      ) : (
+                        <>
+                          <Power className="w-3.5 h-3.5" /> გააქტიურება
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

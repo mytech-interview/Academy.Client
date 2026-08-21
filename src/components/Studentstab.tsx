@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Mail, Pencil, Phone, Plus, Trash2 } from 'lucide-react';
+import { Mail, Pencil, Phone, Power, PowerOff } from 'lucide-react';
 import { StudentItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 
@@ -9,9 +9,35 @@ interface StudentsTabProps {
   error: string | null;
   searchQuery: string;
   onRetry: () => void;
-  onAdd: () => void;
   onEdit: (student: StudentItem) => void;
-  onDelete: (student: StudentItem) => void;
+  onDelete: (student: StudentItem) => void; // ← фактически toggle isActive (см. AdminDashboardPage)
+}
+
+function isImageUrl(value: string): boolean {
+  return /^https?:\/\//.test(value) || value.startsWith('data:image');
+}
+
+function AvatarDisplay({ value, bgClass, dimmed }: { value: string; bgClass: string; dimmed?: boolean }) {
+  if (value && isImageUrl(value)) {
+    return (
+      <div
+        className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${
+          dimmed ? 'grayscale opacity-60' : ''
+        }`}
+      >
+        <img src={value} alt="avatar" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm ${
+        dimmed ? 'grayscale opacity-60' : ''
+      }`}
+    >
+      {value || '🎓'}
+    </div>
+  );
 }
 
 export default function StudentsTab({
@@ -20,7 +46,6 @@ export default function StudentsTab({
   error,
   searchQuery,
   onRetry,
-  onAdd,
   onEdit,
   onDelete,
 }: StudentsTabProps) {
@@ -35,25 +60,6 @@ export default function StudentsTab({
         st.phone.toLowerCase().includes(q)
     );
   }, [students, searchQuery]);
-  
-  function isImageUrl(value: string): boolean {
-  return /^https?:\/\//.test(value) || value.startsWith('data:image');
-}
-
-function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
-  if (value && isImageUrl(value)) {
-    return (
-      <div className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center`}>
-        <img src={value} alt="avatar" className="w-full h-full object-cover" />
-      </div>
-    );
-  }
-  return (
-    <div className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-      {value || '🎓'}
-    </div>
-  );
-}
 
   return (
     <>
@@ -62,13 +68,6 @@ function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
           <h2 className="text-base font-black text-slate-800">სტუდენტების მართვა</h2>
           <p className="text-xs text-slate-400 mt-0.5">სტუდენტთა სია, პროფილების განახლება</p>
         </div>
-        {/* <button
-          onClick={onAdd}
-          title="ეს ღილაკი ჯერ არააქტიურია — იხ. მესიჯი ჩატში"
-          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition"
-        >
-          <Plus className="w-4 h-4" /> ახალი სტუდენტის დამატება
-        </button> */}
       </div>
 
       {loading && <LoadingState label="სტუდენტები იტვირთება..." />}
@@ -85,52 +84,84 @@ function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
 
       {!loading && !error && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filtered.map((st) => (
-            <div
-              key={st.id}
-              className="bg-white rounded-[2rem] p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition"
-            >
-              <div className="flex items-start gap-4">
-                <AvatarDisplay value={st.avatarIcon} bgClass={st.avatarBg} />
-                <div className="min-w-0">
-                  <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase">
-                    STUDENT
-                  </span>
-                  <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{st.name}</h3>
-                  <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                    {st.role || '— (პროგრამა მითითებული არაა)'}
-                  </p>
-                </div>
-              </div>
+          {filtered.map((st) => {
+            // isActive может отсутствовать в типе — по умолчанию считаем активным
+            const isActive = (st as any).isActive !== false;
 
-              <div className="space-y-2 pt-2 border-t border-slate-100/80 text-xs text-slate-500 font-semibold">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">{st.email}</span>
+            return (
+              <div
+                key={st.id}
+                className={`bg-white rounded-[2rem] p-6 border shadow-sm flex flex-col justify-between space-y-5 transition ${
+                  isActive
+                    ? 'border-slate-200/80 hover:shadow-md'
+                    : 'border-rose-200/70 bg-rose-50/30 opacity-80'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <AvatarDisplay value={st.avatarIcon} bgClass={st.avatarBg} dimmed={!isActive} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase">
+                        STUDENT
+                      </span>
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${
+                          isActive
+                            ? 'text-emerald-600 bg-emerald-50'
+                            : 'text-rose-600 bg-rose-100'
+                        }`}
+                      >
+                        {isActive ? 'აქტიური' : 'არააქტიური'}
+                      </span>
+                    </div>
+                    <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{st.name}</h3>
+                    <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                      {st.role || '— (პროგრამა მითითებული არაა)'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">{st.phone || 'N/A'}</span>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <button
-                  onClick={() => onEdit(st)}
-                  className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
-                >
-                  <Pencil className="w-3.5 h-3.5" /> სტუდენტის რედაქტირება
-                </button>
-                {/* <button
-                  onClick={() => onDelete(st)}
-                  className="bg-rose-50 hover:bg-rose-100 text-rose-500 p-2.5 rounded-xl transition flex items-center justify-center"
-                  title="წაშლა"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button> */}
+                <div className="space-y-2 pt-2 border-t border-slate-100/80 text-xs text-slate-500 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span className="truncate">{st.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span className="truncate">{st.phone || 'N/A'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={() => onEdit(st)}
+                    className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> სტუდენტის რედაქტირება
+                  </button>
+                  <button
+                    onClick={() => onDelete(st)}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                      isActive
+                        ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                    }`}
+                    title={isActive ? 'დეაქტივაცია' : 'გააქტიურება'}
+                  >
+                    {isActive ? (
+                      <>
+                        <PowerOff className="w-3.5 h-3.5" /> დეაქტივაცია
+                      </>
+                    ) : (
+                      <>
+                        <Power className="w-3.5 h-3.5" /> გააქტიურება
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>

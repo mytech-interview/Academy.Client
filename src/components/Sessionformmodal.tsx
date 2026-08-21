@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { CourseItem, LecturerItem, SessionItem } from '../types';
 
@@ -49,15 +49,15 @@ export default function SessionFormModal({
   const [courseId, setCourseId] = useState(
     initial ? String(initial.courseId ?? '') : String(courses[0]?.courseId ?? '')
   );
-const [teacherId, setTeacherId] = useState(
-  initial ? String(initial.teacherId ?? '') : String(lecturers[0]?.userId ?? '')
-);
+  const [teacherId, setTeacherId] = useState(
+    initial ? String(initial.teacherId ?? '') : String(lecturers[0]?.userId ?? '')
+  );
   const [weeks, setWeeks] = useState(initial?.weeks ? String(initial.weeks) : '8');
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-11-15');
   const [lessonDaysDescription, setLessonDaysDescription] = useState(
-  initial?.lessonDaysDescription ?? ''
-);
+    initial?.lessonDaysDescription ?? ''
+  );
   // TODO: no cities/attendance-mode API confirmed yet. Cities table in the
   // DB currently has only Id=1 თბილისი, Id=2 ახალციხე (per the screenshot) —
   // hardcoded to match that for now, but this should become a real
@@ -67,6 +67,24 @@ const [teacherId, setTeacherId] = useState(
     initial?.attendanceModeId ? String(initial.attendanceModeId) : '1'
   );
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+
+  // FIX: courses / lecturers (and sometimes `initial` in edit mode) can
+  // arrive AFTER this modal's first render (async fetch in the parent).
+  // The useState initializers above only run once on mount, so if data
+  // wasn't ready yet, courseId/teacherId silently stayed '' even though
+  // the <select> visually showed the first option — causing the false
+  // "აირჩიეთ კურსი და ლექტორი" validation error until the user touched
+  // the dropdowns manually. This effect re-syncs once the real data lands.
+  useEffect(() => {
+    if (initial) {
+      if (initial.courseId != null) setCourseId(String(initial.courseId));
+      if (initial.teacherId != null) setTeacherId(String(initial.teacherId));
+    } else {
+      if (!courseId && courses[0]) setCourseId(String(courses[0].courseId));
+      if (!teacherId && lecturers[0]) setTeacherId(String(lecturers[0].userId));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial, courses, lecturers]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,16 +97,16 @@ const [teacherId, setTeacherId] = useState(
     const parsedWeeks = Math.min(255, Math.max(0, Number(weeks) || 0));
 
     onSubmit({
-  courseId: Number(courseId),
-  teacherId: Number(teacherId),
-  weeks: parsedWeeks,
-  startDate,
-  endDate,
-  cityId: Number(cityId) || 1,
-  attendanceModeId: Number(attendanceModeId) || 1,
-  lessonDaysDescription: lessonDaysDescription.trim(), // NEW
-  ...(mode === 'edit' ? { isActive } : {}),
-});
+      courseId: Number(courseId),
+      teacherId: Number(teacherId),
+      weeks: parsedWeeks,
+      startDate,
+      endDate,
+      cityId: Number(cityId) || 1,
+      attendanceModeId: Number(attendanceModeId) || 1,
+      lessonDaysDescription: lessonDaysDescription.trim(), // NEW
+      ...(mode === 'edit' ? { isActive } : {}),
+    });
   };
 
   return (

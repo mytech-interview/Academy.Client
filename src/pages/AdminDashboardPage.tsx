@@ -200,6 +200,66 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleToggleStudentActive = async (student: StudentItem) => {
+  const nextActive = !(student as any).isActive;
+  const prev = students;
+  setStudents((list) =>
+    list.map((s) => (s.id === student.id ? ({ ...s, isActive: nextActive } as StudentItem) : s))
+  );
+  try {
+    const parts = (student.name ?? '').trim().split(' ');
+    const firstName = parts[0] || '';
+    const lastName = parts.slice(1).join(' ') || '';
+    await adminApi.editStudent({
+      studentId: student.userId,
+      userGuid,
+      firstName,
+      lastName,
+      email: student.email ?? '',
+      telephone: student.phone ?? '',
+      picture: (student as any).picture ?? student.avatarIcon ?? '',
+      isActive: nextActive,
+    });
+  } catch (err) {
+    setStudents(prev);
+    console.error('სტუდენტის სტატუსის შეცვლა ვერ მოხერხდა', err);
+  }
+};
+const handleToggleUserActive = async (user: SystemUserItem) => {
+  if (user.id.startsWith('teacher-')) {
+    const lecturer = lecturers.find((l) => `teacher-${l.id}` === user.id);
+    if (lecturer) await handleToggleLecturerActive(lecturer);
+  } else if (user.id.startsWith('student-')) {
+    const student = students.find((s) => `student-${s.id}` === user.id);
+    if (student) await handleToggleStudentActive(student);
+  }
+};
+  // ── Lecturer mutations ──
+// Деактивация вместо удаления: дергаем editTeacher с isActive: !текущее.
+const handleToggleLecturerActive = async (lecturer: LecturerItem) => {
+  const nextActive = !(lecturer as any).isActive;
+  const prev = lecturers;
+  setLecturers((list) =>
+    list.map((l) => (l.id === lecturer.id ? ({ ...l, isActive: nextActive } as LecturerItem) : l))
+  );
+  try {
+    const { firstName, lastName } = splitFullName(lecturer.name ?? '');
+    await adminApi.editTeacher({
+      teacherId: lecturer.userId,
+      userGuid,
+      firstName,
+      lastName,
+      email: lecturer.email ?? '',
+      telephone: (lecturer as any).phone ?? '',
+      picture: lecturer.avatarIcon ?? '',
+      isActive: nextActive,
+    } as any);
+  } catch (err) {
+    setLecturers(prev);
+    console.error('ლექტორის სტატუსის შეცვლა ვერ მოხერხდა', err);
+  }
+};
+
   const handleTogglePinLecturer = (id: string) => {
     setLecturers((list) => list.map((l) => (l.id === id ? { ...l, isPinned: !l.isPinned } : l)));
   };
@@ -495,7 +555,7 @@ export default function AdminDashboardPage() {
                 fetchLecturers();
                 fetchStudents();
               }}
-              onDelete={handleDeleteUser}
+              onDelete={handleToggleUserActive}
             />
           )}
 
@@ -538,7 +598,7 @@ export default function AdminDashboardPage() {
               onRetry={fetchLecturers}
               onAdd={handleAddLecturer}
               onEdit={handleEditLecturer}
-              onDelete={handleDeleteLecturer}
+              onDelete={handleToggleLecturerActive}
               onTogglePin={handleTogglePinLecturer}
             />
           )}
@@ -552,7 +612,7 @@ export default function AdminDashboardPage() {
               onRetry={fetchStudents}
               
               onEdit={handleOpenEditStudent}
-              onDelete={handleDeleteStudent}
+              onDelete={handleToggleStudentActive}
             />
           )}
 
@@ -570,17 +630,18 @@ export default function AdminDashboardPage() {
         </main>
       </div>
 
-      {sessionModal && (
-        <SessionFormModal
-          mode={sessionModal.mode}
-          initial={sessionModal.mode === 'edit' ? sessionModal.session : undefined}
-          submitting={sessionSubmitting}
-          courses={courses}
-          lecturers={lecturers}
-          onClose={handleCloseSessionModal}
-          onSubmit={handleSubmitSessionForm}
-        />
-      )}
+ {sessionModal && (
+  <SessionFormModal
+    key={sessionModal.mode === 'edit' ? sessionModal.session.id : 'new'}
+    mode={sessionModal.mode}
+    initial={sessionModal.mode === 'edit' ? sessionModal.session : undefined}
+    courses={courses}
+    lecturers={lecturers}
+    submitting={sessionSubmitting}
+    onClose={handleCloseSessionModal}
+    onSubmit={handleSubmitSessionForm}
+  />
+)}
 
       {courseModal && (
         <CourseFormModal
