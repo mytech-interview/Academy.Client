@@ -63,7 +63,7 @@ interface GetStudentSessionsResponse {
 
 export async function getStudentSessions(studentGuid: string): Promise<StudentSession[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentSessions`, {
+  const response = await fetch(`${API_BASE_URL}/sessions/getStudentSessions`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
@@ -124,7 +124,7 @@ export async function getCourseSessionDetailsForStudent(
   studentGuid: string
 ): Promise<CourseSessionDetailsForStudent> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/sessions/getCourseSessionDetailsForStudent`, {
+  const response = await fetch(`${API_BASE_URL}/sessions/getCourseSessionDetailsForStudent`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
@@ -169,7 +169,7 @@ export async function getCourseLibrarySessionId(
   userGuid: string
 ): Promise<CourseLibraryItem[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/sessions/getCourseLibrarySessionId`, {
+  const response = await fetch(`${API_BASE_URL}/sessions/getCourseLibrarySessionId`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
@@ -282,7 +282,7 @@ interface GetLessonsForSessionResponse {
 
 export async function getLessonsForSession(sessionId: number): Promise<SessionLesson[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/sessions/getLessonsForSession`, {
+  const response = await fetch(`${API_BASE_URL}/sessions/getLessonsForSession`, {
     method: 'POST',
      headers: {
       "Content-Type": "application/json",
@@ -337,7 +337,7 @@ interface GetHomeWorksForStudentResponse {
 
 export async function getHomeWorksForStudent(studentGuid: string, sessionId: number): Promise<StudentHomeWork[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/homeWorks/getHomeWorksForStudent`, {
+  const response = await fetch(`${API_BASE_URL}/homeWorks/getHomeWorksForStudent`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
@@ -380,7 +380,7 @@ interface AddHomeWorkSubmissionResponse {
 
 export async function submitHomeWork(payload: AddHomeWorkSubmissionPayload): Promise<void> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/homeWorks/addHomeWorkSubmission`, {
+  const response = await fetch(`${API_BASE_URL}/homeWorks/addHomeWorkSubmission`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
@@ -431,7 +431,7 @@ export async function getStudentAttendanceForSession(
   sessionId: number
 ): Promise<GetStudentAttendanceApiItem[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/sessions/getStudentAttendance`, {
+  const response = await fetch(`${API_BASE_URL}/sessions/getStudentAttendance`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
