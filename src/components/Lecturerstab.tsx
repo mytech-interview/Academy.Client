@@ -17,19 +17,26 @@ interface LecturersTabProps {
   onTogglePin: (id: string) => void;
 }
 
-function isImageUrl(value: string): boolean {
-  return /^https?:\/\//.test(value) || value.startsWith('data:image');
+const API_BASE_URL = 'https://localhost:5188/api';
+
+function resolveAvatarSrc(value: string): string | null {
+  if (!value) return null;
+  if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
+    return value;
+  }
+  return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
 }
 
 function AvatarDisplay({ value, bgClass, dimmed }: { value: string; bgClass: string; dimmed?: boolean }) {
-  if (value && isImageUrl(value)) {
+  const src = resolveAvatarSrc(value);
+  if (src) {
     return (
       <div
         className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${
           dimmed ? 'grayscale opacity-60' : ''
         }`}
       >
-        <img src={value} alt="avatar" className="w-full h-full object-cover" />
+        <img src={src} alt="avatar" className="w-full h-full object-cover" />
       </div>
     );
   }
