@@ -295,6 +295,7 @@ export interface BaseResponseDto {
   errMsg?: string | null;
 }
 
+
 export interface GetAllTeachersResponseDto {
   userId: number;
   userGuid: string;
@@ -385,7 +386,7 @@ export interface UpdateSessionRequestDto {
   endDate: string; // ISO date
   cityId?: number | null;
   isActive: boolean;
-  userGuid: string;
+  userGuid?: string;
   attendanceModeId: number;
    lessonDaysDescription: string | null;
 }
@@ -461,17 +462,16 @@ export function avatarColorFor(seed: number | string): string {
 
 export function mapTeacherToLecturer(dto: GetAllTeachersResponseDto): LecturerItem {
   return {
-    id: String(dto.userId),
-    userId: dto.userId,
-    userGuid: dto.userGuid,
+    id: String(dto.teacherId),
+    userId: dto.teacherId,
     name: `${dto.firstName} ${dto.lastName}`.trim(),
     role: '',
     email: dto.email,
     phone: dto.telephone,
     bio: '',
     picture: dto.picture,
-    avatarBg: avatarColorFor(dto.userId),
-    avatarIcon: dto.picture || '🎓', 
+    avatarBg: avatarColorFor(dto.teacherId),
+    avatarIcon: dto.picture || '🎓',
     isActive: dto.isActive,
     isPinned: false,
   };
@@ -479,15 +479,15 @@ export function mapTeacherToLecturer(dto: GetAllTeachersResponseDto): LecturerIt
 
 export function mapStudentToStudentItem(dto: GetAllStudentsResponseDto): StudentItem {
   return {
-    id: String(dto.userId),
-    userId: dto.userId,
+    id: String(dto.studentId),
+    userId: dto.studentId,
     name: `${dto.firstName} ${dto.lastName}`.trim(),
     role: '',
     email: dto.email,
     phone: dto.telephone,
     picture: dto.picture,
-    avatarBg: avatarColorFor(dto.userId),
-    avatarIcon: dto.picture || '🎓', // ← было: '🤖'
+    avatarBg: avatarColorFor(dto.studentId),
+    avatarIcon: dto.picture || '🎓',
     isActive: dto.isActive,
   };
 }

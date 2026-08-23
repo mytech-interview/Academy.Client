@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface AdminHeaderProps {
   adminName?: string;
@@ -7,6 +8,8 @@ interface AdminHeaderProps {
 }
 
 export default function AdminHeader({ adminName, adminEmail }: AdminHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     // max-w-[1360px] убавляет ширину на 20px, py-5 возвращает исходную высоту
     <div className="max-w-[1420px] mx-auto bg-[#0e0f20] text-white py-12 px-6 md:px-8 rounded-3xl relative overflow-hidden shadow-xl">
@@ -22,16 +25,16 @@ export default function AdminHeader({ adminName, adminEmail }: AdminHeaderProps)
           <div className="space-y-1">
             <div>
               <span className="text-[10px] font-extrabold bg-[#2a1d4a] text-purple-300 px-2.5 py-0.5 rounded-md border border-purple-500/30 inline-flex items-center gap-1">
-                <span>👑</span> ადმინისტრაციის პანელი
+                <span>👑</span> {t('adminHeader.badge')}
               </span>
             </div>
 
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-white">
-              ადმინისტრატორის მართვის ცენტრი
+              {t('adminHeader.title')}
             </h1>
 
             <p className="text-[11px] text-slate-400 font-medium">
-              მართეთ კურსები, სესიები, ლექტორები, სტუდენტები, პროექტები, ვიდეოები და საიტის ტექსტები ცენტრალიზებულად
+              {t('adminHeader.subtitle')}
             </p>
           </div>
         </div>
@@ -48,7 +51,7 @@ export default function AdminHeader({ adminName, adminEmail }: AdminHeaderProps)
                 {adminName || 'David Chikva'}
               </span>
               <span className="bg-[#2a1d4a] text-purple-300 border border-purple-500/30 text-[9px] font-extrabold px-1.5 py-0.5 rounded">
-                Admin
+                {t('adminHeader.roleAdmin')}
               </span>
             </div>
             <p className="text-slate-400 text-[10px] font-medium">

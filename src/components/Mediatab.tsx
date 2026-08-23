@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Calendar, FileText, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { MediaItem } from '../types';
 import { EmptyState } from './Asyncstates';
 
@@ -12,6 +13,8 @@ interface MediaTabProps {
 // NOTE: no backend endpoint for the media library yet — local state only.
 
 export default function MediaTab({ media, searchQuery, onDelete }: MediaTabProps) {
+  const { t } = useTranslation();
+
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return media;
     const q = searchQuery.toLowerCase();
@@ -29,23 +32,32 @@ export default function MediaTab({ media, searchQuery, onDelete }: MediaTabProps
       <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
-            <span className="text-lg">📚</span> მედია ბიბლიოთეკა & სასწავლო მასალები
+            <span className="text-lg">📚</span> {t('mediaTab.title')}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            ატვირთეთ სასწავლო მასალა (PDF, Word დოკუმენტები, წიგნები (ZIP)) და დააკავშირეთ კურსებთან
+            {t('mediaTab.subtitle')}
           </p>
         </div>
         <button className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition shrink-0">
-          <Plus className="w-4 h-4" /> ახალი მასალის ატვირთვა
+          <Plus className="w-4 h-4" /> {t('mediaTab.uploadBtn')}
         </button>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState message={searchQuery.trim() ? `მასალა ვერ მოიძებნა: "${searchQuery}"` : 'მასალები ჯერ არ ატვირთულა'} />
+        <EmptyState
+          message={
+            searchQuery.trim()
+              ? t('mediaTab.notFound', { query: searchQuery })
+              : t('mediaTab.empty')
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map((mediaItem) => (
-            <div key={mediaItem.id} className="bg-white rounded-[2rem] border border-slate-200/80 shadow-sm p-5 flex flex-col min-h-[245px] hover:shadow-md transition">
+            <div
+              key={mediaItem.id}
+              className="bg-white rounded-[2rem] border border-slate-200/80 shadow-sm p-5 flex flex-col min-h-[245px] hover:shadow-md transition"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
                   <FileText className="w-5 h-5" />
@@ -55,8 +67,12 @@ export default function MediaTab({ media, searchQuery, onDelete }: MediaTabProps
                 </span>
               </div>
               <div className="mt-4 flex-1">
-                <h3 className="font-extrabold text-slate-800 text-sm leading-snug line-clamp-2">{mediaItem.title}</h3>
-                <p className="text-xs text-slate-400 mt-1.5 line-clamp-3 leading-relaxed">{mediaItem.description}</p>
+                <h3 className="font-extrabold text-slate-800 text-sm leading-snug line-clamp-2">
+                  {mediaItem.title}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1.5 line-clamp-3 leading-relaxed">
+                  {mediaItem.description}
+                </p>
               </div>
               <div className="pt-3 mt-3 border-t border-slate-100">
                 <div className="flex items-start justify-between gap-3 text-[10px] text-slate-500 font-semibold min-h-[42px]">
@@ -71,12 +87,12 @@ export default function MediaTab({ media, searchQuery, onDelete }: MediaTabProps
                 </div>
                 <div className="flex items-center gap-2 mt-3">
                   <button className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition">
-                    ⇩ გადმოწერა
+                    {t('mediaTab.downloadBtn')}
                   </button>
                   <button
                     onClick={() => onDelete(mediaItem.id)}
                     className="bg-rose-50 hover:bg-rose-100 text-rose-500 p-2 rounded-xl transition flex items-center justify-center border border-rose-100"
-                    title="წაშლა"
+                    title={t('mediaTab.deleteTitle')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

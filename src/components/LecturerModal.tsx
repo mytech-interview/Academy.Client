@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Key, Dice5, Star } from 'lucide-react';
+import { X, Key, Dice5 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { LecturerItem } from '../types';
 
 interface LecturerModalProps {
@@ -15,15 +16,14 @@ export default function LecturerModal({
   onSave,
   initialData,
 }: LecturerModalProps) {
+  const { t } = useTranslation();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     phone: '+995 ',
     role: 'Teacher / Lecturer',
-    // isLeadMentor: false,
-    // title: 'აკადემიის ლექტორი',
-    // bio: '',
     avatarBg: 'bg-purple-600',
     avatarIcon: '🎓',
   });
@@ -36,9 +36,6 @@ export default function LecturerModal({
         password: '',
         phone: (initialData as any).phone || '+995 ',
         role: initialData.role || 'Teacher / Lecturer',
-        isLeadMentor: (initialData as any).isLeadMentor || false,
-        title: (initialData as any).title || 'აკადემიის ლექტორი',
-        bio: initialData.bio || '',
         avatarBg: initialData.avatarBg || 'bg-purple-600',
         avatarIcon: initialData.avatarIcon || '🎓',
       });
@@ -49,9 +46,6 @@ export default function LecturerModal({
         password: '',
         phone: '+995 ',
         role: 'Teacher / Lecturer',
-        isLeadMentor: false,
-        title: 'აკადემიის ლექტორი',
-        bio: '',
         avatarBg: 'bg-purple-600',
         avatarIcon: '🎓',
       });
@@ -78,7 +72,7 @@ export default function LecturerModal({
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-8 pb-4">
           <h2 className="text-xl font-black text-slate-800">
-            {initialData ? 'ლექტორის რედაქტირება' : 'ახალი ლექტორის დამატება'}
+            {initialData ? t('lecturersModal.editTitle') : t('lecturersModal.addTitle')}
           </h2>
           <button
             onClick={onClose}
@@ -93,7 +87,7 @@ export default function LecturerModal({
           {/* Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
-              სახელი და გვარი
+              {t('lecturersModal.fullName')}
             </label>
             <input
               type="text"
@@ -108,7 +102,7 @@ export default function LecturerModal({
           {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
-              ელ-ფოსტა
+              {t('lecturersModal.email')}
             </label>
             <input
               type="email"
@@ -125,7 +119,7 @@ export default function LecturerModal({
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-slate-700 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-amber-500" />
-                პაროლი (Password)
+                {t('lecturersModal.password')}
               </label>
               <button
                 type="button"
@@ -133,7 +127,7 @@ export default function LecturerModal({
                 className="text-xs font-black text-purple-600 hover:text-purple-700 flex items-center gap-1 transition"
               >
                 <Dice5 className="w-3.5 h-3.5" />
-                შემთხვევითი პაროლი
+                {t('lecturersModal.randomPassword')}
               </button>
             </div>
             <input
@@ -144,14 +138,14 @@ export default function LecturerModal({
               className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-purple-900 font-bold placeholder-slate-300 bg-purple-50/30"
             />
             <p className="text-[11px] text-slate-400">
-              ლექტორს/სტუდენტს შეეძლება ამ პაროლით სისტემაში ავტორიზაცია.
+              {t('lecturersModal.passwordHint')}
             </p>
           </div>
 
           {/* Phone */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
-              ტელეფონის ნომერი
+              {t('lecturersModal.phone')}
             </label>
             <input
               type="text"
@@ -162,72 +156,14 @@ export default function LecturerModal({
             />
           </div>
 
-          {/* Role Select */}
-          {/* <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
-              როლი
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 bg-white"
-            >
-              <option value="Teacher / Lecturer">Teacher / Lecturer</option>
-              <option value="Senior Lecturer">Senior Lecturer</option>
-              <option value="Assistant">Assistant</option>
-            </select>
-          </div> */}
-
-          {/* Lead Mentor Status Checkbox Box */}
-          {/* <label className="flex items-center gap-2.5 p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-2xl cursor-pointer select-none transition hover:bg-amber-50">
-            <input
-              type="checkbox"
-              checked={formData.isLeadMentor}
-              onChange={(e) => setFormData({ ...formData, isLeadMentor: e.target.checked })}
-              className="w-4 h-4 rounded border-amber-300 text-amber-500 focus:ring-amber-400"
-            />
-            <span className="text-xs font-black text-amber-900 flex items-center gap-1.5">
-              <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-              წამყვანი მენტორის (Lead Mentor) სტატუსი
-            </span>
-          </label> */}
-
-          {/* Title / Profession */}
-          {/* <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
-              სათაური / პროფესია
-            </label>
-            <input
-              type="text"
-              placeholder="აკადემიის ლექტორი"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300"
-            />
-          </div> */}
-
-          {/* Bio */}
-          {/* <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700">
-              ბიოგრაფია / გამოცდილება
-            </label>
-            <textarea
-              rows={3}
-              placeholder="მოკლე ბიო..."
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300 resize-none"
-            />
-          </div> */}
-
           {/* Avatar / Photo selection section */}
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-slate-700">
-                ფოტოს ატვირთვა ან ავატარის არჩევა
+                {t('lecturersModal.avatarLabel')}
               </label>
               <span className="text-[10px] font-extrabold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
-                ლექტორი - მეცნიერი / ლაბორანტი
+                {t('lecturersModal.lecturerBadge')}
               </span>
             </div>
             <input
@@ -246,13 +182,13 @@ export default function LecturerModal({
               onClick={onClose}
               className="px-6 py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
             >
-              გაუქმება
+              {t('lecturersModal.cancel')}
             </button>
             <button
               type="submit"
               className="px-7 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-lg shadow-purple-200 transition"
             >
-              შენახვა
+              {t('lecturersModal.save')}
             </button>
           </div>
         </form>

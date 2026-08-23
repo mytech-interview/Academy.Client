@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Key, Upload, Dice5 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { StudentItem } from '../types';
 
 export interface StudentFormValues {
@@ -29,6 +30,8 @@ export default function StudentFormModal({
   onClose,
   onSubmit,
 }: StudentFormModalProps) {
+  const { t } = useTranslation();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +40,6 @@ export default function StudentFormModal({
   const [title, setTitle] = useState('');
   const [bio, setBio] = useState('');
   const [picture, setPicture] = useState('');
-  
 
   useEffect(() => {
     if (initial) {
@@ -89,14 +91,13 @@ export default function StudentFormModal({
       isActive: true,
     });
   };
-  
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 my-8">
         {/* Header */}
         <div className="px-8 pt-6 pb-4 flex items-center justify-between">
-          <h2 className="text-xl font-black text-slate-800">სტუდენტის რედაქტირება</h2>
+          <h2 className="text-xl font-black text-slate-800">{t('studentsModal.editTitle')}</h2>
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition"
@@ -107,129 +108,72 @@ export default function StudentFormModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-4 max-h-[80vh] overflow-y-auto pr-6">
-          {/* სახელები და გვარი */}
+          {/* Full Name */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              სახელი და გვარი
+              {t('studentsModal.fullName')}
             </label>
             <input
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="ანა წიკლაური"
+              placeholder={t('studentsModal.fullNamePlaceholder')}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
             />
           </div>
 
-          {/* ელ-ფოსტა */}
+          {/* Email */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              ელ-ფოსტა
+              {t('studentsModal.email')}
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ana.tsiklauri@geoalpha.ge"
+              placeholder={t('studentsModal.emailPlaceholder')}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
             />
           </div>
 
-          {/* პაროლი */}
-          {/* <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-amber-500" />
-                პაროლი (Password) (შეცვლა / რესეტი)
-              </label>
-              <button
-                type="button"
-                onClick={generateRandomPassword}
-                className="text-[11px] font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1 transition"
-              >
-                <Dice5 className="w-3.5 h-3.5" /> შემთხვევებითი პაროლი
-              </button>
-            </div>
-            <input
-              type="text"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="123456"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
-            />
-            <p className="text-[10px] text-slate-400 font-medium mt-1">
-              ლექტორს/სტუდენტს შეეძლება ამ პაროლით სისტემაში ავტორიზაცია.
-            </p>
-          </div> */}
-
-          {/* ტელეფონი */}
+          {/* Phone */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              ტელეფონის ნომერი
+              {t('studentsModal.phone')}
             </label>
             <input
               type="text"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+995 599 88 77 66"
+              placeholder={t('studentsModal.phonePlaceholder')}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
             />
           </div>
 
-          {/* როლი */}
-          {/* <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              როლი
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition appearance-none"
-            >
-              <option value="Student">Student</option>
-              <option value="Teacher">Teacher</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div> */}
-
-          {/* სათაური / პროფესია */}
-          {/* <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              სათაური / პროფესია
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="სტუდენტი - UI/UX Design"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
-            />
-          </div> */}
-
-          {/* ბიოგრაფია */}
+          {/* Bio */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              ბიოგრაფია / გამოცდილება
+              {t('studentsModal.bio')}
             </label>
             <textarea
               rows={3}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="მოკლე ბიო..."
+              placeholder={t('studentsModal.bioPlaceholder')}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition resize-none"
             />
           </div>
 
-          {/* ფოტოს ატვირთვა */}
+          {/* File Upload */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-700">
-                ფოტოს ატვირთვა ან ავატარის არჩევა
+                {t('studentsModal.avatarLabel')}
               </label>
               <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full">
-                Custom Photo
+                {t('studentsModal.customPhoto')}
               </span>
             </div>
             <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex items-center justify-between">
@@ -243,11 +187,11 @@ export default function StudentFormModal({
                 </div>
                 <div>
                   <label className="cursor-pointer bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-2 transition">
-                    <Upload className="w-4 h-4" /> ფოტოს ატვირთვა კომპიუტერიდან
+                    <Upload className="w-4 h-4" /> {t('studentsModal.uploadBtn')}
                     <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                   </label>
                   <p className="text-[10px] text-slate-400 font-medium mt-1">
-                    PNG, JPG, WEBP (მაქს 5MB)
+                    {t('studentsModal.fileHint')}
                   </p>
                 </div>
               </div>
@@ -261,14 +205,14 @@ export default function StudentFormModal({
               onClick={onClose}
               className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition"
             >
-              გაუქმება
+              {t('studentsModal.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-200 transition disabled:opacity-50"
             >
-              {submitting ? 'ინახება...' : 'შენახვა'}
+              {submitting ? t('studentsModal.saving') : t('studentsModal.save')}
             </button>
           </div>
         </form>

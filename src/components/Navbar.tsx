@@ -319,15 +319,19 @@ export default function Navbar({
                   </span>
 
                   <span
-                    className="
-                      block text-[9px]
-                      uppercase
-                      font-bold
-                      text-indigo-600
-                    "
-                  >
-                    {user.role === "teacher" ? t("navbar.teacher") : t("navbar.student")}
-                  </span>
+  className="
+    block text-[9px]
+    uppercase
+    font-bold
+    text-indigo-600
+  "
+>
+  {user.role === "teacher"
+    ? t("navbar.teacher")
+    : user.role === "admin"
+    ? t("navbar.admin")
+    : t("navbar.student")}
+</span>
                 </div>
               </button>
 
