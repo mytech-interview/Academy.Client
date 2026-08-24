@@ -76,17 +76,3 @@ export interface StudentSession {
   id: number;
   [key: string]: any;
 }
-
-export async function getStudentSessions(userGuid: string): Promise<StudentSession[]> {
-  const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/students/${userGuid}/sessions`, {
-    method: 'GET',
-    headers: {
-      ...(token && {
-        Authorization: `Bearer ${token}`
-      })
-    }
-  });
-  const data = await parseResponse<{ sessions: StudentSession[] } & ApiEnvelope>(response);
-  return data.sessions ?? [];
-}

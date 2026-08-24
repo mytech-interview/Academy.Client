@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './i18n';
 
 import { AppProvider, useApp } from './context/AppContext';
-import AppLayout from './layouts/AppLayout';
+import AppLayout from './Layouts/AppLayout';
 
 // Pages
 import HomePage from './pages/HomePage';

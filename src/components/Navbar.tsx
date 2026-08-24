@@ -8,6 +8,7 @@ import {
   Info,
   Tag,
   PhoneCall,
+  User as UserIcon,
 } from "lucide-react";
 
 import { User } from "../types";
@@ -55,6 +56,15 @@ export default function Navbar({
   const { t } = useTranslation();
 
   const [isLangOpen, setIsLangOpen] = useState(false);
+
+  // NEW — если ссылка на аватар оказалась битой (404 / CORS / невалидный URL),
+  // откатываемся на иконку-заглушку вместо сломанной картинки.
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  // Реальное поле аватара в User (types.ts) — avatarIcon.
+  const resolvedAvatarUrl = user?.avatarIcon || null;
+
+  const showUserAvatarImage = !!resolvedAvatarUrl && !avatarFailed;
 
   const languages = [
     {
@@ -154,24 +164,6 @@ export default function Navbar({
             {t("navbar.about")}
           </button>
 
-          {/* <button
-            onClick={() => onTabChange("offers")}
-            className={`
-              flex items-center gap-1.5
-              px-3 py-2 rounded-xl
-              text-xs font-bold transition
-
-              ${
-                activeTab === "offers"
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-slate-600 hover:text-slate-950 hover:bg-slate-50"
-              }
-            `}
-          >
-            <Tag className="h-4 w-4" />
-            {t("navbar.offers")}
-          </button> */}
-
           <button
             onClick={() => onTabChange("contact")}
             className={`
@@ -211,69 +203,6 @@ export default function Navbar({
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Language Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setIsLangOpen(!isLangOpen)}
-              className="
-                flex items-center gap-2
-                rounded-xl border border-slate-200
-                bg-white px-3 py-2
-                text-xs font-bold
-                hover:bg-slate-50
-                transition
-              "
-            >
-              <span className="hidden sm:inline uppercase">{lang}</span>
-            </button>
-
-            {isLangOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsLangOpen(false)}
-                />
-
-                <div
-                  className="
-                    absolute right-0 mt-2
-                    w-44 z-50
-                    rounded-2xl
-                    border border-slate-200
-                    bg-white
-                    p-2
-                    shadow-xl
-                  "
-                >
-                  {languages.map((item) => (
-                    <button
-                      key={item.code}
-                      onClick={() => {
-                        onLangChange(item.code);
-                        setIsLangOpen(false);
-                      }}
-                      className={`
-                        flex items-center
-                        w-full px-3 py-2
-                        rounded-xl
-                        text-xs font-bold
-                        transition
-
-                        ${
-                          lang === item.code
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "text-slate-600 hover:bg-slate-50"
-                        }
-                      `}
-                    >
-                      <span>{item.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
           {user ? (
             <div className="flex items-center gap-2">
               <button
@@ -290,22 +219,32 @@ export default function Navbar({
                   transition
                 "
               >
-                <img
-                  src={
-                    user.avatar ||
-                    `https://images.unsplash.com/photo-${
-                      user.role === "teacher"
-                        ? "1573496359142-b8d87734a5a2"
-                        : "1534528741775-53994a69daeb"
-                    }?w=80&h=80&fit=crop`
-                  }
-                  alt={user.name}
-                  className="
-                    h-8 w-8
-                    rounded-lg
-                    object-cover
-                  "
-                />
+                {showUserAvatarImage ? (
+                  <img
+                    src={resolvedAvatarUrl as string}
+                    alt={user.name}
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarFailed(true)}
+                    className="
+                      h-8 w-8
+                      rounded-lg
+                      object-cover
+                    "
+                  />
+                ) : (
+                  <div
+                    className="
+                      h-8 w-8
+                      rounded-lg
+                      bg-slate-100
+                      border border-slate-200
+                      flex items-center justify-center
+                      text-slate-500
+                    "
+                  >
+                    <UserIcon className="h-4 w-4" />
+                  </div>
+                )}
 
                 <div className="hidden sm:block text-left">
                   <span
@@ -420,11 +359,6 @@ export default function Navbar({
             text: t("navbar.about"),
             icon: Info,
           },
-          // {
-          //   id: "offers",
-          //   text: t("navbar.offers"),
-          //   icon: Tag,
-          // },
           {
             id: "contact",
             text: t("navbar.contact"),

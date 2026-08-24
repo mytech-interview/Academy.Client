@@ -6,6 +6,20 @@ export enum LanguageType {
 }
 
 
+export interface CreateOtpRegistrationRequest {
+  email: string;
+  password?: string | null;
+}
+
+export function createOtpRegistration(
+ payload: CreateOtpRegistrationRequest
+){
+ return apiFetch(
+   "/api/auth/createOtpRegistration",
+   payload
+ );
+}
+
 export interface CreateOtpRequest {
   email: string;
   password?: string | null;
@@ -15,6 +29,15 @@ export interface CreateOtpRequest {
 export interface ValidateOtpRequest {
   email: string;
   otpNumber: string;
+}
+export interface ValidateOtpRegistrationPayload {
+  email: string;
+  otpNumber: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  telephone: string;
+  roleId: number;
 }
 
 
@@ -75,6 +98,7 @@ export function createOtp(
 
 
 
+
 export function validateOtp(
  payload: ValidateOtpRequest
 ){
@@ -82,6 +106,15 @@ export function validateOtp(
    "/api/auth/validateOtp",
    payload
  );
+}
+
+export function validateOtpRegitration(
+  payload: ValidateOtpRegistrationPayload
+) {
+  return apiFetch(
+    "/api/auth/validateOtpRegistration",
+    payload
+  );
 }
 
 

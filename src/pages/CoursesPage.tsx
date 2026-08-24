@@ -44,7 +44,7 @@ export default function CoursesPage({
   const [courses, setCourses] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  
+
 
   // Frontend sorting state
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'title' | 'duration'>('default');
@@ -64,11 +64,22 @@ export default function CoursesPage({
 
         let sessionsList: ActiveSession[] = [];
 
-        // Normalize selectedCategory (defaults to 'all' if empty or invalid)
-        const currentCategory = (!selectedCategory || selectedCategory === '0') ? 'all' : selectedCategory;
+        // Normalize selectedCategory — defaults to 'all' for any empty/whitespace/
+        // unexpected-case/invalid value, not just the exact strings '' or '0'.
+        // Previously an exact-match check (`currentCategory === 'all'`) meant any
+        // unforeseen initial value from the parent (different case, null, etc.)
+        // fell through to the `else` branch, where `Number(currentCategory)` could
+        // become NaN and silently return an empty course list — which is why
+        // nothing showed up until the user explicitly clicked the "All" button.
+        const normalized = String(selectedCategory ?? '').trim().toLowerCase();
+        const isAllCategory = !normalized || normalized === '0' || normalized === 'all';
+        const categoryId = isAllCategory ? NaN : Number(normalized);
+        const isValidSingleCategory = !isAllCategory && Number.isFinite(categoryId) && categoryId > 0;
 
-        if (currentCategory === 'all') {
-          // Fetch categories 1 and 2 individually with catch block to prevent throwing
+        if (isAllCategory || !isValidSingleCategory) {
+          // Fetch categories 1 and 2 individually with catch block to prevent throwing.
+          // Also used as a safe fallback when the category value can't be parsed,
+          // so the user always sees courses instead of an empty state by default.
           const cat1Promise = getHomeActiveSessions(1).then(res => Array.isArray(res) ? res : (res as any)?.activeSessions || []).catch(() => []);
           const cat2Promise = getHomeActiveSessions(2).then(res => Array.isArray(res) ? res : (res as any)?.activeSessions || []).catch(() => []);
 
@@ -90,7 +101,6 @@ export default function CoursesPage({
         } else {
           // Fetch specific category safely
           try {
-            const categoryId = Number(currentCategory);
             const result = await getHomeActiveSessions(categoryId);
             sessionsList = Array.isArray(result) ? result : (result as any)?.activeSessions || [];
           } catch (e) {
@@ -148,7 +158,14 @@ export default function CoursesPage({
     return 0; // Default
   });
 
-  const activeCategory = (!selectedCategory || selectedCategory === '0') ? 'all' : selectedCategory;
+  // Same normalization as the fetch effect, so the "All" button is highlighted
+  // consistently with whatever value actually triggered the combined fetch.
+  const activeCategory = (() => {
+    const normalized = String(selectedCategory ?? '').trim().toLowerCase();
+    if (!normalized || normalized === '0' || normalized === 'all') return 'all';
+    const match = backendCategories.find((c) => c.id === normalized);
+    return match ? match.id : 'all';
+  })();
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-fade-in">
