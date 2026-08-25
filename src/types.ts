@@ -299,12 +299,14 @@ export interface BaseResponseDto {
 
 export interface GetAllTeachersResponseDto {
   userId: number;
+  teacherId: number;
   userGuid: string;
   isActive: boolean;
   firstName: string;
   lastName: string;
   email: string;
   telephone: string;
+  description: string;
   picture: string;
 }
 
@@ -469,7 +471,8 @@ export function mapTeacherToLecturer(dto: GetAllTeachersResponseDto): LecturerIt
     role: '',
     email: dto.email,
     phone: dto.telephone,
-    bio: '',
+    bio: dto.description ?? '',
+    description: dto.description ?? '',
     picture: dto.picture,
     avatarBg: avatarColorFor(dto.teacherId),
     avatarIcon: dto.picture || '🎓',

@@ -17,6 +17,18 @@ import { getCityName } from '../lib/cityNames';
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
+const API_BASE_URL = 'https://localhost:5188/api';
+
+// picture / teacherPicture иногда приходят как полный URL, а иногда просто
+// как имя файла (например "abc123.png") — в этом случае URL нужно собрать самим.
+function resolveAvatarSrc(value?: string | null): string | null {
+  if (!value) return null;
+  if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
+    return value;
+  }
+  return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
+}
+
 // Фиксированная длительность урока — на бэке нет per-lesson данных,
 // продукт решил показывать урок как блок в 2 часа.
 const LESSON_DURATION_HOURS = 2;
@@ -125,12 +137,14 @@ export default function CourseDetailModal({
   const teacherName = details?.teacherName ?? course.teacherName;
   // бэк отдаёт аватар/картинку учителя под именем teacherPicture (см. CourseCard)
   const teacherPicture = details?.teacherPicture ?? course.teacherPicture;
+  const teacherAvatarSrc = resolveAvatarSrc(teacherPicture);
   const price = details?.price ?? course.price;
   const enrolledCount = details?.enrolledCount ?? course.enrolledCount;
   const maxStudents = details?.maxStudents ?? course.maxStudents;
-  const picture = details?.picture || DEFAULT_COURSE_IMAGE;
+  const picture = resolveAvatarSrc(details?.picture) || DEFAULT_COURSE_IMAGE;
+    const teacherDescription = details?.teacherDescription ?? course.teacherDescription;
 
-  const showAvatarImage = !!teacherPicture && !avatarFailed;
+  const showAvatarImage = !!teacherAvatarSrc && !avatarFailed;
 
   // Реальное количество отзывов и рейтинг — из данных сессии,
   // как только подтянутся отзывы, используем точную длину списка.
@@ -228,7 +242,7 @@ export default function CourseDetailModal({
                 <span className="h-5 w-5 rounded-full overflow-hidden bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
                   {showAvatarImage ? (
                     <img
-                      src={teacherPicture as string}
+                      src={teacherAvatarSrc as string}
                       alt={teacherName}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
@@ -452,7 +466,7 @@ export default function CourseDetailModal({
                     <div className="h-20 w-20 rounded-2xl flex items-center justify-center bg-indigo-50 ring-4 ring-indigo-50 border border-slate-200 shrink-0 overflow-hidden">
                       {showAvatarImage ? (
                         <img
-                          src={teacherPicture as string}
+                          src={teacherAvatarSrc as string}
                           alt={teacherName}
                           className="h-full w-full object-cover"
                           referrerPolicy="no-referrer"
@@ -469,8 +483,10 @@ export default function CourseDetailModal({
                       <h3 className="text-lg font-black text-slate-950 mt-1">{teacherName}</h3>
                     </div>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
-                    {t('courseDetailModal.instructorBioMissing', 'Instructor profile is not available yet.')}
+                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
+                    {teacherDescription
+                      ? teacherDescription
+                      : 'ინფორმაცია ჯერ არ არის დამატებული'}
                   </div>
                 </div>
               </div>

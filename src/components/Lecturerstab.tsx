@@ -3,7 +3,7 @@ import { Mail, Pencil, Plus, Power, PowerOff, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LecturerItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
-import LecturerModal from './LecturerModal'; // Импортируем модалку
+import LecturerModal from './LecturerModal'; 
 
 interface LecturersTabProps {
   lecturers: LecturerItem[];
@@ -17,7 +17,7 @@ interface LecturersTabProps {
   onTogglePin: (id: string) => void;
 }
 
-const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
+const API_BASE_URL = 'https://localhost:5188/api';
 
 function resolveAvatarSrc(value: string): string | null {
   if (!value) return null;
@@ -64,17 +64,18 @@ export default function LecturersTab({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState<LecturerItem | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return lecturers;
-    const q = searchQuery.toLowerCase();
-    return lecturers.filter(
-      (l) =>
-        l.name.toLowerCase().includes(q) ||
-        l.role.toLowerCase().includes(q) ||
-        l.email.toLowerCase().includes(q) ||
-        l.bio.toLowerCase().includes(q)
-    );
-  }, [lecturers, searchQuery]);
+ const filtered = useMemo(() => {
+  if (!searchQuery.trim()) return lecturers;
+  const q = searchQuery.toLowerCase();
+  return lecturers.filter(
+    (l) =>
+      l.name.toLowerCase().includes(q) ||
+      l.role.toLowerCase().includes(q) ||
+      l.email.toLowerCase().includes(q) ||
+      (l.bio || '').toLowerCase().includes(q) ||
+      ((l as any).description || '').toLowerCase().includes(q)
+  );
+}, [lecturers, searchQuery]);
 
   const handleOpenAddModal = () => {
     setSelectedLecturer(null);
@@ -152,8 +153,8 @@ export default function LecturersTab({
                       </span>
                     </div>
                     <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{lec.name}</h3>
-                    <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                      {lec.role || t('lecturers.noRole')}
+                    <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">
+                      {(lec as any).description || lec.bio || t('lecturers.noBio')}
                     </p>
                   </div>
                 </div>
@@ -185,7 +186,7 @@ export default function LecturersTab({
                       onClick={() => handleOpenEditModal(lec)}
                       className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                     >
-                      <Pencil className="w-3.5 h-3.5" /> {t('lecturers.edit')}
+                      <Pencil className="w-3.5 h-3.5" /> 
                     </button>
                     <button
                       onClick={() => onDelete(lec)}
@@ -197,11 +198,11 @@ export default function LecturersTab({
                     >
                       {isActive ? (
                         <>
-                          <PowerOff className="w-3.5 h-3.5" /> {t('lecturers.deactivate')}
+                          <PowerOff className="w-3.5 h-3.5" /> 
                         </>
                       ) : (
                         <>
-                          <Power className="w-3.5 h-3.5" /> {t('lecturers.activate')}
+                          <Power className="w-3.5 h-3.5" /> 
                         </>
                       )}
                     </button>

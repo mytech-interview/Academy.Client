@@ -8,6 +8,18 @@ import { ActiveSession } from '../types';
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
 
+const API_BASE_URL = 'https://localhost:5188/api';
+
+// teacherPicture иногда приходит как полный URL, а иногда просто как имя файла
+// (например "abc123.png") — в этом случае URL нужно собрать самим.
+function resolveAvatarSrc(value?: string | null): string | null {
+  if (!value) return null;
+  if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
+    return value;
+  }
+  return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
+}
+
 // No exact duration-in-hours field from backend, so we estimate it from the
 // session's date range: ~4 hours of lessons per week.
 const HOURS_PER_WEEK = 4;
@@ -54,7 +66,8 @@ export default function CourseCard({
 
   // Если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
   const [avatarFailed, setAvatarFailed] = React.useState(false);
-  const showAvatarImage = !!teacherPicture && !avatarFailed;
+  const avatarSrc = resolveAvatarSrc(teacherPicture);
+  const showAvatarImage = !!avatarSrc && !avatarFailed;
 
   const ratingNum = averageRating ? parseFloat(averageRating) : 5;
   const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '0.0';
@@ -253,7 +266,7 @@ export default function CourseCard({
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 text-slate-500 font-bold border border-slate-200/50 shadow-inner overflow-hidden">
               {showAvatarImage ? (
                 <img
-                  src={teacherPicture as string}
+                  src={avatarSrc as string}
                   alt={teacherName}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"

@@ -140,7 +140,7 @@ export default function StudentsTab({
                     onClick={() => onEdit(st)}
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
                   >
-                    <Pencil className="w-3.5 h-3.5" /> {t('studentsTab.editStudent')}
+                    <Pencil className="w-3.5 h-3.5" /> 
                   </button>
                   <button
                     onClick={() => onDelete(st)}
@@ -149,15 +149,15 @@ export default function StudentsTab({
                         ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
                         : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                     }`}
-                    title={isActive ? t('studentsTab.deactivate') : t('studentsTab.activate')}
+                    
                   >
                     {isActive ? (
                       <>
-                        <PowerOff className="w-3.5 h-3.5" /> {t('studentsTab.deactivate')}
+                        <PowerOff className="w-3.5 h-3.5" />
                       </>
                     ) : (
                       <>
-                        <Power className="w-3.5 h-3.5" /> {t('studentsTab.activate')}
+                        <Power className="w-3.5 h-3.5" /> 
                       </>
                     )}
                   </button>

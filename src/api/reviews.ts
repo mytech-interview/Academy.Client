@@ -32,7 +32,7 @@ export interface ReviewUpsertResponse extends ApiEnvelope {}
 
 export async function upsertReview(request: ReviewUpsertRequest): Promise<ReviewUpsertResponse> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/reviews/upsertReview`, {
+  const response = await fetch(`${API_BASE_URL}/api/reviews/addReview`, {
     method: 'POST',
  headers: {
       "Content-Type": "application/json",

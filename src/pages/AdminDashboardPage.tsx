@@ -252,6 +252,7 @@ const handleToggleLecturerActive = async (lecturer: LecturerItem) => {
       email: lecturer.email ?? '',
       telephone: (lecturer as any).phone ?? '',
       picture: lecturer.avatarIcon ?? '',
+      description: (lecturer as any).description ?? '',
       isActive: nextActive,
     } as any);
   } catch (err) {
@@ -273,51 +274,51 @@ const handleToggleLecturerActive = async (lecturer: LecturerItem) => {
     };
   }
 
-  const handleAddLecturer = async (data: Partial<LecturerItem> & Record<string, any>) => {
-    setLecturerSubmitting(true);
-    try {
-      const { firstName, lastName } = splitFullName(data.name ?? '');
-      await adminApi.addTeacher({
-        userGuid,
-        firstName,
-        lastName,
-        email: data.email ?? '',
-        telephone: data.phone ?? '',
-        password: data.password ?? '',
-        picture: data.avatarIcon ?? '',
-        isActive: true,
-      } as any); // ← см. примечание про типы ниже
-      await fetchLecturers();
-    } catch (err) {
-      // TODO: показать через модалку/тост вместо console.error
-      console.error('ლექტორის დამატება ვერ მოხერხდა', err);
-    } finally {
-      setLecturerSubmitting(false);
-    }
-  };
+ const handleAddLecturer = async (data: Partial<LecturerItem> & Record<string, any>) => {
+  setLecturerSubmitting(true);
+  try {
+    const { firstName, lastName } = splitFullName(data.name ?? '');
+    await adminApi.addTeacher({
+      userGuid,
+      firstName,
+      lastName,
+      email: data.email ?? '',
+      telephone: data.phone ?? '',
+      password: data.password ?? '',
+      picture: data.avatarIcon ?? '',
+      description: data.description ?? '',
+      isActive: true,
+    } as any);
+    await fetchLecturers();
+  } catch (err) {
+    console.error('ლექტორის დამატება ვერ მოხერხდა', err);
+  } finally {
+    setLecturerSubmitting(false);
+  }
+};
 
-  const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) => {
-    setLecturerSubmitting(true);
-    try {
-      const { firstName, lastName } = splitFullName(lecturer.name ?? '');
-      await adminApi.editTeacher({
-        teacherId: lecturer.userId,
-        userGuid,
-        firstName,
-        lastName,
-        email: lecturer.email ?? '',
-        telephone: lecturer.phone ?? '',
-        picture: lecturer.avatarIcon ?? '',
-        isActive: true,
-      } as any); // ← см. примечание про типы ниже
-      await fetchLecturers();
-    } catch (err) {
-      // TODO: показать через модалку/тост вместо console.error
-      console.error('ლექტორის რედაქტირება ვერ მოხერხდა', err);
-    } finally {
-      setLecturerSubmitting(false);
-    }
-  };
+ const handleEditLecturer = async (lecturer: LecturerItem & Record<string, any>) => {
+  setLecturerSubmitting(true);
+  try {
+    const { firstName, lastName } = splitFullName(lecturer.name ?? '');
+    await adminApi.editTeacher({
+      teacherId: lecturer.userId,
+      userGuid,
+      firstName,
+      lastName,
+      email: lecturer.email ?? '',
+      telephone: lecturer.phone ?? '',
+      picture: lecturer.avatarIcon ?? '',
+      description: lecturer.description ?? '',
+      isActive: (lecturer as any).isActive ?? true,
+    } as any);
+    await fetchLecturers();
+  } catch (err) {
+    console.error('ლექტორის რედაქტირება ვერ მოხერხდა', err);
+  } finally {
+    setLecturerSubmitting(false);
+  }
+};
 
   // ── Student mutations ──
   const handleDeleteStudent = async (student: StudentItem) => {

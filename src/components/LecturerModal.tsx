@@ -26,6 +26,7 @@ export default function LecturerModal({
     role: 'Teacher / Lecturer',
     avatarBg: 'bg-purple-600',
     avatarIcon: '🎓',
+    description: '',
   });
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function LecturerModal({
         role: initialData.role || 'Teacher / Lecturer',
         avatarBg: initialData.avatarBg || 'bg-purple-600',
         avatarIcon: initialData.avatarIcon || '🎓',
+        description: (initialData as any).description || initialData.bio || '',
       });
     } else {
       setFormData({
@@ -48,6 +50,7 @@ export default function LecturerModal({
         role: 'Teacher / Lecturer',
         avatarBg: 'bg-purple-600',
         avatarIcon: '🎓',
+        description: '',
       });
     }
   }, [initialData, isOpen]);
@@ -60,6 +63,10 @@ export default function LecturerModal({
     setFormData((prev) => ({ ...prev, password: randomPass }));
   };
 
+  // Модалка отдаёт "сырые" данные формы как есть — маппинг под конкретные
+  // поля API (firstName/lastName/telephone/picture/teacherId и т.д.)
+  // делает AdminDashboardPage в handleAddLecturer / handleEditLecturer,
+  // там же, где вызывается adminApi.addTeacher / editTeacher.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
@@ -153,6 +160,20 @@ export default function LecturerModal({
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-slate-700">
+              ბიოგრაფია
+            </label>
+            <textarea
+              rows={3}
+              placeholder="ბიოგრაფია"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300 resize-none"
             />
           </div>
 
