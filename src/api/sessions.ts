@@ -1,6 +1,6 @@
 import { ActiveSession } from '../types';
 
-const API_BASE_URL = "https://localhost:5188";
+const API_BASE_URL = "https://academyapi.tech-interview.com";
 interface HomeActiveSessionsResponse {
   activeSessions: ActiveSession[];
   errMsg: string | null;

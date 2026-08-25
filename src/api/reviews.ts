@@ -1,5 +1,5 @@
 // api/reviews.ts
-const API_BASE_URL = "https://localhost:5188";
+const API_BASE_URL = "https://academyapi.tech-interview.com";
 interface ApiEnvelope {
   errMsg: string | null;
   errorCode: string | null;

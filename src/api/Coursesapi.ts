@@ -2,7 +2,7 @@
 // sessionsapi.ts: BaseResponse (errorCode/errMsg), Bearer token from
 // localStorage, POST-only.
 
-const API_BASE_URL = 'https://localhost:5188/api';
+const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
 
 export interface BaseResponseDto {
   errorCode?: string | null;

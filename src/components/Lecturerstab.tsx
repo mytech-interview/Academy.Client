@@ -17,7 +17,7 @@ interface LecturersTabProps {
   onTogglePin: (id: string) => void;
 }
 
-const API_BASE_URL = 'https://localhost:5188/api';
+const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
 
 function resolveAvatarSrc(value: string): string | null {
   if (!value) return null;
@@ -32,9 +32,8 @@ function AvatarDisplay({ value, bgClass, dimmed }: { value: string; bgClass: str
   if (src) {
     return (
       <div
-        className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${
-          dimmed ? 'grayscale opacity-60' : ''
-        }`}
+        className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${dimmed ? 'grayscale opacity-60' : ''
+          }`}
       >
         <img src={src} alt="avatar" className="w-full h-full object-cover" />
       </div>
@@ -42,9 +41,8 @@ function AvatarDisplay({ value, bgClass, dimmed }: { value: string; bgClass: str
   }
   return (
     <div
-      className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm ${
-        dimmed ? 'grayscale opacity-60' : ''
-      }`}
+      className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm ${dimmed ? 'grayscale opacity-60' : ''
+        }`}
     >
       {value || '🎓'}
     </div>
@@ -132,11 +130,10 @@ export default function LecturersTab({
             return (
               <div
                 key={lec.id}
-                className={`bg-white rounded-[2rem] p-6 border shadow-sm flex flex-col justify-between space-y-5 transition ${
-                  isActive
-                    ? 'border-slate-200/80 hover:shadow-md'
-                    : 'border-rose-200/70 bg-rose-50/30 opacity-80'
-                }`}
+                className={`bg-white rounded-[2rem] p-6 border shadow-sm flex flex-col justify-between space-y-5 transition ${isActive
+                  ? 'border-slate-200/80 hover:shadow-md'
+                  : 'border-rose-200/70 bg-rose-50/30 opacity-80'
+                  }`}
               >
                 <div className="flex items-start gap-4">
                   <AvatarDisplay value={lec.avatarIcon} bgClass={lec.avatarBg} dimmed={!isActive} />
@@ -146,11 +143,10 @@ export default function LecturersTab({
                         LECTURER
                       </span>
                       <span
-                        className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${
-                          isActive
-                            ? 'text-emerald-600 bg-emerald-50'
-                            : 'text-rose-600 bg-rose-100'
-                        }`}
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${isActive
+                          ? 'text-emerald-600 bg-emerald-50'
+                          : 'text-rose-600 bg-rose-100'
+                          }`}
                       >
                         {isActive ? t('lecturers.active') : t('lecturers.inactive')}
                       </span>
@@ -175,11 +171,10 @@ export default function LecturersTab({
                 <div className="space-y-2 pt-2">
                   <button
                     onClick={() => onTogglePin(lec.id)}
-                    className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${
-                      lec.isPinned
-                        ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                        : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                    }`}
+                    className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${lec.isPinned
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                      : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                      }`}
                   >
                     <Star className={`w-3.5 h-3.5 ${lec.isPinned ? 'fill-white' : 'fill-amber-400'}`} />
                     {lec.isPinned ? t('lecturers.pinned') : t('lecturers.pin')}
@@ -194,11 +189,10 @@ export default function LecturersTab({
                     </button>
                     <button
                       onClick={() => onDelete(lec)}
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                        isActive
-                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
-                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
-                      }`}
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${isActive
+                        ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                        }`}
                       title={isActive ? t('lecturers.deactivate') : t('lecturers.activate')}
                     >
                       {isActive ? (

@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://localhost:5188";
+const API_BASE_URL = "https://academyapi.tech-interview.com";
 // Mirrors Academy.CoreApi.Entities.HomeWorks.GetHomeWorksForStudentResponse
 export interface StudentHomeWork {
   homeWorkId: number;

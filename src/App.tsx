@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 import './i18n';
 
@@ -41,8 +41,9 @@ function RequireAuth({
   adminOnly?: boolean;
   studentOnly?: boolean;
 }) {
-  const { activeUser } = useApp();
 
+  const { activeUser } = useApp();
+  const navigate = useNavigate();
   // Not logged in
   if (!activeUser) {
     return <Navigate to="/login" replace />;
@@ -132,18 +133,18 @@ function AppRoutes() {
     return matchCat && matchSearch;
   });
 
-
+  const navigate = useNavigate();
   /* =========================================================
      ENROLLMENT CHECK
   ========================================================= */
 
   const isSelectedCourseEnrolled = selectedCourse
     ? enrollments.some(
-        (e) =>
-          activeUser != null &&
-          e.studentId === activeUser.id &&
-          String(e.courseId) === String(selectedCourse.sessionId)
-      )
+      (e) =>
+        activeUser != null &&
+        e.studentId === activeUser.id &&
+        String(e.courseId) === String(selectedCourse.sessionId)
+    )
     : false;
 
 
@@ -189,11 +190,11 @@ function AppRoutes() {
                 activeSessions={activeSessions}
 
                 onBrowseCourses={() =>
-                  window.location.assign('/courses')
+                  navigate('/courses')
                 }
 
                 onOpenAuth={() =>
-                  window.location.assign('/login')
+                  navigate('/login')
                 }
 
                 onSelectCourse={setSelectedCourse}
@@ -201,12 +202,12 @@ function AppRoutes() {
                 onEnroll={(id) =>
                   handleEnrollInCourse(
                     id,
-                    () => window.location.assign('/login')
+                    () => navigate('/login')
                   )
                 }
 
                 onViewAllCourses={() =>
-                  window.location.assign('/courses')
+                  navigate('/courses')
                 }
               />
             }
@@ -232,7 +233,7 @@ function AppRoutes() {
                 onEnroll={(id) =>
                   handleEnrollInCourse(
                     id,
-                    () => window.location.assign('/login')
+                    () => navigate('/login')
                   )
                 }
               />
@@ -258,10 +259,10 @@ function AppRoutes() {
               <OffersPage
                 lang={lang}
                 onSelectCoursesTab={() =>
-                  window.location.assign('/courses')
+                  navigate('/courses')
                 }
                 onOpenConsultation={() =>
-                  window.location.assign('/contact')
+                  navigate('/contact')
                 }
               />
             }
@@ -295,7 +296,7 @@ function AppRoutes() {
                   onUpdateProfile={handleUpdateProfile}
                   onUpdateEnrollment={handleUpdateEnrollment}
                   onOpenAuth={() =>
-                    window.location.assign('/login')
+                    navigate('/login')
                   }
                 />
               </RequireAuth>
