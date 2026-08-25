@@ -21,29 +21,31 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!email || !password) { setError(t('auth.errors.fieldRequired')); return; }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  if (!email || !password) { setError(t('auth.errors.fieldRequired')); return; }
 
-    setLoading(true);
-    try {
-      // 1. Send OTP via real API
-      await createOtp({ email, password });
+  setLoading(true);
+  try {
+    const res = await createOtp({ email, password });
 
-      // 2. Store state for OtpPage
-      setOtpMode('login');
-      setOtpEmail(email.toLowerCase());
-      setOtpPassword(password);
-
-      // 3. Go to OTP page
-      navigate('/otp');
-    } catch {
-      setError(t('auth.errors.registerFailed'));
-    } finally {
-      setLoading(false);
+    // проверяем поля ошибки в теле ответа
+    if (res?.errorCode && res.errorCode !== 0) {
+      setError('ავტორიზაცია ვერ მოხერხდა. გთხოვთ, შეამოწმოთ ელფოსტა და პაროლი.');
+      return; // не переходим на /otp
     }
-  };
+
+    setOtpMode('login');
+    setOtpEmail(email.toLowerCase());
+    setOtpPassword(password);
+    navigate('/otp');
+  } catch {
+    setError('ავტორიზაცია ვერ მოხერხდა. გთხოვთ, შეამოწმოთ ელფოსტა და პაროლი.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 flex items-center justify-center p-4">

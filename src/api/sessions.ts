@@ -16,9 +16,6 @@ export async function getHomeActiveSessions(
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
-      ...(token && {
-        Authorization: `Bearer ${token}`
-      })
     },
     body: JSON.stringify({ courseCategoryId }),
   });
@@ -63,19 +60,29 @@ interface GetStudentSessionsResponse {
 
 export async function getStudentSessions(studentGuid: string): Promise<StudentSession[]> {
   const token = localStorage.getItem("academy_token");
+
+  if (!token) {
+
+    throw new Error('Сессия истекла, войдите заново');
+  }
+
   const response = await fetch(`${API_BASE_URL}/sessions/getStudentSessions`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
-      ...(token && {
-        Authorization: `Bearer ${token}`
-      })
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ studentGuid }),
   });
 
+  if (response.status === 401) {
+    localStorage.removeItem('academy_token');
+    localStorage.removeItem('academy_active_user');
+    throw new Error('Сессия истекла, войдите заново');
+  }
+
   if (!response.ok) {
-    throw new Error('');
+    throw new Error('Не удалось загрузить курсы студента');
   }
 
   const text = await response.text();
@@ -84,7 +91,7 @@ export async function getStudentSessions(studentGuid: string): Promise<StudentSe
     : { studentSessions: [], errMsg: null, errorCode: null, err: 0 };
 
   if (data.err !== 0) {
-    throw new Error(data.errMsg ?? '');
+    throw new Error(data.errMsg ?? 'Не удалось загрузить курсы студента');
   }
 
   return data.studentSessions || [];
@@ -102,6 +109,7 @@ export interface CourseSessionDetailsForStudent {
   lessonDaysDescription: string;
   cityId: number;
   cityName: string;
+   teacherAvatarUrl?: string | null;
 }
 
 interface GetCourseSessionDetailsForStudentResponse {
@@ -216,6 +224,7 @@ export interface CourseDetailsBySessionId {
   startDate: string;
   endDate: string;
   lessonCount: number;
+   teacherAvatarUrl?: string | null;
 }
 
 interface GetCourseDetailsBySessionIdResponse extends CourseDetailsBySessionId {
@@ -326,6 +335,7 @@ export interface StudentHomeWork {
   dueDate: string;
   teacherGuid: string;
   teacherName: string;
+   teacherAvatarUrl?: string | null;
 }
 
 interface GetHomeWorksForStudentResponse {

@@ -114,6 +114,7 @@ export interface ActiveSession {
   attendanceModeId: number;
   attendanceModeName: string;
   lessonCount: number;
+  teacherAvatarUrl?: string | null;
 }
 export interface StudentSession {
   sessionId: number;

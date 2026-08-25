@@ -5,12 +5,25 @@ import { ShieldCheck, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useApp } from '../context/AppContext';
-import { validateOtp, registerUser } from '../api/authApi';
+import { validateOtp, validateOtpRegitration } from '../api/authApi';
 import { User } from '../types';
 
 
 const OTP_LEN = 6;
 const RESEND_SEC = 60;
+
+/*
+ * Backend roles:
+ *
+ * 1 = student
+ * 2 = teacher
+ * 3 = admin
+ */
+const roleMap: Record<number, 'student' | 'teacher' | 'admin'> = {
+  1: 'student',
+  2: 'teacher',
+  3: 'admin',
+};
 
 
 export default function OtpPage() {
@@ -208,9 +221,20 @@ export default function OtpPage() {
          VALIDATE OTP
       ================================================= */
 
-      const result = await validateOtp({
+      const result =
+  otpMode === 'login'
+    ? await validateOtp({
         email: otpEmail,
         otpNumber: code,
+      })
+    : await validateOtpRegitration({
+        email: otpEmail,
+        otpNumber: code,
+        firstName: otpFirstName,
+        lastName: otpLastName,
+        password: otpPassword,
+        telephone: otpTelephone,
+        roleId: otpRole,
       });
 
 
@@ -241,24 +265,6 @@ export default function OtpPage() {
         console.log('USER ROLE:', auth?.userRole);
         console.log('OTP PENDING USER:', otpPendingUser);
         console.log('=============================================');
-
-
-        /*
-         * Backend roles:
-         *
-         * 1 = student
-         * 2 = teacher
-         * 3 = admin
-         */
-
-        const roleMap: Record<
-          number,
-          'student' | 'teacher' | 'admin'
-        > = {
-          1: 'student',
-          2: 'teacher',
-          3: 'admin',
-        };
 
 
         const resolvedRole =
@@ -375,40 +381,65 @@ export default function OtpPage() {
 
         /* =================================================
            REGISTER
+           validateOtpRegitration now creates the account on
+           the backend AND returns { token, authResponse }
+           in the exact same shape as login. So we no longer
+           call registerUser() separately - that would try to
+           register the same user twice.
         ================================================= */
 
-        await registerUser({
-          email: otpEmail,
-          firstName: otpFirstName,
-          lastName: otpLastName,
-          password: otpPassword,
-          telephone: otpTelephone,
+        const auth =
+          (result as any)?.authResponse ??
+          result;
 
-          roleId:
-            otpRole === 'teacher'
-              ? 2
-              : 1,
-        });
+        console.log('================ REGISTER DEBUG ================');
+        console.log('FULL OTP RESULT:', result);
+        console.log('AUTH RESPONSE:', auth);
+        console.log('ROLE ID:', auth?.roleId);
+        console.log('==================================================');
 
+        if ((result as any)?.token) {
+          localStorage.setItem(
+            'academy_token',
+            (result as any).token
+          );
+        }
+
+        // roleId приходит теперь от бэкенда в auth.roleId (1 = student, 2 = teacher),
+        // а не из локального otpRole, но на случай если бэкенд его не вернёт -
+        // используем otpRole (то, что выбрал пользователь на форме) как запасной вариант.
+        const resolvedRegisterRole =
+          roleMap[Number(auth?.roleId ?? otpRole)] ??
+          'student';
+        const isTeacher = resolvedRegisterRole === 'teacher';
 
         const newUser: User = {
-          id: `user-${Date.now()}`,
+          id:
+            auth?.userGuid ??
+            auth?.userId?.toString() ??
+            `user-${Date.now()}`,
 
-          email: otpEmail,
+          email:
+            auth?.email ??
+            otpEmail,
 
-          name: otpName,
+          name:
+            `${auth?.firstName ?? otpFirstName ?? ''} ${auth?.lastName ?? otpLastName ?? ''
+              }`.trim() ||
+            otpName ||
+            otpEmail,
 
-          role: otpRole,
+          role: resolvedRegisterRole,
 
           avatar:
-            otpRole === 'teacher'
+            auth?.picture ??
+            (isTeacher
               ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'
-              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
 
-          headline:
-            otpRole === 'teacher'
-              ? t('auth.newTeacherHeadline')
-              : undefined,
+          headline: isTeacher
+            ? t('auth.newTeacherHeadline')
+            : undefined,
 
           createdAt:
             new Date().toISOString(),
@@ -430,9 +461,7 @@ export default function OtpPage() {
          * Registration redirect
          */
 
-        if (
-          otpRole === 'teacher'
-        ) {
+        if (isTeacher) {
           navigate(
             '/teacher-sessions',
             { replace: true }

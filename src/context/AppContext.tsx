@@ -40,7 +40,8 @@ interface AppContextValue {
   setOtpPendingUser: (u: User | null) => void;
   otpEmail: string; setOtpEmail: (v: string) => void;
   otpPassword: string; setOtpPassword: (v: string) => void;
-  otpRole: 'student' | 'teacher'; setOtpRole: (v: 'student' | 'teacher') => void;
+  otpRole: number;
+  setOtpRole: (role: number) => void;
   otpName: string; setOtpName: (v: string) => void;
   otpFirstName: string; setOtpFirstName: (v: string) => void;
   otpLastName: string; setOtpLastName: (v: string) => void;
@@ -56,7 +57,7 @@ export function useApp() {
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Language>(() => (localStorage.getItem('academy_lang') as Language) || 'ka');
+  const [lang, setLangState] = useState<Language>('ka');
   const [activeUser, setActiveUserState] = useState<User | null>(() => {
     const s = localStorage.getItem('academy_active_user');
     return s ? JSON.parse(s) : null;
@@ -86,7 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [otpPendingUser, setOtpPendingUser] = useState<User | null>(null);
   const [otpEmail, setOtpEmail] = useState('');
   const [otpPassword, setOtpPassword] = useState('');
-  const [otpRole, setOtpRole] = useState<'student' | 'teacher'>('student');
+  const [otpRole, setOtpRole] = useState<number>(1); // 1 = ученик, 2 = учитель
   const [otpName, setOtpName] = useState('');
   const [otpFirstName, setOtpFirstName] = useState('');
   const [otpLastName, setOtpLastName] = useState('');

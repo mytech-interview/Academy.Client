@@ -9,6 +9,7 @@ import {
   MapPin,
   Pencil,
   Plus,
+  Search,
   Trash2,
   User,
   Users,
@@ -28,6 +29,7 @@ interface SessionsTabProps {
   loading: boolean;
   error: string | null;
   searchQuery: string;
+  onSearchChange: (value: string) => void;
   onRetry: () => void;
   onAdd: () => void;
   onEdit: (session: SessionItem) => void;
@@ -50,8 +52,8 @@ function DetailRow({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className={`w-8 h-8 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shrink-0`}>
+    <div className="flex items-center gap-2.5">
+      <div className={`w-7 h-7 rounded-lg ${iconBg} ${iconColor} flex items-center justify-center shrink-0`}>
         {icon}
       </div>
       <span className="text-xs text-slate-500 font-semibold min-w-0 truncate">
@@ -66,6 +68,7 @@ export default function SessionsTab({
   loading,
   error,
   searchQuery,
+  onSearchChange,
   onRetry,
   onAdd,
   onEdit,
@@ -102,22 +105,35 @@ export default function SessionsTab({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-purple-50 rounded-2xl text-purple-600">
-            <Calendar className="w-6 h-6" />
+      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-purple-50 rounded-2xl text-purple-600">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-slate-800">{t('sessionsTab.title')}</h2>
+              <p className="text-xs text-slate-400 mt-0.5 font-medium">{t('sessionsTab.subtitle')}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base font-black text-slate-800">{t('sessionsTab.title')}</h2>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">{t('sessionsTab.subtitle')}</p>
-          </div>
+          <button
+            onClick={onAdd}
+            className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition hover:shadow-lg active:scale-[0.98]"
+          >
+            <Plus className="w-4 h-4" /> {t('sessionsTab.addSession')}
+          </button>
         </div>
-        <button
-          onClick={onAdd}
-          className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition hover:shadow-lg active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" /> {t('sessionsTab.addSession')}
-        </button>
+
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="🔍 ძიება სესიებში (ჩაწერეთ სესია, ლექტორი, ლოკაცია, განრიგი)..."
+            className="w-full pl-9 pr-4 py-2.5 text-xs rounded-2xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-400"
+          />
+        </div>
       </div>
 
       {loading && <LoadingState label={t('sessionsTab.loading')} />}
@@ -140,7 +156,7 @@ export default function SessionsTab({
             return (
               <div
                 key={s.id}
-                className={`bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-between space-y-5 transition hover:shadow-lg hover:-translate-y-0.5 ${
+                className={`bg-white rounded-3xl p-5 border shadow-sm flex flex-col justify-between space-y-4 transition hover:shadow-lg hover:-translate-y-0.5 ${
                   isActive ? 'border-slate-100' : 'border-rose-200/70 bg-rose-50/20'
                 }`}
               >
@@ -169,23 +185,23 @@ export default function SessionsTab({
                 </div>
 
                 {/* Session Details — единый стиль иконка-чип + текст */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   <DetailRow
-                    icon={<User className="w-4 h-4" />}
+                    icon={<User className="w-3.5 h-3.5" />}
                     iconBg="bg-emerald-50"
                     iconColor="text-emerald-600"
                     label={t('sessionsTab.instructor')}
                     value={s.instructor}
                   />
                   <DetailRow
-                    icon={<Clock className="w-4 h-4" />}
+                    icon={<Clock className="w-3.5 h-3.5" />}
                     iconBg="bg-amber-50"
                     iconColor="text-amber-600"
                     label={t('sessionsTab.schedule')}
                     value={s.lessonDaysDescription}
                   />
                   <DetailRow
-                    icon={<MapPin className="w-4 h-4" />}
+                    icon={<MapPin className="w-3.5 h-3.5" />}
                     iconBg="bg-sky-50"
                     iconColor="text-sky-600"
                     label={t('sessionsTab.location')}
@@ -193,7 +209,7 @@ export default function SessionsTab({
                   />
                   {(s as any).weeks != null && (
                     <DetailRow
-                      icon={<CalendarRange className="w-4 h-4" />}
+                      icon={<CalendarRange className="w-3.5 h-3.5" />}
                       iconBg="bg-teal-50"
                       iconColor="text-teal-600"
                       label={t('sessionsTab.duration')}
@@ -202,7 +218,7 @@ export default function SessionsTab({
                   )}
                   {(s.startDate || s.endDate) && (
                     <DetailRow
-                      icon={<CalendarClock className="w-4 h-4" />}
+                      icon={<CalendarClock className="w-3.5 h-3.5" />}
                       iconBg="bg-violet-50"
                       iconColor="text-violet-600"
                       label={t('sessionsTab.dates')}
@@ -212,10 +228,10 @@ export default function SessionsTab({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                   <button
                     onClick={() => onViewStudents && onViewStudents(s)}
-                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition"
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition"
                   >
                     <Users className="w-4 h-4" />
                     <span>{t('sessionsTab.studentsList', { count: s.currentStudents ?? 0 })}</span>
@@ -228,6 +244,13 @@ export default function SessionsTab({
                       title={t('sessionsTab.edit')}
                     >
                       <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setSessionToDelete(s)}
+                      className="p-2.5 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition"
+                      title={t('sessionsTab.delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

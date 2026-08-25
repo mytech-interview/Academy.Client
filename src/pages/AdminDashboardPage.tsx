@@ -566,6 +566,7 @@ const handleToggleLecturerActive = async (lecturer: LecturerItem) => {
               error={coursesError}
               categories={categories}
               searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onRetry={fetchCourses}
               onAddCategory={handleAddCategory}
               onRemoveCategory={handleRemoveCategory}
@@ -582,6 +583,7 @@ const handleToggleLecturerActive = async (lecturer: LecturerItem) => {
               loading={sessionsLoading}
               error={sessionsError}
               searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onRetry={fetchSessions}
               onAdd={handleOpenAddSession}
               onEdit={handleOpenEditSession}

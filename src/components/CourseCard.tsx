@@ -43,6 +43,7 @@ export default function CourseCard({
     levelName,
     amountOfLessons,
     teacherName,
+    teacherAvatarUrl, // NEW — бэк пока не отдаёт это поле, будет undefined до готовности API
     averageRating,
     price,
     cityName,
@@ -50,6 +51,10 @@ export default function CourseCard({
     endDate,
     attendanceModeName,
   } = course;
+
+  // NEW — если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
+  const [avatarFailed, setAvatarFailed] = React.useState(false);
+  const showAvatarImage = !!teacherAvatarUrl && !avatarFailed;
 
   const ratingNum = averageRating ? parseFloat(averageRating) : 5;
   const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '0.0';
@@ -62,78 +67,79 @@ export default function CourseCard({
   const durationHours = durationWeeks * HOURS_PER_WEEK;
 
   const dateLocale =
-  lang.startsWith('ru')
-    ? 'ru-RU'
-    : lang.startsWith('ka')
-    ? 'ka-GE'
-    : 'en-US';
+    lang.startsWith('ru')
+      ? 'ru-RU'
+      : lang.startsWith('ka')
+      ? 'ka-GE'
+      : 'en-US';
 
-const formatDate = (d: Date) => {
-  const months = {
-    en: [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ],
-    ru: [
-      'января',
-      'февраля',
-      'марта',
-      'апреля',
-      'мая',
-      'июня',
-      'июля',
-      'августа',
-      'сентября',
-      'октября',
-      'ноября',
-      'декабря',
-    ],
-    ka: [
-      'იანვარი',
-      'თებერვალი',
-      'მარტი',
-      'აპრილი',
-      'მაისი',
-      'ივნისი',
-      'ივლისი',
-      'აგვისტო',
-      'სექტემბერი',
-      'ოქტომბერი',
-      'ნოემბერი',
-      'დეკემბერი',
-    ],
+  const formatDate = (d: Date) => {
+    const months = {
+      en: [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ],
+      ru: [
+        'января',
+        'февраля',
+        'марта',
+        'апреля',
+        'мая',
+        'июня',
+        'июля',
+        'августа',
+        'сентября',
+        'октября',
+        'ноября',
+        'декабря',
+      ],
+      ka: [
+        'იანვარი',
+        'თებერვალი',
+        'მარტი',
+        'აპრილი',
+        'მაისი',
+        'ივნისი',
+        'ივლისი',
+        'აგვისტო',
+        'სექტემბერი',
+        'ოქტომბერი',
+        'ნოემბერი',
+        'დეკემბერი',
+      ],
+    };
+
+    const currentLang = lang.startsWith('ru')
+      ? 'ru'
+      : lang.startsWith('ka')
+      ? 'ka'
+      : 'en';
+
+    const day = d.getDate();
+    const month = months[currentLang][d.getMonth()];
+    const year = d.getFullYear();
+
+    if (currentLang === 'ru') {
+      return `${day} ${month} ${year} г.`;
+    }
+
+    if (currentLang === 'ka') {
+      return `${day} ${month}, ${year}`;
+    }
+
+    return `${month} ${day}, ${year}`;
   };
 
-  const currentLang = lang.startsWith('ru')
-    ? 'ru'
-    : lang.startsWith('ka')
-    ? 'ka'
-    : 'en';
-
-  const day = d.getDate();
-  const month = months[currentLang][d.getMonth()];
-  const year = d.getFullYear();
-
-  if (currentLang === 'ru') {
-    return `${day} ${month} ${year} г.`;
-  }
-
-  if (currentLang === 'ka') {
-    return `${day} ${month}, ${year}`;
-  }
-
-  return `${month} ${day}, ${year}`;
-};
   // Session status derived from its date range — backend doesn't send one directly
   const now = new Date();
   const status = !hasValidDates
@@ -244,8 +250,18 @@ const formatDate = (d: Date) => {
         {/* Author / rating row */}
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3.5">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 text-slate-500 font-bold border border-slate-200/50 shadow-inner">
-              <UserIcon className="h-3.5 w-3.5" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 text-slate-500 font-bold border border-slate-200/50 shadow-inner overflow-hidden">
+              {showAvatarImage ? (
+                <img
+                  src={teacherAvatarUrl as string}
+                  alt={teacherName}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarFailed(true)}
+                />
+              ) : (
+                <UserIcon className="h-3.5 w-3.5" />
+              )}
             </div>
             <span className="text-xs font-semibold text-slate-700 truncate">{teacherName}</span>
           </div>

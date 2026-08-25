@@ -28,6 +28,7 @@ interface CoursesCategoriesTabProps {
   error: string | null;
   categories: string[];
   searchQuery: string;
+  onSearchChange: (value: string) => void;
   userGuid: string;
   onRetry: () => void;
   onAddCategory: (category: string) => void;
@@ -533,12 +534,14 @@ export default function CoursesCategoriesTab({
   error,
   categories,
   searchQuery,
+  onSearchChange,
   userGuid,
   onRetry,
   onAddCategory,
   onRemoveCategory,
   onAdd,
   onEdit,
+  onDelete,
 }: CoursesCategoriesTabProps) {
   const { t } = useTranslation();
   const [newCategory, setNewCategory] = useState('');
@@ -609,21 +612,35 @@ export default function CoursesCategoriesTab({
       </div>
 
       {/* ── List header section ── */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-purple-600" />
-            {t('coursesTab.fullCourseList')}
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">{t('coursesTab.fullCourseListSubtitle')}</p>
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-purple-600" />
+              {t('coursesTab.fullCourseList')}
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">{t('coursesTab.fullCourseListSubtitle')}</p>
+          </div>
+
+          <button
+            onClick={onAdd}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition shrink-0"
+          >
+            <Plus className="w-4 h-4" /> {t('coursesTab.addNewCourse')}
+          </button>
         </div>
 
-        <button
-          onClick={onAdd}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-purple-200 transition shrink-0"
-        >
-          <Plus className="w-4 h-4" /> {t('coursesTab.addNewCourse')}
-        </button>
+        {/* Search input — wired to searchQuery/onSearchChange so it actually filters filteredCourses below */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder={"🔍 ძიება კურსებში (ჩაწერეთ სათაური, კატეგორია, აღწერა)..."}
+            className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-slate-400"
+          />
+        </div>
       </div>
 
       {/* ── Loading and error states ── */}
@@ -671,7 +688,7 @@ export default function CoursesCategoriesTab({
 
                 {/* Meta information */}
                 <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px]">
+                  {/* <div className="flex items-center justify-between text-[11px]">
                     <div className="flex items-center gap-1.5 text-purple-700 font-bold bg-purple-50 px-2.5 py-1 rounded-xl">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>{c.startDate ? c.startDate.slice(0, 10) : '—'}</span>
@@ -685,19 +702,19 @@ export default function CoursesCategoriesTab({
                     >
                       {c.isActive ? t('coursesTab.statusActive') : t('coursesTab.statusCompleted')}
                     </span>
-                  </div>
+                  </div> */}
 
                   {/* Instructor row removed: courses have no assigned
                       teacher in the API (teachers are assigned per session,
                       not per course) — "მარიამ ბერიძე" was hardcoded UI text
                       with no real data source at all. */}
 
-                  <div className="flex items-center justify-end text-xs text-slate-600 pt-1">
+                  {/* <div className="flex items-center justify-end text-xs text-slate-600 pt-1">
                     <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
                       <Star className="w-3.5 h-3.5 fill-amber-400" />
                       <span>{c.averageReviewMark != null ? c.averageReviewMark.toFixed(1) : '—'}</span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Statistics */}
@@ -721,12 +738,12 @@ export default function CoursesCategoriesTab({
                   >
                     <List className="w-4 h-4" />
                   </button>
+
                   <button
                     onClick={() => onEdit(c)}
-                    className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                    className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 transition flex items-center justify-center"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
-                    {t('coursesTab.editCourse')}
+                    <Pencil className="w-4 h-4" />
                   </button>
                 </div>
               </div>

@@ -4,12 +4,12 @@ import { motion } from 'motion/react';
 import { Mail, Lock, Eye, EyeOff, GraduationCap, Briefcase, User as UserIcon, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
-import { createOtp } from '../api/authApi';
+import { createOtpRegistration } from '../api/authApi';
 
 export default function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { lang, setOtpEmail, setOtpPassword, setOtpRole, setOtpName, setOtpFirstName, setOtpLastName, setOtpTelephone } = useApp();
+  const { lang, setOtpEmail, setOtpPassword, setOtpRole, setOtpName, setOtpFirstName, setOtpLastName, setOtpTelephone, setOtpMode } = useApp();
   const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -23,20 +23,30 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!firstName || !lastName || !email || !password || !telephone) { setError(t('auth.errors.fieldRequired')); return; }
+    if (!firstName || !lastName || !email || !password || !telephone) {
+      setError(t('auth.errors.fieldRequired'));
+      return;
+    }
     setLoading(true);
     try {
-      await createOtp({ email, password });
+      await createOtpRegistration({ email, password });
+
+      const roleId = role === 'student' ? 1 : 2; // 1 - ученик, 2 - учитель
+
       setOtpEmail(email.toLowerCase());
       setOtpPassword(password);
-      setOtpRole(role);
+      setOtpMode('register');
+      setOtpRole(roleId);
       setOtpName(`${firstName} ${lastName}`);
       setOtpFirstName(firstName);
       setOtpLastName(lastName);
       setOtpTelephone(telephone);
       navigate('/otp');
-    } catch { setError(t('auth.errors.registerFailed')); }
-    finally { setLoading(false); }
+    } catch {
+      setError(t('auth.errors.registerFailed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,13 +82,13 @@ export default function RegisterPage() {
               </div>
               {/* First Name */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.firstName') || 'First Name'}</label>
-                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t('auth.firstNamePlaceholder') || 'First name'} required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">სახელი</label>
+                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder='სახელი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
               </div>
               {/* Last Name */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.lastName') || 'Last Name'}</label>
-                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('auth.lastNamePlaceholder') || 'Last name'} required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">გვარი</label>
+                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder='გვარი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
               </div>
               {/* Email */}
               <div className="space-y-1.5">
@@ -87,7 +97,7 @@ export default function RegisterPage() {
               </div>
               {/* Telephone */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.telephone') || 'Telephone'}</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">ტელეფონის ნომერი</label>
                 <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="tel" value={telephone} onChange={(e) => setTelephone(e.target.value)} placeholder="+995..." required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
               </div>
               {/* Password */}
