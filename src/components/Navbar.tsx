@@ -62,7 +62,7 @@ export default function Navbar({
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   // Реальное поле аватара в User (types.ts) — avatarIcon.
-  const resolvedAvatarUrl = user?.avatarIcon || null;
+  const resolvedAvatarUrl = user?.avatar || null;
 
   const showUserAvatarImage = !!resolvedAvatarUrl && !avatarFailed;
 

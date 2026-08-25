@@ -1,5 +1,5 @@
 // api/students.ts
-const API_BASE_URL = "https://academyapi.tech-interview.com";
+const API_BASE_URL = "https://localhost:5188";
 interface ApiEnvelope {
   errMsg: string | null;
   errorCode: string | null;

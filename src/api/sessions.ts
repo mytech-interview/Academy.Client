@@ -1,6 +1,6 @@
 import { ActiveSession } from '../types';
 
-const API_BASE_URL = "https://academyapi.tech-interview.com";
+const API_BASE_URL = "https://localhost:5188/api";
 interface HomeActiveSessionsResponse {
   activeSessions: ActiveSession[];
   errMsg: string | null;
@@ -12,7 +12,7 @@ export async function getHomeActiveSessions(
   courseCategoryId: number
 ): Promise<ActiveSession[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/home/getHomeActiveSessions`, {
+  const response = await fetch(`${API_BASE_URL}/home/getHomeActiveSessions`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",

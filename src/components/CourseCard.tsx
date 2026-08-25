@@ -43,7 +43,7 @@ export default function CourseCard({
     levelName,
     amountOfLessons,
     teacherName,
-    teacherAvatarUrl, // NEW — бэк пока не отдаёт это поле, будет undefined до готовности API
+    teacherPicture, // бэк отдаёт аватар/картинку учителя под этим именем (было teacherAvatarUrl — не совпадало с API)
     averageRating,
     price,
     cityName,
@@ -52,9 +52,9 @@ export default function CourseCard({
     attendanceModeName,
   } = course;
 
-  // NEW — если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
+  // Если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
   const [avatarFailed, setAvatarFailed] = React.useState(false);
-  const showAvatarImage = !!teacherAvatarUrl && !avatarFailed;
+  const showAvatarImage = !!teacherPicture && !avatarFailed;
 
   const ratingNum = averageRating ? parseFloat(averageRating) : 5;
   const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '0.0';
@@ -253,7 +253,7 @@ export default function CourseCard({
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 text-slate-500 font-bold border border-slate-200/50 shadow-inner overflow-hidden">
               {showAvatarImage ? (
                 <img
-                  src={teacherAvatarUrl as string}
+                  src={teacherPicture as string}
                   alt={teacherName}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"

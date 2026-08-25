@@ -11,7 +11,7 @@ import {
 // Academy.Api.Entities.Sessions and extend the same BaseResponse
 // (errorCode/errMsg), so this follows adminApi.ts, not the numeric
 // `err`-based convention used by the separate CoreApi sessions.ts file.
-const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
+const API_BASE_URL = 'https://localhost:5188/api';
 
 async function apiFetch<T extends BaseResponseDto>(path: string, body: unknown): Promise<T> {
   const token = localStorage.getItem('academy_token');

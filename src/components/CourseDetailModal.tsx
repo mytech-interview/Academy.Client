@@ -70,6 +70,10 @@ export default function CourseDetailModal({
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
 
+  // Флаг ошибки загрузки аватара преподавателя — если картинка не пришла
+  // или не загрузилась, откатываемся на иконку-заглушку (как в CourseCard).
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
   // Public endpoints — no login required, fetch both as soon as the modal opens.
   useEffect(() => {
     if (!isOpen) {
@@ -106,6 +110,7 @@ export default function CourseDetailModal({
     if (isOpen) {
       setActiveTab('overview');
       setExpandedLessonId(null);
+      setAvatarFailed(false);
     }
   }, [isOpen, course.sessionId]);
 
@@ -118,10 +123,14 @@ export default function CourseDetailModal({
   const durationWeeks = details?.weeks ?? course.durationWeeks;
   const amountOfLessons = details?.amountOfLessons ?? course.amountOfLessons;
   const teacherName = details?.teacherName ?? course.teacherName;
+  // бэк отдаёт аватар/картинку учителя под именем teacherPicture (см. CourseCard)
+  const teacherPicture = details?.teacherPicture ?? course.teacherPicture;
   const price = details?.price ?? course.price;
   const enrolledCount = details?.enrolledCount ?? course.enrolledCount;
   const maxStudents = details?.maxStudents ?? course.maxStudents;
   const picture = details?.picture || DEFAULT_COURSE_IMAGE;
+
+  const showAvatarImage = !!teacherPicture && !avatarFailed;
 
   // Реальное количество отзывов и рейтинг — из данных сессии,
   // как только подтянутся отзывы, используем точную длину списка.
@@ -215,8 +224,23 @@ export default function CourseDetailModal({
                 {title}
               </h2>
 
-              <p className="text-xs text-slate-300 font-medium line-clamp-1 max-w-2xl">
-                {t('courseDetailModal.teacherPrefix', 'Instructor:')} <strong className="text-white font-bold">{teacherName}</strong>
+              <p className="flex items-center gap-2 text-xs text-slate-300 font-medium max-w-2xl">
+                <span className="h-5 w-5 rounded-full overflow-hidden bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                  {showAvatarImage ? (
+                    <img
+                      src={teacherPicture as string}
+                      alt={teacherName}
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={() => setAvatarFailed(true)}
+                    />
+                  ) : (
+                    <UserIcon className="h-3 w-3 text-white" />
+                  )}
+                </span>
+                <span className="line-clamp-1">
+                  {t('courseDetailModal.teacherPrefix', 'Instructor:')} <strong className="text-white font-bold">{teacherName}</strong>
+                </span>
               </p>
             </div>
           </div>
@@ -420,13 +444,23 @@ export default function CourseDetailModal({
               </div>
             )}
 
-            {/* TAB: INSTRUCTOR — only real name, no fake photo/bio */}
+            {/* TAB: INSTRUCTOR — real name + real avatar (teacherPicture), no fake bio */}
             {activeTab === 'instructor' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
                   <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-                    <div className="h-20 w-20 rounded-2xl flex items-center justify-center bg-indigo-50 ring-4 ring-indigo-50 border border-slate-200 shrink-0">
-                      <GraduationCap className="h-9 w-9 text-indigo-600" />
+                    <div className="h-20 w-20 rounded-2xl flex items-center justify-center bg-indigo-50 ring-4 ring-indigo-50 border border-slate-200 shrink-0 overflow-hidden">
+                      {showAvatarImage ? (
+                        <img
+                          src={teacherPicture as string}
+                          alt={teacherName}
+                          className="h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={() => setAvatarFailed(true)}
+                        />
+                      ) : (
+                        <GraduationCap className="h-9 w-9 text-indigo-600" />
+                      )}
                     </div>
                     <div className="space-y-1">
                       <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase">
