@@ -210,6 +210,7 @@ export function updateTeacher(payload: {
   telephone: string;
   picture: string;
   isActive?: boolean;
+  description?: string;
 }) {
   return apiPost<{ success: boolean }>('/general/updateTeacher', payload);
 }

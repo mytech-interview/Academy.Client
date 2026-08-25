@@ -24,7 +24,7 @@ interface CoursesPageProps {
 const backendCategories = [
   { id: 'all', numId: 0, labels: { ka: 'ყველა', en: 'All', ru: 'Все' } },
   { id: '1', numId: 1, labels: { ka: 'პროგრამირება', en: 'Programming', ru: 'Программирование' } },
-  { id: '2', numId: 2, labels: { ka: 'კიბერუსაფრთხოება', en: 'Cybersecurity', ru: 'Кибербезопасность' } },
+  { id: '2', numId: 2, labels: { ka: 'დიაინი', en: 'Cybersecurity', ru: 'Кибербезопасность' } },
 ];
 
 export default function CoursesPage({
@@ -45,6 +45,15 @@ export default function CoursesPage({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
+  // Reset search query when leaving the courses page (component unmounts),
+  // so returning to it later starts with a clean search field instead of
+  // whatever was typed during the previous visit.
+  useEffect(() => {
+    return () => {
+      onSearchQueryChange('');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Frontend sorting state
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'title' | 'duration'>('default');
@@ -231,11 +240,11 @@ export default function CoursesPage({
             onChange={(e: any) => setSortBy(e.target.value)}
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
           >
-            <option value="default">{t('catalog.sortDefault', 'Sort: Default')}</option>
-            <option value="price-asc">{t('catalog.sortPriceAsc', 'Price: Low to High')}</option>
-            <option value="price-desc">{t('catalog.sortPriceDesc', 'Price: High to Low')}</option>
-            <option value="title">{t('catalog.sortTitle', 'By Title (A-Z)')}</option>
-            <option value="duration">{t('catalog.sortDuration', 'By Duration (Longest)')}</option>
+            <option value="default">{t('catalog.sortDefault', 'დალაგება: სტანდარტული')}</option>
+            <option value="price-asc">{t('catalog.sortPriceAsc', 'ფასი: დაბლიდან მაღლა')}</option>
+            <option value="price-desc">{t('catalog.sortPriceDesc', 'ფასი: მაღლიდან დაბლა')}</option>
+            <option value="title">{t('catalog.sortTitle', 'სათაურით (A-Z)')}</option>
+            <option value="duration">{t('catalog.sortDuration', 'ხანგრძლივობით (ყველაზე გრძელი)')}</option>
           </select>
         </div>
       </div>

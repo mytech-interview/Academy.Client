@@ -43,13 +43,24 @@ function getTeacherPhone(teacher: any): string {
   );
 }
 
+// Поле может называться description (с бэкенда) или headline (если уже
+// смаплено где-то на фронте) — проверяем оба варианта. Пока бэкенд не
+// добавил description в ответ, здесь просто будет пустая строка.
+function getTeacherDescription(teacher: any): string {
+  return (
+    teacher?.description ??
+    teacher?.headline ??
+    ''
+  );
+}
+
 export default function TeacherProfileTab({ teacher, onUpdateProfile }: TeacherProfileTabProps) {
   const { t } = useTranslation();
 console.log('teacher object:', teacher);
   const [profName, setProfName] = useState(teacher?.name || '');
   const [profEmail, setProfEmail] = useState(teacher?.email || '');
   const [profPhone, setProfPhone] = useState(getTeacherPhone(teacher));
-  const [profHeadline, setProfHeadline] = useState(teacher?.headline || '');
+  const [profHeadline, setProfHeadline] = useState(getTeacherDescription(teacher));
   const [profAvatar, setProfAvatar] = useState(teacher?.avatar || AVATAR_PRESETS[0]);
   const [profSuccess, setProfSuccess] = useState(false);
 
@@ -61,7 +72,7 @@ console.log('teacher object:', teacher);
     setProfName(teacher?.name || '');
     setProfEmail(teacher?.email || '');
     setProfPhone(getTeacherPhone(teacher));
-    setProfHeadline(teacher?.headline || '');
+    setProfHeadline(getTeacherDescription(teacher));
     setProfAvatar(teacher?.avatar || AVATAR_PRESETS[0]);
   }, [teacher]);
 
@@ -81,6 +92,7 @@ console.log('teacher object:', teacher);
         email: profEmail,
         telephone: profPhone,
         picture: profAvatar,
+        description: profHeadline,
         isActive: true,
       });
 
@@ -88,6 +100,7 @@ console.log('teacher object:', teacher);
         name: profName,
         email: profEmail,
         headline: profHeadline,
+        description: profHeadline,
         avatar: profAvatar,
       });
 
@@ -166,13 +179,13 @@ console.log('teacher object:', teacher);
         {/* Headline / Specialization */}
         <div>
           <label className="text-xs font-extrabold text-slate-800 block mb-1.5">
-            {t('teacherDashboard.profile.headline')}
+            ბიოგრაფია
           </label>
-          <input
-            type="text"
+          <textarea
             value={profHeadline}
             onChange={(e) => setProfHeadline(e.target.value)}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-[#f8fafc] text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+            rows={4}
+            className="w-full p-3 rounded-xl border border-slate-200 bg-[#f8fafc] text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none transition resize-none"
           />
         </div>
 

@@ -142,6 +142,22 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
   const totalHomeworksCount = homeworks.length;
   const totalAttendance = attendanceRecords.length;
   const presentAttendance = attendanceRecords.filter((a) => a.isPresent).length;
+const georgianMonths = [
+  'იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი',
+  'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი',
+];
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // სათადარიგო ვარიანტი, თუ ფორმატი მოულოდნელია
+
+  const day = date.getDate();
+  const month = georgianMonths[date.getMonth()];
+  const year = date.getFullYear();
+
+  return `${day} ${month}, ${year}`;
+};
 
   const pendingHomework = homeworks.find(
     (hw) => !homeworkSubmissions.some((s) => s.homeworkId === hw.id)
@@ -258,12 +274,13 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                       <CheckCircle className="h-4 w-4 text-emerald-600" />
                       <span>{t('studentModal.syllabus.title')}</span>
                     </h4>
-                    <p className="text-xs text-slate-500">
+                    {/* <p className="text-xs text-slate-500">
                       {t('studentModal.syllabus.description')}
-                    </p>
+                    </p> */}
                   </div>
                   <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-200">
-                    {t('studentModal.syllabus.completedCount', { completed: completedIds.length, total: lessons.length || 1 })}
+                    {/* {t('studentModal.syllabus.completedCount', { completed: completedIds.length, total: lessons.length || 1 })} */}
+                    {completedIds.length}/{lessons.length}
                   </span>
                 </div>
 
@@ -285,16 +302,16 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                           }`}
                         >
                           <div
-                            className="flex items-center gap-3 cursor-pointer flex-1"
+                            className="flex items-center gap-3 cursor-pointer flex-1 "
                             onClick={() => toggleLesson(les.id)}
                           >
-                            <div
+                            {/* <div
                               className={`h-6 w-6 rounded-lg flex items-center justify-center transition shrink-0 ${
                                 isDone ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300 bg-white'
                               }`}
                             >
                               {isDone && <Check className="h-4 w-4 stroke-[3]" />}
-                            </div>
+                            </div> */}
                             <div>
                               <p className={`text-xs font-black ${isDone ? 'text-emerald-950 line-through' : 'text-slate-900'}`}>
                                 {t('studentModal.syllabus.lessonNumber', { number: idx + 1, title: les.title })}
@@ -550,9 +567,9 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
                       <p className="text-[10px] font-bold text-slate-400 uppercase">{t('studentModal.schedule.location')}</p>
                       <p className="text-xs font-black text-slate-900">{session.room || t('studentModal.schedule.onlineLecture')}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">{t('studentModal.schedule.startDate')}</p>
-                      <p className="text-xs font-black text-slate-900">{session.startDate || t('studentModal.notSpecified')}</p>
+                      <p className="text-xs font-black text-slate-900">{formatDate(session.startDate) || t('studentModal.notSpecified')}</p>
                     </div>
                   </div>
                 ) : (

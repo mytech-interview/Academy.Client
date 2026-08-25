@@ -15,23 +15,18 @@ export default function ContactPage({ lang }: ContactPageProps) {
 
   const branches = [
     {
-      title: t('contact.mainOffice'),
-      addr: t('contact.tbilisiAddress'),
-      phone: '+995 322 199 200',
-      email: 'info@geoalfa.edu.ge',
+      title: 'თბილისის ფილიალი',
+      addr: 'თბილისი',
+      phone: '+995 568 80  584',
+      email: 'contact@geoalphasolutions.com',
     },
     {
-      title: t('contact.kutaisiOffice'),
-      addr: t('contact.kutaisiAddress'),
-      phone: '+995 431 223 344',
-      email: 'kutaisi@geoalfa.edu.ge',
+      title: 'ახალციხის ფილიალი',
+      addr: 'ახალციხე',
+      phone: '+995 568 80  584',
+      email: 'contact@geoalphasolutions.com',
     },
-    {
-      title: t('contact.batumiOffice'),
-      addr: t('contact.batumiAddress'),
-      phone: '+995 422 554 433',
-      email: 'batumi@geoalfa.edu.ge',
-    },
+
   ];
 
   return (
@@ -53,7 +48,7 @@ export default function ContactPage({ lang }: ContactPageProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 text-left">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 text-left max-w-3xl mx-auto">
             {branches.map((branch, bi) => (
               <div key={bi} className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 space-y-4 hover:border-indigo-200 transition">
                 <div className="space-y-1">

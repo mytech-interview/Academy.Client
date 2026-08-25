@@ -10,6 +10,7 @@ export interface User {
   headline?: string;
   bio?: string;
   createdAt: string;
+  description: string;
 }
 
 export interface Lesson {

@@ -174,7 +174,7 @@ export default function CourseCard({
     if (lower.includes('programming') || lower.includes('პროგრამირება') || lower.includes('программирование')) {
       return 'bg-emerald-50 text-emerald-700 border-emerald-100/80';
     }
-    if (lower.includes('cyber') || lower.includes('კიბერუსაფრთხოება') || lower.includes('кибербезопасность')) {
+    if (lower.includes('cyber') || lower.includes('დიძაინი') || lower.includes('кибербезопасность')) {
       return 'bg-sky-50 text-sky-700 border-sky-100/80';
     }
     return 'bg-slate-50 text-slate-700 border-slate-200/60';
