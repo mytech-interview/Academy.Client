@@ -10,7 +10,7 @@ export interface SessionFormValues {
   endDate: string; // ISO date
   cityId: number;
   attendanceModeId: number;
-  lessonDaysDescription: string; 
+  lessonDaysDescription: string;
   isActive?: boolean;
 }
 
@@ -29,82 +29,78 @@ function toDateInputValue(iso?: string): string {
   return iso.slice(0, 10);
 }
 
-// NOTE: courses/lecturers must come from real API data (AdminDashboardPage's
-// `courses` / `lecturers` state, already fetched via coursesApi.getAllCourses
-// and adminApi.getAllTeachers) — never hardcode option lists here again,
-// that's exactly what produced the "teachers that don't exist" bug.
-//
-// teacherId: backend confirmed it now takes LecturerItem.teacherId /
-// userId (numeric), not a GUID — the earlier userGuid requirement was
-// fixed on the backend side, so this form sends teacherId again.
 export default function SessionFormModal({
   mode,
   initial,
   submitting,
-  courses,
-  lecturers,
+  courses = [],
+  lecturers = [],
   onClose,
   onSubmit,
 }: SessionFormModalProps) {
-  const [courseId, setCourseId] = useState(
-    initial ? String(initial.courseId ?? '') : String(courses[0]?.courseId ?? '')
-  );
-  const [teacherId, setTeacherId] = useState(
-    initial ? String(initial.teacherId ?? '') : String(lecturers[0]?.userId ?? '')
-  );
+  // Фильтруем только активных преподавателей
+  const activeLecturers = lecturers.filter((l) => l.isActive !== false);
+
+  const [courseId, setCourseId] = useState<string>('');
+  const [teacherId, setTeacherId] = useState<string>('');
   const [weeks, setWeeks] = useState(initial?.weeks ? String(initial.weeks) : '8');
   const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
   const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-11-15');
   const [lessonDaysDescription, setLessonDaysDescription] = useState(
     initial?.lessonDaysDescription ?? ''
   );
-  // TODO: no cities/attendance-mode API confirmed yet. Cities table in the
-  // DB currently has only Id=1 თბილისი, Id=2 ახალციხე (per the screenshot) —
-  // hardcoded to match that for now, but this should become a real
-  // getAllCities() call once that endpoint exists, same as courses/lecturers.
   const [cityId, setCityId] = useState(initial?.cityId ? String(initial.cityId) : '1');
   const [attendanceModeId, setAttendanceModeId] = useState(
     initial?.attendanceModeId ? String(initial.attendanceModeId) : '1'
   );
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
 
-  // FIX: courses / lecturers (and sometimes `initial` in edit mode) can
-  // arrive AFTER this modal's first render (async fetch in the parent).
-  // The useState initializers above only run once on mount, so if data
-  // wasn't ready yet, courseId/teacherId silently stayed '' even though
-  // the <select> visually showed the first option — causing the false
-  // "აირჩიეთ კურსი და ლექტორი" validation error until the user touched
-  // the dropdowns manually. This effect re-syncs once the real data lands.
+  // Синхронизация выборов с загруженными массивами
   useEffect(() => {
-    if (initial) {
-      if (initial.courseId != null) setCourseId(String(initial.courseId));
-      if (initial.teacherId != null) setTeacherId(String(initial.teacherId));
-    } else {
-      if (!courseId && courses[0]) setCourseId(String(courses[0].courseId));
-      if (!teacherId && lecturers[0]) setTeacherId(String(lecturers[0].userId));
+    if (initial?.courseId != null) {
+      setCourseId(String(initial.courseId));
+    } else if (courses.length > 0) {
+      // Если courseId не выбран или выбранное значение отсутствует в массиве courses
+      const exists = courses.some((c) => String(c.courseId) === courseId);
+      if (!courseId || !exists) {
+        setCourseId(String(courses[0].courseId));
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    if (initial?.teacherId != null) {
+      setTeacherId(String(initial.teacherId));
+    } else if (activeLecturers.length > 0) {
+      // Если teacherId не выбран или его нет среди активных лекторов
+      const exists = activeLecturers.some((l) => String(l.userId) === teacherId);
+      if (!teacherId || !exists) {
+        setTeacherId(String(activeLecturers[0].userId));
+      }
+    }
   }, [initial, courses, lecturers]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!courseId || !teacherId) {
+    // Вычисляем финальные ID: если state почему-то пуст, берем ID первого элемента массива
+    const finalCourseId = courseId || String(courses[0]?.courseId ?? '');
+    const finalTeacherId = teacherId || String(activeLecturers[0]?.userId ?? '');
+
+    if (!finalCourseId || !finalTeacherId) {
       alert('აირჩიეთ კურსი და ლექტორი.');
       return;
     }
 
-    const parsedWeeks = Math.min(255, Math.max(0, Number(weeks) || 0));
+    const parsedWeeks = Math.min(255, Math.max(1, Number(weeks) || 1));
 
     onSubmit({
-      courseId: Number(courseId),
-      teacherId: Number(teacherId),
+      courseId: Number(finalCourseId),
+      teacherId: Number(finalTeacherId),
       weeks: parsedWeeks,
       startDate,
       endDate,
       cityId: Number(cityId) || 1,
       attendanceModeId: Number(attendanceModeId) || 1,
-      lessonDaysDescription: lessonDaysDescription.trim(), // NEW
+      lessonDaysDescription: lessonDaysDescription.trim(),
       ...(mode === 'edit' ? { isActive } : {}),
     });
   };
@@ -129,7 +125,11 @@ export default function SessionFormModal({
             {courses.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium py-2">კურსები არ არის ჩატვირთული</p>
             ) : (
-              <select value={courseId} onChange={(e) => setCourseId(e.target.value)} className="styled-input">
+              <select
+                value={courseId || String(courses[0]?.courseId ?? '')}
+                onChange={(e) => setCourseId(e.target.value)}
+                className="styled-input"
+              >
                 {courses.map((c) => (
                   <option key={c.courseId} value={c.courseId}>
                     {c.title}
@@ -142,12 +142,16 @@ export default function SessionFormModal({
             </p>
           </Field>
 
-                    <Field label="მიჩენილი ლექტორი">
-            {lecturers.length === 0 ? (
+          <Field label="მიჩენილი ლექტორი">
+            {activeLecturers.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium py-2">ლექტორები არ არის ჩატვირთული</p>
             ) : (
-              <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)} className="styled-input">
-                {lecturers.map((l) => (
+              <select
+                value={teacherId || String(activeLecturers[0]?.userId ?? '')}
+                onChange={(e) => setTeacherId(e.target.value)}
+                className="styled-input"
+              >
+                {activeLecturers.map((l) => (
                   <option key={l.userId} value={l.userId}>
                     {l.name}
                   </option>
@@ -158,15 +162,15 @@ export default function SessionFormModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="ხანგრძლივობა (კვირები)">
-  <input
-    type="number"
-    min={1}
-    max={7}
-    value={weeks}
-    onChange={(e) => setWeeks(e.target.value)}
-    className="styled-input"
-  />
-</Field>
+              <input
+                type="number"
+                min={1}
+                max={255}
+                value={weeks}
+                onChange={(e) => setWeeks(e.target.value)}
+                className="styled-input"
+              />
+            </Field>
 
             <Field label="დასწრების ფორმატი">
               <select
@@ -199,15 +203,16 @@ export default function SessionFormModal({
               />
             </Field>
           </div>
+
           <Field label="განრიგი (დღეები და საათები)">
-          <input
-            type="text"
-            value={lessonDaysDescription}
-            onChange={(e) => setLessonDaysDescription(e.target.value)}
-            placeholder="მაგ: ორშ/ოთხ/პარ 18:00–20:00"
-            className="styled-input"
-          />
-        </Field>
+            <input
+              type="text"
+              value={lessonDaysDescription}
+              onChange={(e) => setLessonDaysDescription(e.target.value)}
+              placeholder="მაგ: ორშ/ოთხ/პარ 18:00–20:00"
+              className="styled-input"
+            />
+          </Field>
 
           <Field label="🏢 ქალაქი (City)">
             <select value={cityId} onChange={(e) => setCityId(e.target.value)} className="styled-input">

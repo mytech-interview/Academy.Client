@@ -52,6 +52,7 @@ export interface GetAllCoursesResponseDto {
   enrolledStudentsAmount: number;
   price: number;
   isActive: boolean;
+  picture?: string | null;
 }
 
 export function getAllCourses(

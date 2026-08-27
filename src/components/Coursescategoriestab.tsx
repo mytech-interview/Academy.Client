@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {
   AlertTriangle,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   Search,
   Star,
   X,
+  Bold, Italic, Underline, ListOrdered,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CourseItem } from '../types';
@@ -21,6 +23,8 @@ import {
   updateCourseLesson,
   GetAllCourseLessonsResponseDto,
 } from '../api/Coursesapi';
+
+const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800';
 
 interface CoursesCategoriesTabProps {
   courses: CourseItem[];
@@ -103,7 +107,7 @@ function LessonsModal({
   const [lessons, setLessons] = useState<GetAllCourseLessonsResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   // ── Add-lesson form state ──
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -665,19 +669,24 @@ export default function CoursesCategoriesTab({
               className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col group hover:shadow-lg transition duration-200"
             >
               {/* Course preview / banner */}
-              <div className="relative h-44 bg-slate-100 overflow-hidden">
-                <img
-                  src={c.picture || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800'}
-                  alt={c.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                />
-                {/* Category badge removed: GetAllCoursesResponseDto doesn't
-                    return courseCategoryId/name yet, so there's no real
-                    data to show here. Re-add once the backend includes it. */}
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-800 text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-sm">
-                  {c.price ? `${c.price} ₾` : t('coursesTab.free')}
+                <div className="relative h-44 bg-slate-100 overflow-hidden">
+                                        <img
+                        src={
+                          c.picture ||
+                          (c as any).pictureUrl ||
+                          (c as any).imageUrl ||
+                          DEFAULT_COURSE_IMAGE
+                        }
+                        alt={c.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_COURSE_IMAGE;
+                        }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-800 text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-sm">
+                    {c.price ? `${c.price} ₾` : t('coursesTab.free')}
+                  </div>
                 </div>
-              </div>
 
               {/* Card content */}
               <div className="p-5 flex flex-col flex-1 justify-between space-y-4">

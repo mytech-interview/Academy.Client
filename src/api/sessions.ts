@@ -293,11 +293,9 @@ export async function getLessonsForSession(sessionId: number): Promise<SessionLe
   const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/sessions/getLessonsForSession`, {
     method: 'POST',
-     headers: {
+    headers: {
       "Content-Type": "application/json",
-      ...(token && {
-        Authorization: `Bearer ${token}`
-      })
+      ...(token && { Authorization: `Bearer ${token}` })
     },
     body: JSON.stringify({ sessionId }),
   });
@@ -315,14 +313,8 @@ export async function getLessonsForSession(sessionId: number): Promise<SessionLe
     throw new Error(data.errMsg ?? '');
   }
 
-  return (data.lessons || []).map((l) => ({
-    lessonId: l.courseLessonId,
-    orderIndex: l.lessonNumber,
-    title: l.title,
-    content: l.description,
-  }));
+  return data.lessons || [];
 }
-
 // --- Homeworks for student -------------------------------------------
 // Mirrors Academy.CoreApi.Entities.HomeWorks.GetHomeWorksForStudentResponseList.
 // NOTE: backend response has NO SessionId/CourseId — these are ALL of the

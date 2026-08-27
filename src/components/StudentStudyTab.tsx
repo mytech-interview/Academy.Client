@@ -5,6 +5,7 @@ import { Language } from '../lib/translations';
 import { StudentSession } from '../api/sessions';
 import { StudentCourseDetailContainer } from './Studentcoursedetailmodal.container';
 import { ReviewModal } from './ReviewModal';
+import DOMPurify from 'dompurify';
 
 const COURSE_IMAGE_PLACEHOLDER =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
@@ -77,11 +78,15 @@ export const StudentStudyTab: React.FC<StudentStudyTabProps> = ({
                 {/* Image and category badge */}
                 <div className="relative h-52 sm:h-60 w-full overflow-hidden">
                   <img
-                    src={COURSE_IMAGE_PLACEHOLDER}
-                    alt={session.title}
-                    className="h-full w-full object-cover transition duration-500 hover:scale-105"
-                    referrerPolicy="no-referrer"
-                  />
+  src={session.picture || COURSE_IMAGE_PLACEHOLDER}
+  alt={session.title}
+  className="h-full w-full object-cover transition duration-500 hover:scale-105"
+  referrerPolicy="no-referrer"
+  onError={(e) => {
+    // на случай если ссылка есть, но битая — тоже подставляем дефолт
+    (e.currentTarget as HTMLImageElement).src = COURSE_IMAGE_PLACEHOLDER;
+  }}
+/>
                   <div className="absolute left-4 top-4">
                     <span className="rounded-xl bg-slate-900/85 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-white shadow-md">
                       {session.categoryName}

@@ -4,47 +4,48 @@ import { motion } from 'motion/react';
 import {
   X, Clock, Award, Star, BookOpen, Users, ChevronRight, ChevronDown, ChevronUp,
   Calendar, MapPin, Loader2, AlertCircle, User as UserIcon, GraduationCap,
-  Sparkles, Check, Layers,
+  Sparkles, Layers,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActiveSession } from '../types';
-import { getCourseDetailsBySessionId, CourseDetailsBySessionId } from '../api/sessions';
+import {
+  getCourseDetailsBySessionId,
+  CourseDetailsBySessionId,
+  getLessonsForSession,
+  SessionLesson
+} from '../api/sessions';
 import { getReviewsBySession, ReviewItem } from '../api/reviews';
 import { getCityName } from '../lib/cityNames';
+import DOMPurify from 'dompurify';
 
-// Fallback placeholder used only until real `picture` arrives from the API,
-// or if the backend ever sends an empty string.
+// სამაგიერო სურათი, სანამ API-დან რეალური `picture` არ მოვა,
+// ან თუ ბექენდიდან ცარიელი სტრიქონი დაბრუნდა.
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
 const API_BASE_URL = 'https://localhost:5188/api';
 
-// picture / teacherPicture иногда приходят как полный URL, а иногда просто
-// как имя файла (например "abc123.png") — в этом случае URL нужно собрать самим.
+// picture / teacherPicture ხანდახან სრული URL-ის სახით მოდის, ხანდახან კი
+// მხოლოდ ფაილის სახელის სახით (მაგ. "abc123.png") — ამ შემთხვევაში
+// URL-ი თვითონ უნდა ავაწყოთ.
 function resolveAvatarSrc(value?: string | null): string | null {
   if (!value) return null;
+
+  const driveMatch = value.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w200`;
+  }
+
+  const driveOpenMatch = value.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (driveOpenMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveOpenMatch[1]}&sz=w200`;
+  }
+
   if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
     return value;
   }
+
   return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
-}
-
-// Фиксированная длительность урока — на бэке нет per-lesson данных,
-// продукт решил показывать урок как блок в 2 часа.
-const LESSON_DURATION_HOURS = 2;
-
-interface StubLesson {
-  id: string;
-  title: string;
-}
-
-// TODO(stub): нет эндпоинта контента уроков. Генерируем только счётчик
-// строк по amountOfLessons (это реальное число), без фейкового контента.
-function buildStubLessons(count: number, t: (k: string, o?: any) => string): StubLesson[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `stub-lesson-${i}`,
-    title: t('courseDetailModal.lessonPlaceholderTitle', { index: i + 1, defaultValue: `Lesson ${i + 1}` }),
-  }));
 }
 
 interface CourseDetailModalProps {
@@ -72,24 +73,30 @@ export default function CourseDetailModal({
   const lang = i18n.language || 'en';
 
   const [activeTab, setActiveTab] = useState<'overview' | 'lessons' | 'instructor' | 'reviews'>('overview');
-  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
+  const [expandedLessonId, setExpandedLessonId] = useState<number | null>(null);
 
   const [details, setDetails] = useState<CourseDetailsBySessionId | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
 
+  const [lessons, setLessons] = useState<SessionLesson[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+  const [lessonsError, setLessonsError] = useState<string | null>(null);
+
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
 
-  // Флаг ошибки загрузки аватара преподавателя — если картинка не пришла
-  // или не загрузилась, откатываемся на иконку-заглушку (как в CourseCard).
+  // ლექტორის ავატარის ჩატვირთვის შეცდომის ალამი — თუ სურათი არ მოვიდა
+  // ან ვერ ჩაიტვირთა, ვუბრუნდებით სამაგიერო ხატულას (როგორც CourseCard-ში).
   const [avatarFailed, setAvatarFailed] = useState(false);
 
-  // Public endpoints — no login required, fetch both as soon as the modal opens.
+  // საჯარო endpoint-ებია — ავტორიზაცია არ სჭირდება, ამიტომ სამივეს ერთად
+  // ვითხოვთ მოდალის გახსნისთანავე.
   useEffect(() => {
     if (!isOpen) {
       setDetails(null);
+      setLessons([]);
       setReviews([]);
       return;
     }
@@ -101,23 +108,32 @@ export default function CourseDetailModal({
     getCourseDetailsBySessionId(course.sessionId)
       .then((data) => { if (!cancelled) setDetails(data); })
       .catch((err) => {
-        if (!cancelled) setDetailsError(err.message || t('courseDetailModal.loadError', 'Failed to load course details'));
+        if (!cancelled) setDetailsError(err.message || t('courseDetailModal.loadError', 'კურსის დეტალების ჩატვირთვა ვერ მოხერხდა'));
       })
       .finally(() => { if (!cancelled) setDetailsLoading(false); });
+
+    setLessonsLoading(true);
+    setLessonsError(null);
+getLessonsForSession(course.sessionId)
+  .then((data) => { if (!cancelled) setLessons(data || []); }) 
+      .catch((err) => {
+        if (!cancelled) setLessonsError(err.message || t('courseDetailModal.lessonsLoadError', 'გაკვეთილების ჩატვირთვა ვერ მოხერხდა'));
+      })
+      .finally(() => { if (!cancelled) setLessonsLoading(false); });
 
     setReviewsLoading(true);
     setReviewsError(null);
     getReviewsBySession(course.sessionId)
       .then((data) => { if (!cancelled) setReviews(data); })
       .catch((err) => {
-        if (!cancelled) setReviewsError(err.message || t('courseDetailModal.reviewsLoadError', 'Failed to load reviews'));
+        if (!cancelled) setReviewsError(err.message || t('courseDetailModal.reviewsLoadError', 'შეფასებების ჩატვირთვა ვერ მოხერხდა'));
       })
       .finally(() => { if (!cancelled) setReviewsLoading(false); });
 
     return () => { cancelled = true; };
   }, [isOpen, course.sessionId]);
 
-  // Reset to the overview tab each time a different course is opened
+  // მოდალის ყოველ ხელახლა გახსნაზე ვუბრუნდებით overview ტაბს
   useEffect(() => {
     if (isOpen) {
       setActiveTab('overview');
@@ -135,19 +151,19 @@ export default function CourseDetailModal({
   const durationWeeks = details?.weeks ?? course.durationWeeks;
   const amountOfLessons = details?.amountOfLessons ?? course.amountOfLessons;
   const teacherName = details?.teacherName ?? course.teacherName;
-  // бэк отдаёт аватар/картинку учителя под именем teacherPicture (см. CourseCard)
+  // ბექენდი ლექტორის ავატარს/სურათს აბრუნებს teacherPicture-ის სახელით (იხ. CourseCard)
   const teacherPicture = details?.teacherPicture ?? course.teacherPicture;
   const teacherAvatarSrc = resolveAvatarSrc(teacherPicture);
   const price = details?.price ?? course.price;
   const enrolledCount = details?.enrolledCount ?? course.enrolledCount;
   const maxStudents = details?.maxStudents ?? course.maxStudents;
   const picture = resolveAvatarSrc(details?.picture) || DEFAULT_COURSE_IMAGE;
-    const teacherDescription = details?.teacherDescription ?? course.teacherDescription;
+  const teacherDescription = details?.teacherDescription ?? course.teacherDescription;
 
   const showAvatarImage = !!teacherAvatarSrc && !avatarFailed;
 
-  // Реальное количество отзывов и рейтинг — из данных сессии,
-  // как только подтянутся отзывы, используем точную длину списка.
+  // შეფასებების რეალური რაოდენობა და რეიტინგი — თუ შეფასებები უკვე
+  // ჩამოტვირთულია, ვიყენებთ სიის ზუსტ სიგრძეს.
   const reviewCount = reviews.length > 0 ? reviews.length : (details?.reviewCount ?? course.reviewCount ?? 0);
 
   const averageRatingRaw = details?.averageRating ?? course.averageRating;
@@ -158,7 +174,7 @@ export default function CourseDetailModal({
   const ratingFormatted =
     Number.isFinite(ratingNum) && ratingNum !== 0 ? ratingNum.toFixed(1) : '—';
 
-  const priceDisplay = price === 0 ? t('courseDetailModal.free', 'Free') : `$${price}`;
+  const priceDisplay = price === 0 ? t('courseDetailModal.free', 'უფასო') : `${price}₾`;
 
   const formatDate = (iso?: string) => {
     if (!iso) return '';
@@ -168,17 +184,17 @@ export default function CourseDetailModal({
 
   const cityLabel = details ? getCityName(details.cityId, details.cityName, lang) : '';
 
-  const stubLessons = buildStubLessons(amountOfLessons || 0, t);
+  const sortedLessons = [...lessons].sort((a, b) => a.lessonNumber - b.lessonNumber);
 
   const sortedReviews = [...reviews].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   const tabs: { key: typeof activeTab; label: string; count?: number }[] = [
-    { key: 'overview', label: t('courseDetailModal.tabOverview', 'Overview') },
-    { key: 'lessons', label: t('courseDetailModal.tabLessons', 'Lessons'), count: amountOfLessons },
-    { key: 'instructor', label: t('courseDetailModal.tabInstructor', 'Instructor') },
-    { key: 'reviews', label: t('courseDetailModal.tabReviews', 'Reviews'), count: reviewCount || undefined },
+    { key: 'overview', label: t('courseDetailModal.tabOverview', 'მიმოხილვა') },
+    { key: 'lessons', label: t('courseDetailModal.tabLessons', 'გაკვეთილები'), count: amountOfLessons },
+    { key: 'instructor', label: t('courseDetailModal.tabInstructor', 'ლექტორი') },
+    { key: 'reviews', label: t('courseDetailModal.tabReviews', 'შეფასებები'), count: reviewCount || undefined },
   ];
 
   return (
@@ -212,7 +228,7 @@ export default function CourseDetailModal({
             {detailsLoading && (
               <div className="absolute top-5 left-5 flex items-center gap-2 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1.5 text-[10px] font-bold text-white">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>{t('courseDetailModal.loading', 'Loading...')}</span>
+                <span>{t('courseDetailModal.loading', 'იტვირთება...')}</span>
               </div>
             )}
 
@@ -230,7 +246,7 @@ export default function CourseDetailModal({
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-lg bg-white/20 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white">
                   <BookOpen className="h-3 w-3 text-indigo-300" />
-                  <span>{t('courseCard.lessons', { count: amountOfLessons, defaultValue: `${amountOfLessons} lessons` })}</span>
+                  <span>{t('courseCard.lessons', { count: amountOfLessons, defaultValue: `${amountOfLessons} გაკვეთილი` })}</span>
                 </span>
               </div>
 
@@ -253,7 +269,7 @@ export default function CourseDetailModal({
                   )}
                 </span>
                 <span className="line-clamp-1">
-                  {t('courseDetailModal.teacherPrefix', 'Instructor:')} <strong className="text-white font-bold">{teacherName}</strong>
+                  {t('courseDetailModal.teacherPrefix', 'ლექტორი:')} <strong className="text-white font-bold">{teacherName}</strong>
                 </span>
               </p>
             </div>
@@ -283,22 +299,22 @@ export default function CourseDetailModal({
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
-            {/* TAB: OVERVIEW */}
+            {/* ტაბი: მიმოხილვა */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-3.5 rounded-2xl bg-slate-50 p-5 sm:grid-cols-4 text-center border border-slate-200/60">
                   <div className="space-y-1">
                     <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
-                      {t('courseDetailModal.lblDuration', 'Duration')}
+                      {t('courseDetailModal.lblDuration', 'ხანგრძლივობა')}
                     </span>
                     <span className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-900">
                       <Clock className="h-4 w-4 text-indigo-600" />
-                      {t('course.durationWeeks', { count: durationWeeks, defaultValue: `${durationWeeks} weeks` })}
+                      {t('course.durationWeeks', { count: durationWeeks, defaultValue: `${durationWeeks} კვირა` })}
                     </span>
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
-                      {t('courseDetailModal.lblLevel', 'Level')}
+                      {t('courseDetailModal.lblLevel', 'დონე')}
                     </span>
                     <span className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-900">
                       <Award className="h-4 w-4 text-indigo-600" />
@@ -307,7 +323,7 @@ export default function CourseDetailModal({
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
-                      {t('courseDetailModal.lblLessons', 'Lessons')}
+                      {t('courseDetailModal.lblLessons', 'გაკვეთილები')}
                     </span>
                     <span className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-900">
                       <BookOpen className="h-4 w-4 text-indigo-600" />
@@ -316,7 +332,7 @@ export default function CourseDetailModal({
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[10px] uppercase font-bold tracking-widest text-slate-400">
-                      {t('courseDetailModal.lblRating', 'Rating')}
+                      {t('courseDetailModal.lblRating', 'რეიტინგი')}
                     </span>
                     <span className="flex items-center justify-center gap-1 text-sm font-black text-slate-900">
                       <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
@@ -329,31 +345,32 @@ export default function CourseDetailModal({
                   <Users className="h-4 w-4 text-indigo-600 shrink-0" />
                   <span>
                     {enrolledCount}
-                    {maxStudents ? ` / ${maxStudents}` : ''} {t('courseDetailModal.studentsLabel', 'students enrolled')}
+                    {maxStudents ? ` / ${maxStudents}` : ''} {t('courseDetailModal.studentsLabel', 'ჩარიცხული სტუდენტი')}
                   </span>
                 </div>
 
                 {courseDescription && (
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-indigo-600" />
-                      <span>{t('courseDetailModal.aboutTitle', 'About the Course')}</span>
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                      {courseDescription}
-                    </p>
-                  </div>
-                )}
+  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+      <Sparkles className="h-5 w-5 text-indigo-600" />
+      <span>{t('courseDetailModal.aboutTitle', 'კურსის შესახებ')}</span>
+    </h3>
+    <div
+      className="bio-preview p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(courseDescription) }}
+    />
+  </div>
+)}
 
                 <div className="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 space-y-3">
                   <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider">
-                    {t('courseDetailModal.scheduleTitle', 'Schedule')}
+                    {t('courseDetailModal.scheduleTitle', 'განრიგი')}
                   </h4>
 
                   {detailsLoading && (
                     <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>{t('courseDetailModal.loading', 'Loading...')}</span>
+                      <span>{t('courseDetailModal.loading', 'იტვირთება...')}</span>
                     </div>
                   )}
 
@@ -386,46 +403,59 @@ export default function CourseDetailModal({
               </div>
             )}
 
-            {/* TAB: LESSONS — count real, per-lesson content still not backed by API */}
+            {/* ტაბი: გაკვეთილები — რეალური მონაცემები getLessonsForSession-იდან, სტაბები აღარ გამოიყენება */}
             {activeTab === 'lessons' && (
               <div className="space-y-6">
                 <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-base font-black text-white flex items-center gap-2">
                       <Layers className="h-5 w-5 text-indigo-400" />
-                      <span>{t('courseDetailModal.lessonsTitle', { count: amountOfLessons, defaultValue: `Lessons (${amountOfLessons})` })}</span>
+                      <span>{t('courseDetailModal.lessonsTitle', { count: amountOfLessons, defaultValue: `გაკვეთილები (${amountOfLessons})` })}</span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {t('courseDetailModal.lessonsSubtitle', 'Full list of lessons attached to this course')}
+                      {t('courseDetailModal.lessonsSubtitle', 'კურსზე დამატებული გაკვეთილების სრული სია')}
                     </p>
                   </div>
                 </div>
 
-                {stubLessons.length > 0 ? (
+                {lessonsLoading && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500 py-4 justify-center">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>{t('courseDetailModal.loading', 'იტვირთება...')}</span>
+                  </div>
+                )}
+
+                {lessonsError && !lessonsLoading && (
+                  <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <span>{lessonsError}</span>
+                  </div>
+                )}
+
+                {!lessonsLoading && !lessonsError && sortedLessons.length > 0 && (
                   <div className="space-y-3">
-                    {stubLessons.map((les, idx) => {
-                      const isExpanded = expandedLessonId === les.id;
+                    {sortedLessons.map((les) => {
+                      const isExpanded = expandedLessonId === les.courseLessonId;
                       return (
-                        <div key={les.id} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition hover:border-indigo-300">
+                        <div key={les.courseLessonId} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition hover:border-indigo-300">
                           <div
-                            onClick={() => setExpandedLessonId(isExpanded ? null : les.id)}
+                            onClick={() => setExpandedLessonId(isExpanded ? null : les.courseLessonId)}
                             className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none bg-white hover:bg-slate-50/80 transition"
                           >
                             <div className="flex items-center gap-3.5 min-w-0">
                               <span className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">
-                                #{idx + 1}
+                                #{les.lessonNumber}
                               </span>
                               <div className="min-w-0 space-y-1">
                                 <h4 className="text-sm font-black text-slate-900 truncate">{les.title}</h4>
-                                <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
-                                  {t('courseDetailModal.lessonPlaceholderContent', 'Lesson content will be added by the instructor.')}
-                                </p>
+                                {les.description && (
+                                  <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+                                    {les.description}
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                                ⏱️ {t('courseDetailModal.lessonDurationHours', { count: LESSON_DURATION_HOURS, defaultValue: `${LESSON_DURATION_HOURS} hours` })}
-                              </span>
                               <div className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
                                 {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                               </div>
@@ -437,10 +467,10 @@ export default function CourseDetailModal({
                               <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-2">
                                 <p className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                                   <BookOpen className="h-4 w-4 text-indigo-600" />
-                                  <span>{t('courseDetailModal.lessonDetailLabel', 'Lesson description:')}</span>
+                                  <span>{t('courseDetailModal.lessonDetailLabel', 'გაკვეთილის აღწერა:')}</span>
                                 </p>
-                                <p className="text-slate-700 font-medium">
-                                  {t('courseDetailModal.lessonPlaceholderContent', 'Lesson content will be added by the instructor.')}
+                                <p className="text-slate-700 font-medium whitespace-pre-line">
+                                  {les.description || t('courseDetailModal.lessonPlaceholderContent', 'გაკვეთილის შინაარსი ჯერ არ არის დამატებული.')}
                                 </p>
                               </div>
                             </div>
@@ -449,55 +479,63 @@ export default function CourseDetailModal({
                       );
                     })}
                   </div>
-                ) : (
+                )}
+
+                {!lessonsLoading && !lessonsError && sortedLessons.length === 0 && (
                   <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
                     <BookOpen className="h-8 w-8 text-slate-400 mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">{t('courseDetailModal.noLessonsYet', 'No lessons attached to this course yet')}</p>
+                    <p className="text-xs font-bold text-slate-700">{t('courseDetailModal.noLessonsYet', 'ამ კურსს ჯერ არ აქვს გაკვეთილები დამატებული')}</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* TAB: INSTRUCTOR — real name + real avatar (teacherPicture), no fake bio */}
+            {/* ტაბი: ლექტორი — რეალური სახელი + რეალური ავატარი (teacherPicture), ყალბი ბიოგრაფია აღარ გამოიყენება */}
             {activeTab === 'instructor' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
-                  <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
-                    <div className="h-20 w-20 rounded-2xl flex items-center justify-center bg-indigo-50 ring-4 ring-indigo-50 border border-slate-200 shrink-0 overflow-hidden">
-                      {showAvatarImage ? (
-                        <img
-                          src={teacherAvatarSrc as string}
-                          alt={teacherName}
-                          className="h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
-                          onError={() => setAvatarFailed(true)}
-                        />
-                      ) : (
-                        <GraduationCap className="h-9 w-9 text-indigo-600" />
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase">
-                        {t('courseDetailModal.instructorHeadline', 'Academy Instructor')}
-                      </span>
-                      <h3 className="text-lg font-black text-slate-950 mt-1">{teacherName}</h3>
-                    </div>
-                  </div>
-                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
-                    {teacherDescription
-                      ? teacherDescription
-                      : 'ინფორმაცია ჯერ არ არის დამატებული'}
-                  </div>
-                </div>
-              </div>
-            )}
+  <div className="space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
+      <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+        <div className="h-20 w-20 rounded-2xl flex items-center justify-center bg-indigo-50 ring-4 ring-indigo-50 border border-slate-200 shrink-0 overflow-hidden">
+          {showAvatarImage ? (
+            <img
+              src={teacherAvatarSrc as string}
+              alt={teacherName}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarFailed(true)}
+            />
+          ) : (
+            <GraduationCap className="h-9 w-9 text-indigo-600" />
+          )}
+        </div>
+        <div className="space-y-1">
+          <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-black uppercase">
+            {t('courseDetailModal.instructorHeadline', 'აკადემიის ლექტორი')}
+          </span>
+          <h3 className="text-lg font-black text-slate-950 mt-1">{teacherName}</h3>
+        </div>
+      </div>
 
-            {/* TAB: REVIEWS — fully real data from getReviewsBySession */}
+      {teacherDescription ? (
+        <div
+          className="bio-preview p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(teacherDescription) }}
+        />
+      ) : (
+        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
+          {t('courseDetailModal.noTeacherDescription', 'ინფორმაცია ჯერ არ არის დამატებული')}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+            {/* ტაბი: შეფასებები — მთლიანად რეალური მონაცემები getReviewsBySession-იდან */}
             {activeTab === 'reviews' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h3 className="text-base font-black text-slate-900">{t('courseDetailModal.reviewsTitle', 'Student Reviews')}</h3>
+                    <h3 className="text-base font-black text-slate-900">{t('courseDetailModal.reviewsTitle', 'სტუდენტების შეფასებები')}</h3>
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-xl">
                       <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
                       <span className="text-base font-black text-amber-950">
@@ -509,7 +547,7 @@ export default function CourseDetailModal({
                   {reviewsLoading && (
                     <div className="flex items-center gap-2 text-xs text-slate-500 py-4 justify-center">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>{t('courseDetailModal.loading', 'Loading...')}</span>
+                      <span>{t('courseDetailModal.loading', 'იტვირთება...')}</span>
                     </div>
                   )}
 
@@ -524,7 +562,7 @@ export default function CourseDetailModal({
                     <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
                       <Star className="h-8 w-8 text-slate-300 mx-auto" />
                       <p className="text-xs font-bold text-slate-700">
-                        {t('courseDetailModal.noReviewsYet', 'No reviews yet')}
+                        {t('courseDetailModal.noReviewsYet', 'ჯერ არ არის შეფასებები')}
                       </p>
                     </div>
                   )}
@@ -559,11 +597,11 @@ export default function CourseDetailModal({
           </div>
         </div>
 
-        {/* Sticky action footer */}
+        {/* ფასი + ჩარიცხვის ღილაკი, ეკრანის ბოლოში ფიქსირებული */}
         <div className="sticky bottom-0 border-t border-slate-200/80 bg-white/95 backdrop-blur-md p-5 sm:p-6 flex items-center justify-between">
           <div className="px-2 text-left">
             <span className="block text-[10px] uppercase font-extrabold tracking-widest text-slate-400 leading-none mb-1">
-              {t('courseDetailModal.lblPrice', 'Price')}
+              {t('courseDetailModal.lblPrice', 'ფასი')}
             </span>
             <span className={`text-xl font-black block leading-none ${price === 0 ? 'text-emerald-600' : 'text-slate-950'}`}>
               {priceDisplay}
@@ -573,7 +611,7 @@ export default function CourseDetailModal({
           <div className="flex items-center gap-2.5">
             {isLoggedIn && userRole === 'teacher' ? (
               <span className="rounded-xl bg-slate-50 border border-slate-200 px-5 py-3 text-xs font-bold text-slate-400">
-                {t('courseDetailModal.isTeacherLabel', 'You are the instructor of this course')}
+                {t('courseDetailModal.isTeacherLabel', 'თქვენ ხართ ამ კურსის ლექტორი')}
               </span>
             ) : isEnrolled ? (
               <button
@@ -581,7 +619,7 @@ export default function CourseDetailModal({
                 id="btn-detail-start-study"
                 className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs sm:text-sm font-black text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-md shadow-indigo-100 cursor-pointer"
               >
-                {t('courseDetailModal.btnStart', 'Start Learning')}
+                {t('courseDetailModal.btnStart', 'სწავლის დაწყება')}
                 <ChevronRight className="h-4 w-4" />
               </button>
             ) : (
@@ -590,7 +628,7 @@ export default function CourseDetailModal({
                 id="btn-detail-enroll"
                 className="rounded-xl bg-indigo-600 px-6 py-3 text-xs sm:text-sm font-black text-white hover:bg-indigo-700 active:scale-[0.98] transition shadow-md shadow-indigo-100 cursor-pointer"
               >
-                {t('courseDetailModal.btnEnroll', 'Enroll in Course')}
+                {t('courseDetailModal.btnEnroll', 'კურსზე ჩარიცხვა')}
               </button>
             )}
           </div>
