@@ -60,7 +60,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         className="relative w-full max-w-[440px]"
       >
         <div className="bg-white rounded-[2.25rem] border border-slate-100/90 shadow-[0_32px_64px_-12px_rgba(30,41,59,0.14)] overflow-hidden">
-          <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-blue-500" />
+          
           <div className="p-8 sm:p-10">
 
             {/* Header */}

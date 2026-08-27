@@ -200,21 +200,36 @@ export default function OtpPage() {
     setLoading(true);
 
     try {
-      const result =
-        otpMode === 'login'
-          ? await validateOtp({
-              email: otpEmail,
-              otpNumber: code,
-            })
-          : await validateOtpRegitration({
-              email: otpEmail,
-              otpNumber: code,
-              firstName: otpFirstName,
-              lastName: otpLastName,
-              password: otpPassword,
-              telephone: otpTelephone,
-              roleId: otpRole,
-            });
+const result =
+  otpMode === 'login'
+    ? await validateOtp({
+        email: otpEmail,
+        otpNumber: code,
+      })
+    : await validateOtpRegitration({
+        email: otpEmail,
+        otpNumber: code,
+        firstName: otpFirstName,
+        lastName: otpLastName,
+        password: otpPassword,
+        telephone: otpTelephone,
+        roleId: otpRole,
+      });
+
+// Бэкенд возвращает HTTP 200 даже при невалидном/просроченном OTP,
+// ошибка приходит внутри authResponse (err !== 0 / errMsg заполнен).
+const authCheck = (result as any)?.authResponse;
+
+const hasBackendError =
+  !authCheck ||
+  (typeof authCheck.err === 'number' && authCheck.err !== 0) ||
+  Boolean(authCheck.errMsg);
+
+if (hasBackendError) {
+  setError(authCheck?.errMsg ?? t('auth.errors.otpInvalid'));
+  setLoading(false);
+  return; // <-- прерываем, дальше не идём: ни localStorage, ни handleLoginSuccess, ни navigate
+}
 
       if (otpMode === 'login') {
         const auth =

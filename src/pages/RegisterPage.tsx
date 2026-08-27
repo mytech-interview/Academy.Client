@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Mail, Lock, Eye, EyeOff, GraduationCap, Briefcase, User as UserIcon, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User as UserIcon, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import { createOtpRegistration } from '../api/authApi';
+
+const PHONE_DIGITS_LENGTH = 9; // например, 5XX XXX XXX для Грузии
 
 export default function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { lang, setOtpEmail, setOtpPassword, setOtpRole, setOtpName, setOtpFirstName, setOtpLastName, setOtpTelephone, setOtpMode } = useApp();
-  const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [telephone, setTelephone] = useState('');
@@ -20,34 +21,82 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!firstName || !lastName || !email || !password || !telephone) {
-      setError(t('auth.errors.fieldRequired'));
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // оставляем только цифры и ограничиваем длину
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, PHONE_DIGITS_LENGTH);
+    setTelephone(digitsOnly);
+  };
+
+ // Маппинг известных ошибок бэкенда на грузинский
+const mapErrorToGeorgian = (res: any): string => {
+  const raw = (res?.errMsg || res?.errorCode || '').toString().toLowerCase();
+
+  if (raw.includes('already') || raw.includes('exist') || raw.includes('duplicate')) {
+    return 'ამ ელ-ფოსტით მომხმარებელი უკვე რეგისტრირებულია';
+  }
+  if (raw.includes('email')) {
+    return 'ელ-ფოსტის მისამართი არასწორია';
+  }
+  if (raw.includes('phone') || raw.includes('telephone')) {
+    return 'ტელეფონის ნომერი არასწორია';
+  }
+  if (raw.includes('password')) {
+    return 'პაროლი არ აკმაყოფილებს მოთხოვნებს';
+  }
+  if (raw.includes('network') || raw.includes('timeout')) {
+    return 'კავშირის შეცდომა, სცადეთ თავიდან';
+  }
+
+  // Дефолтная ошибка — вместо необработанного текста с бэкенда
+  return 'რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან';
+};
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+
+  if (!firstName || !lastName || !email || !password || !telephone) {
+    setError('გთხოვთ შეავსოთ ყველა ველი');
+    return;
+  }
+
+  if (telephone.length !== PHONE_DIGITS_LENGTH) {
+    setError(`ტელეფონის ნომერი უნდა შეიცავდეს ${PHONE_DIGITS_LENGTH} ციფრს`);
+    return;
+  }
+
+  if (password.length < 6) {
+    setError('პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const res = await createOtpRegistration({ email, password });
+
+    if (!res || res.errorCode) {
+      setError(mapErrorToGeorgian(res));
+      setLoading(false);
       return;
     }
-    setLoading(true);
-    try {
-      await createOtpRegistration({ email, password });
 
-      const roleId = role === 'student' ? 1 : 2; // 1 - ученик, 2 - учитель
+    const roleId = 1;
 
-      setOtpEmail(email.toLowerCase());
-      setOtpPassword(password);
-      setOtpMode('register');
-      setOtpRole(roleId);
-      setOtpName(`${firstName} ${lastName}`);
-      setOtpFirstName(firstName);
-      setOtpLastName(lastName);
-      setOtpTelephone(telephone);
-      navigate('/otp');
-    } catch {
-      setError(t('auth.errors.registerFailed'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    setOtpEmail(email.toLowerCase());
+    setOtpPassword(password);
+    setOtpMode('register');
+    setOtpRole(roleId);
+    setOtpName(`${firstName} ${lastName}`);
+    setOtpFirstName(firstName);
+    setOtpLastName(lastName);
+    setOtpTelephone(telephone);
+    navigate('/otp');
+  } catch {
+    setError('რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 flex items-center justify-center p-4">
@@ -57,7 +106,7 @@ export default function RegisterPage() {
       </div>
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-[440px]">
         <div className="bg-white rounded-[2.25rem] border border-slate-100/90 shadow-[0_32px_64px_-12px_rgba(30,41,59,0.14)] overflow-hidden">
-          <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-blue-500" />
+         
           <div className="p-8 sm:p-10">
             <div className="text-center mb-8">
               <div className="mx-auto mb-4 h-14 w-14 flex items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100">
@@ -67,43 +116,63 @@ export default function RegisterPage() {
               <p className="mt-2 text-xs text-slate-500 font-medium">{t('auth.subtitleRegister')}</p>
             </div>
 
-            {/* OTP hint removed - using real API */}
-
-            {error && <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mb-5 rounded-2xl bg-rose-50 border border-rose-100 p-3.5 text-xs font-bold text-rose-700 flex items-center gap-2.5"><span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />{error}</motion.div>}
+            {error && (
+              <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="mb-5 rounded-2xl bg-rose-50 border border-rose-100 p-3.5 text-xs font-bold text-rose-700 flex items-center gap-2.5">
+                <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />{error}
+              </motion.div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Role */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.whoAreYou')}</label>
-                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100">
-                  <button type="button" onClick={() => setRole('student')} className={`flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-xs font-bold transition cursor-pointer ${role === 'student' ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800'}`}><GraduationCap className="h-4 w-4" />{t('auth.student')}</button>
-                  <button type="button" onClick={() => setRole('teacher')} className={`flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-xs font-bold transition cursor-pointer ${role === 'teacher' ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800'}`}><Briefcase className="h-4 w-4" />{t('auth.teacher')}</button>
-                </div>
-              </div>
               {/* First Name */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">სახელი</label>
-                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder='სახელი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
+                <div className="relative">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder='სახელი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+                </div>
               </div>
               {/* Last Name */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">გვარი</label>
-                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder='გვარი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
+                <div className="relative">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder='გვარი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+                </div>
               </div>
               {/* Email */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.email')}</label>
-                <div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+                </div>
               </div>
               {/* Telephone */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">ტელეფონის ნომერი</label>
-                <div className="relative"><UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="tel" value={telephone} onChange={(e) => setTelephone(e.target.value)} placeholder="+995..." required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /></div>
+                <div className="relative">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={telephone}
+                    onChange={handlePhoneChange}
+                    placeholder="+995..."
+                    required
+                    maxLength={PHONE_DIGITS_LENGTH}
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 pl-1">{telephone.length}/{PHONE_DIGITS_LENGTH} ციფრი</p>
               </div>
               {/* Password */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.password')}</label>
-                <div className="relative"><Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-11 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" /><button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-11 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+                  <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                </div>
               </div>
               <button type="submit" disabled={loading} className="w-full rounded-2xl bg-indigo-600 py-3.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-100 uppercase tracking-widest mt-2 disabled:opacity-60">
                 {loading ? t('auth.sending') : t('auth.submitContinue')}
