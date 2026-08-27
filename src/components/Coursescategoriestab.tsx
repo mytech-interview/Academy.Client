@@ -44,7 +44,27 @@ interface CoursesCategoriesTabProps {
   // error, but this tab doesn't call it until the endpoint exists.
   onDelete?: (course: CourseItem) => void | Promise<void>;
 }
+const API_BASE_URL = 'https://localhost:5188/api';
 
+function resolveAvatarSrc(value?: string | null): string | null {
+  if (!value) return null;
+
+  const driveMatch = value.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
+  }
+
+  const driveOpenMatch = value.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (driveOpenMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveOpenMatch[1]}&sz=w800`;
+  }
+
+  if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
+    return value;
+  }
+
+  return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
+}
 function LoadingState({ label }: { label: string }) {
   return (
     <div className="bg-white rounded-2xl p-12 border border-slate-200/80 shadow-sm flex flex-col items-center justify-center gap-3 text-slate-400">
@@ -669,30 +689,36 @@ export default function CoursesCategoriesTab({
               className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col group hover:shadow-lg transition duration-200"
             >
               {/* Course preview / banner */}
-                <div className="relative h-44 bg-slate-100 overflow-hidden">
-                                        <img
-                        src={
-                          c.picture ||
-                          (c as any).pictureUrl ||
-                          (c as any).imageUrl ||
-                          DEFAULT_COURSE_IMAGE
-                        }
-                        alt={c.title}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = DEFAULT_COURSE_IMAGE;
-                        }}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      />
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-800 text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-sm">
-                    {c.price ? `${c.price} ₾` : t('coursesTab.free')}
-                  </div>
-                </div>
+               <div className="relative h-44 bg-slate-100 overflow-hidden">
+  <img
+    src={
+      resolveAvatarSrc(
+        c.picture ||
+        (c as any).pictureUrl ||
+        (c as any).imageUrl
+      ) || DEFAULT_COURSE_IMAGE
+    }
+    alt={c.title}
+    onError={(e) => {
+      (e.target as HTMLImageElement).src = DEFAULT_COURSE_IMAGE;
+    }}
+    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+  />
+  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-slate-800 text-[11px] font-extrabold px-3 py-1 rounded-xl shadow-sm">
+    {c.price ? `${c.price} ₾` : t('coursesTab.free')}
+  </div>
+</div>
 
               {/* Card content */}
               <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
                 <div className="space-y-2">
                   <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-2">{c.title}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{c.description}</p>
+                  {c.description && (
+      <div
+        className="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed font-light [&>p]:inline [&>p]:m-0"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.description) }}
+      />
+    )}
                 </div>
 
                 {/* Meta information */}

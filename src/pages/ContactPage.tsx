@@ -16,13 +16,13 @@ export default function ContactPage({ lang }: ContactPageProps) {
   const branches = [
     {
       title: 'თბილისის ფილიალი',
-      addr: 'თბილისი',
+      addr: 'რ. აგლაძის 15',
       phone: '+995 568 80  584',
       email: 'contact@geoalphasolutions.com',
     },
     {
       title: 'ახალციხის ფილიალი',
-      addr: 'ახალციხე',
+      addr: 'მერაბ კოსტავას 18ბ ნომერი, ლიბრეს მეორე სართულზე',
       phone: '+995 568 80  584',
       email: 'contact@geoalphasolutions.com',
     },

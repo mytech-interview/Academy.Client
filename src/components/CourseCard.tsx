@@ -12,24 +12,18 @@ const DEFAULT_COURSE_IMAGE =
 
 const API_BASE_URL = 'https://localhost:5188/api';
 
-// teacherPicture может приходить тремя способами:
-// 1) ссылка на просмотр в Google Drive — "https://drive.google.com/file/d/FILE_ID/view..."
-//    (это HTML-страница, а не картинка — <img src> с ней не сработает, нужно достать FILE_ID
-//    и собрать прямую ссылку на превью)
-// 2) обычный прямой URL картинки
-// 3) просто имя файла (например "abc123.png") — в этом случае URL нужно собрать самим.
+
 function resolveAvatarSrc(value?: string | null): string | null {
   if (!value) return null;
 
   const driveMatch = value.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (driveMatch) {
-    const fileId = driveMatch[1];
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
   }
 
   const driveOpenMatch = value.match(/drive\.google\.com\/open\?id=([^&]+)/);
   if (driveOpenMatch) {
-    return `https://drive.google.com/thumbnail?id=${driveOpenMatch[1]}&sz=w200`;
+    return `https://drive.google.com/thumbnail?id=${driveOpenMatch[1]}&sz=w800`;
   }
 
   if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
@@ -80,12 +74,13 @@ export default function CourseCard({
     startDate,
     endDate,
     attendanceModeName,
-    picture,
+    
   } = course;
 
   // Если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
   const [avatarFailed, setAvatarFailed] = React.useState(false);
   const avatarSrc = resolveAvatarSrc(teacherPicture);
+  const picture = resolveAvatarSrc(course.picture) || DEFAULT_COURSE_IMAGE;
   const showAvatarImage = !!avatarSrc && !avatarFailed;
   const [courseImageFailed, setCourseImageFailed] = React.useState(false);
   const courseImageSrc =
@@ -217,10 +212,10 @@ export default function CourseCard({
       {/* Thumbnail */}
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-50">
         <img
-  src={courseImageSrc}
-  alt={title}
-  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+  src={picture}
+  alt={course.title}
   referrerPolicy="no-referrer"
+  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
   onError={() => setCourseImageFailed(true)}
 />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
