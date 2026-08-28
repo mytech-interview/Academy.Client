@@ -341,13 +341,15 @@ getLessonsForSession(course.sessionId)
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-3 w-fit">
-                  <Users className="h-4 w-4 text-indigo-600 shrink-0" />
-                  <span>
-                    {enrolledCount}
-                    {maxStudents ? ` / ${maxStudents}` : ''} {t('courseDetailModal.studentsLabel', 'ჩარიცხული სტუდენტი')}
-                  </span>
-                </div>
+              {isLoggedIn && userRole !== 1 && (
+                  <div className="flex items-center gap-2.5 text-sm font-bold text-slate-700 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-3 w-fit">
+                    <Users className="h-4 w-4 text-indigo-600 shrink-0" />
+                    <span>
+                      {enrolledCount}
+                      {maxStudents ? ` / ${maxStudents}` : ''} {t('courseDetailModal.studentsLabel', 'ჩარიცხული სტუდენტი')}
+                    </span>
+                  </div>
+                )}
 
                 {courseDescription && (
   <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">

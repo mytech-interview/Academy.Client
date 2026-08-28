@@ -279,10 +279,10 @@ const formatDate = (dateStr?: string) => {
                       {t('studentModal.syllabus.description')}
                     </p> */}
                   </div>
-                  <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-200">
-                    {/* {t('studentModal.syllabus.completedCount', { completed: completedIds.length, total: lessons.length || 1 })} */}
+                  {/* <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-200">
+                  
                     {completedIds.length}/{lessons.length}
-                  </span>
+                  </span> */}
                 </div>
 
                 {lessons.length > 0 ? (
