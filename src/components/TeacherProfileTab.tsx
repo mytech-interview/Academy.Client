@@ -195,7 +195,7 @@ console.log('teacher object:', teacher);
             <label className="text-xs font-extrabold text-slate-800 block">
               {t('teacherDashboard.profile.photoTitle')}
             </label>
-            <span className="text-[10px] font-mono font-bold text-[#5850ec]">Cyber Bot Alpha</span>
+            {/* <span className="text-[10px] font-mono font-bold text-[#5850ec]">Cyber Bot Alpha</span> */}
           </div>
 
           <div className="p-5 rounded-2xl bg-[#f8fafc] border border-slate-100 space-y-4">
@@ -225,10 +225,10 @@ console.log('teacher object:', teacher);
 
             {/* Avatar Grid Selector */}
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-slate-600">
+              {/* <p className="text-[11px] font-bold text-slate-600">
                 {t('teacherDashboard.profile.selectAbstract')}
-              </p>
-              <div className="grid grid-cols-6 gap-2">
+              </p> */}
+              {/* <div className="grid grid-cols-6 gap-2">
                 {AVATAR_PRESETS.map((preset, idx) => (
                   <button
                     key={idx}
@@ -243,16 +243,16 @@ console.log('teacher object:', teacher);
                     <img src={preset} alt="" className="h-full w-full object-cover rounded-lg" />
                   </button>
                 ))}
-              </div>
+              </div> */}
             </div>
 
             {/* Avatar URL Input */}
-            <input
+            {/* <input
               type="text"
               value={profAvatar}
               onChange={(e) => setProfAvatar(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-[11px] font-mono text-slate-500 focus:outline-none"
-            />
+            /> */}
           </div>
         </div>
 

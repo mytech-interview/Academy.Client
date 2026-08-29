@@ -64,7 +64,7 @@ export default function CourseFormModal({
   );
   const [status, setStatus] = useState(initial?.isActive === false ? 'completed' : 'ongoing');
   const [picture, setPicture] = useState(
-    initial?.pictureUrl ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
+    initial?.picture ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
   );
 
   // Подставляем сохранённый HTML в редактор при открытии/смене initial

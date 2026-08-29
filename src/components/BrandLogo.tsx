@@ -3,7 +3,7 @@ import React from 'react';
 export function LogoIcon({ className = 'h-8 w-8' }: { className?: string }) {
   return (
     <img 
-      src="https://optim.tildacdn.net/tild6335-3931-4163-b337-663330333730/-/resize/38x/-/format/webp/Vector_2.png.webp" 
+      src="https://academy.tech-interview.com/images/logo.png" 
       alt="GeoAlpha Logo" 
       className={className} 
     />

@@ -55,35 +55,31 @@ export default function SessionFormModal({
   );
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
 
-  // Синхронизация выборов с загруженными массивами
-  useEffect(() => {
-    if (initial?.courseId != null) {
-      setCourseId(String(initial.courseId));
-    } else if (courses.length > 0) {
-      // Если courseId не выбран или выбранное значение отсутствует в массиве courses
-      const exists = courses.some((c) => String(c.courseId) === courseId);
-      if (!courseId || !exists) {
-        setCourseId(String(courses[0].courseId));
-      }
+useEffect(() => {
+  if (initial?.courseId != null) {
+    setCourseId(String(initial.courseId));
+  } else if (courses.length > 0) {
+    const exists = courses.some((c) => String(c.courseId) === courseId);
+    if (!courseId || !exists) {
+      setCourseId(String(courses[0].courseId));
     }
+  }
 
-    if (initial?.teacherId != null) {
-      setTeacherId(String(initial.teacherId));
-    } else if (activeLecturers.length > 0) {
-      // Если teacherId не выбран или его нет среди активных лекторов
-      const exists = activeLecturers.some((l) => String(l.userId) === teacherId);
-      if (!teacherId || !exists) {
-        setTeacherId(String(activeLecturers[0].userId));
-      }
+  if (initial?.teacherId != null) {
+    setTeacherId(String(initial.teacherId));
+  } else if (activeLecturers.length > 0) {
+    const exists = activeLecturers.some((l) => String(l.teacherId) === teacherId);
+    if (!teacherId || !exists) {
+      setTeacherId(String(activeLecturers[0].teacherId));
     }
-  }, [initial, courses, lecturers]);
-
+  }
+}, [initial, courses, lecturers]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Вычисляем финальные ID: если state почему-то пуст, берем ID первого элемента массива
     const finalCourseId = courseId || String(courses[0]?.courseId ?? '');
-    const finalTeacherId = teacherId || String(activeLecturers[0]?.userId ?? '');
+const finalTeacherId = teacherId || String(activeLecturers[0]?.teacherId ?? '');
 
     if (!finalCourseId || !finalTeacherId) {
       alert('აირჩიეთ კურსი და ლექტორი.');
@@ -146,17 +142,17 @@ export default function SessionFormModal({
             {activeLecturers.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium py-2">ლექტორები არ არის ჩატვირთული</p>
             ) : (
-              <select
-                value={teacherId || String(activeLecturers[0]?.userId ?? '')}
-                onChange={(e) => setTeacherId(e.target.value)}
-                className="styled-input"
-              >
-                {activeLecturers.map((l) => (
-                  <option key={l.userId} value={l.userId}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
+             <select
+  value={teacherId || String(activeLecturers[0]?.teacherId ?? '')}
+  onChange={(e) => setTeacherId(e.target.value)}
+  className="styled-input"
+>
+  {activeLecturers.map((l) => (
+    <option key={l.teacherId} value={l.teacherId}>
+      {l.name}
+    </option>
+  ))}
+</select>
             )}
           </Field>
 
