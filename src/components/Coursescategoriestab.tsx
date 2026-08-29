@@ -23,6 +23,7 @@ import {
   updateCourseLesson,
   GetAllCourseLessonsResponseDto,
 } from '../api/Coursesapi';
+import { API_BASE_URL } from '../services/baseApi';
 
 const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800';
 
@@ -44,7 +45,7 @@ interface CoursesCategoriesTabProps {
   // error, but this tab doesn't call it until the endpoint exists.
   onDelete?: (course: CourseItem) => void | Promise<void>;
 }
-const API_BASE_URL = 'https://localhost:5188/api';
+
 
 function resolveAvatarSrc(value?: string | null): string | null {
   if (!value) return null;

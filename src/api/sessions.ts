@@ -1,6 +1,6 @@
 import { ActiveSession } from '../types';
+import { API_BASE_URL } from '../services/baseApi';
 
-const API_BASE_URL = "https://localhost:5188/api";
 interface HomeActiveSessionsResponse {
   activeSessions: ActiveSession[];
   errMsg: string | null;

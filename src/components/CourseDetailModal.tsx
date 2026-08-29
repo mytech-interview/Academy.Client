@@ -17,13 +17,13 @@ import {
 import { getReviewsBySession, ReviewItem } from '../api/reviews';
 import { getCityName } from '../lib/cityNames';
 import DOMPurify from 'dompurify';
+import { API_BASE_URL } from '../services/baseApi';
 
 // სამაგიერო სურათი, სანამ API-დან რეალური `picture` არ მოვა,
 // ან თუ ბექენდიდან ცარიელი სტრიქონი დაბრუნდა.
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
-const API_BASE_URL = 'https://localhost:5188/api';
 
 // picture / teacherPicture ხანდახან სრული URL-ის სახით მოდის, ხანდახან კი
 // მხოლოდ ფაილის სახელის სახით (მაგ. "abc123.png") — ამ შემთხვევაში

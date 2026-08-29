@@ -1,5 +1,6 @@
 // api/reviews.ts
-const API_BASE_URL = "https://localhost:5188";
+import { API_BASE_URL } from "../services/baseApi";
+
 interface ApiEnvelope {
   errMsg: string | null;
   errorCode: string | null;
@@ -68,7 +69,7 @@ export interface ReviewsBySessionResponse extends ApiEnvelope {
 
 export async function getReviewsBySession(sessionId: number): Promise<ReviewItem[]> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/reviews/getReviewsBySession`, {
+  const response = await fetch(`${API_BASE_URL}/reviews/getReviewsBySession`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",

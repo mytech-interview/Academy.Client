@@ -2,7 +2,7 @@
 // sessionsapi.ts: BaseResponse (errorCode/errMsg), Bearer token from
 // localStorage, POST-only.
 
-const API_BASE_URL = 'https://localhost:5188/api';
+import { API_BASE_URL } from "../services/baseApi";
 
 export interface BaseResponseDto {
   errorCode?: string | null;

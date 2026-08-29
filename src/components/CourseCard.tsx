@@ -4,13 +4,13 @@ import { Star, User as UserIcon, CheckCircle2, Loader2, Calendar, MapPin, Briefc
 import { useTranslation } from 'react-i18next';
 import { ActiveSession } from '../types';
 import DOMPurify from 'dompurify';
+import { API_BASE_URL } from '../services/baseApi';
 
 // Default thumbnail used for every course card — backend has no image field
 // TODO: заглушка. Пока бэк не отдаёт courseImage — используется одна картинка на все карточки.
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
 
-const API_BASE_URL = 'https://localhost:5188/api';
 
 
 function resolveAvatarSrc(value?: string | null): string | null {
