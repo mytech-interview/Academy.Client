@@ -24,6 +24,9 @@ interface StudentProfileTabProps {
   profileError?: string;
 }
 
+const GEORGIA_PREFIX = '+995';
+const GEORGIA_DIGITS_LEN = 9; // после +995: 5XX XX XX XX
+
 export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
   student,
   profName,
@@ -49,6 +52,45 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
   const activeAvatarOption = AVATAR_OPTIONS.find(
     (opt) => avatarUrl(opt.seed, opt.bg) === profAvatar
   ) || AVATAR_OPTIONS[0];
+
+  // ---- Телефон: всегда +995, максимум 9 цифр после префикса ----
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+
+    // оставляем только цифры
+    let digits = raw.replace(/\D/g, '');
+
+    // если пользователь вставил номер вместе с кодом страны (995...) — убираем дубль
+    if (digits.startsWith('995')) {
+      digits = digits.slice(3);
+    }
+
+    // ограничиваем длину
+    digits = digits.slice(0, GEORGIA_DIGITS_LEN);
+
+    setProfPhone(GEORGIA_PREFIX + digits);
+  };
+
+  const handlePhoneFocus = () => {
+    if (!profPhone) setProfPhone(GEORGIA_PREFIX);
+  };
+
+  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // запрещаем стирать сам префикс +995 через backspace/delete
+    const input = e.currentTarget;
+    const caret = input.selectionStart ?? 0;
+    const selectionEnd = input.selectionEnd ?? 0;
+
+    if (
+      (e.key === 'Backspace' || e.key === 'Delete') &&
+      caret <= GEORGIA_PREFIX.length &&
+      selectionEnd <= GEORGIA_PREFIX.length
+    ) {
+      e.preventDefault();
+    }
+  };
+
+  const isPhoneValid = /^\+995\d{9}$/.test(profPhone);
 
   return (
     <div className="rounded-[2.5rem] border border-slate-200/80 bg-white p-6 sm:p-10 shadow-sm animate-fade-in text-left max-w-4xl mx-auto">
@@ -94,12 +136,22 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
             {t('studentDashboard.phoneLabel', 'ტელეფონის ნომერი')}
           </label>
           <input
-            type="text"
-            value={profPhone}
-            onChange={(e) => setProfPhone(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition"
-            required
-          />
+  type="tel"
+  inputMode="numeric"
+  value={profPhone || GEORGIA_PREFIX}
+  onChange={handlePhoneChange}
+  onFocus={handlePhoneFocus}
+  onKeyDown={handlePhoneKeyDown}
+  maxLength={GEORGIA_PREFIX.length + GEORGIA_DIGITS_LEN}
+  placeholder="+995 5XX XX XX XX"
+  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition"
+  required
+/>
+{profPhone && !isPhoneValid && (
+  <p className="text-xs font-semibold text-slate-400">
+    {t('studentDashboard.phoneInvalid', 'შეიყვანეთ სრული ნომერი: +995 და 9 ციფრი')}
+  </p>
+)}
         </div>
 
         {/* Headline / Interests */}
@@ -193,7 +245,7 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
         <div className="flex justify-end pt-4">
           <button
             type="submit"
-            disabled={profileSaving}
+            disabled={profileSaving || !isPhoneValid}
             className="rounded-2xl bg-[#5842F8] hover:bg-[#4832E6] px-8 py-3.5 text-xs font-extrabold text-white transition duration-200 active:scale-[0.98] shadow-md shadow-indigo-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
