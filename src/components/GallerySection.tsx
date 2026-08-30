@@ -31,7 +31,7 @@ export default function GallerySection() {
       id: "photo-1",
       title: t("gallery.photos.photo1.title"),
       image:
-        "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
+        "https://academy.tech-interview.com/images/about_us2.jpeg",
       description: t("gallery.photos.photo1.description"),
     },
 
@@ -39,7 +39,7 @@ export default function GallerySection() {
       id: "photo-2",
       title: t("gallery.photos.photo2.title"),
       image:
-        "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
+        "https://academy.tech-interview.com/images/about_us3.jpeg",
       description: t("gallery.photos.photo2.description"),
     },
 
@@ -47,7 +47,7 @@ export default function GallerySection() {
       id: "photo-3",
       title: t("gallery.photos.photo3.title"),
       image:
-        "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800",
+        "https://academy.tech-interview.com/images/about_us4.jpeg",
       description: t("gallery.photos.photo3.description"),
     },
 
@@ -55,7 +55,7 @@ export default function GallerySection() {
       id: "photo-4",
       title: t("gallery.photos.photo4.title"),
       image:
-        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800",
+        "https://academy.tech-interview.com/images/about_us5.jpeg",
       description: t("gallery.photos.photo4.description"),
     },
   ];

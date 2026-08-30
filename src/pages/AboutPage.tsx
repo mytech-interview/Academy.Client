@@ -73,7 +73,7 @@ export default function AboutPage({ lang }: AboutPageProps) {
 
           <div className="w-full md:w-96 rounded-3xl overflow-hidden shadow-lg border border-slate-100 shrink-0">
             <img
-              src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&fit=crop"
+              src="https://academy.tech-interview.com/images/about_us1.jpeg"
               alt="Academy Team Work"
               className="w-full h-64 object-cover"
               referrerPolicy="no-referrer"

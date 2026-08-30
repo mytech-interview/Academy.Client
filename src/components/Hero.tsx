@@ -122,9 +122,9 @@ export default function Hero({
                 {t("hero.offerTitle")}
               </h4>
 
-              <p className="text-emerald-100 text-xs">
+              {/* <p className="text-emerald-100 text-xs">
                 {t("hero.offerDesc")}
-              </p>
+              </p> */}
             </div>
 
             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 z-10">
