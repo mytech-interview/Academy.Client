@@ -16,7 +16,7 @@ export function createOtpRegistration(
  payload: CreateOtpRegistrationRequest
 ){
  return apiFetch(
-   "/api/auth/createOtpRegistration",
+   "/auth/createOtpRegistration",
    payload
  );
 }
@@ -113,7 +113,7 @@ export function validateOtpRegitration(
   payload: ValidateOtpRegistrationPayload
 ) {
   return apiFetch(
-    "/api/auth/validateOtpRegistration",
+    "/auth/validateOtpRegistration",
     payload
   );
 }

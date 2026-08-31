@@ -8,7 +8,7 @@ import { createOtpRegistration } from '../api/authApi';
 
 const GEORGIA_PREFIX = '+995';
 const PHONE_DIGITS_LENGTH = 9; // например, 5XX XXX XXX для Грузии
-const PHONE_REGEX = /^\+995\d{9}$/;
+const PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -24,20 +24,18 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
+    let value = e.target.value;
 
-    // оставляем только цифры
-    let digits = raw.replace(/\D/g, '');
+    value = value.replace(/[^\d+]/g, '');
 
-    // если пользователь вставил номер вместе с кодом страны (995...) — убираем дубль
-    if (digits.startsWith('995')) {
-      digits = digits.slice(3);
+    if (value.includes('+')) {
+      value = '+' + value.replace(/\+/g, '');
     }
 
-    // максимум 9 цифр после +995
-    digits = digits.slice(0, PHONE_DIGITS_LENGTH);
+    // Maximum 15 digits after +
+    const digits = value.replace(/\D/g, '').slice(0, 15);
 
-    setTelephone(GEORGIA_PREFIX + digits);
+    setTelephone('+' + digits);
   };
 
   const handlePhoneFocus = () => {
@@ -62,76 +60,81 @@ export default function RegisterPage() {
   const phoneDigitsCount = telephone.replace(GEORGIA_PREFIX, '').length;
   const isPhoneValid = PHONE_REGEX.test(telephone);
 
- // Маппинг известных ошибок бэкенда на грузинский
-const mapErrorToGeorgian = (res: any): string => {
-  const raw = (res?.errMsg || res?.errorCode || '').toString().toLowerCase();
+  // Маппинг известных ошибок бэкенда на грузинский
+  const mapErrorToGeorgian = (res: any): string => {
+    const raw = (res?.errMsg || res?.errorCode || '').toString().toLowerCase();
 
-  if (raw.includes('already') || raw.includes('exist') || raw.includes('duplicate')) {
-    return 'ამ ელ-ფოსტით მომხმარებელი უკვე რეგისტრირებულია';
-  }
-  if (raw.includes('email')) {
-    return 'ელ-ფოსტის მისამართი არასწორია';
-  }
-  if (raw.includes('phone') || raw.includes('telephone')) {
-    return 'ტელეფონის ნომერი არასწორია';
-  }
-  if (raw.includes('password')) {
-    return 'პაროლი არ აკმაყოფილებს მოთხოვნებს';
-  }
-  if (raw.includes('network') || raw.includes('timeout')) {
-    return 'კავშირის შეცდომა, სცადეთ თავიდან';
-  }
+    if (raw.includes('already') || raw.includes('exist') || raw.includes('duplicate')) {
+      return 'ამ ელ-ფოსტით მომხმარებელი უკვე რეგისტრირებულია';
+    }
+    if (raw.includes('email')) {
+      return 'ელ-ფოსტის მისამართი არასწორია';
+    }
+    if (raw.includes('phone') || raw.includes('telephone')) {
+      return 'ტელეფონის ნომერი არასწორია';
+    }
+    if (raw.includes('password')) {
+      return 'პაროლი არ აკმაყოფილებს მოთხოვნებს';
+    }
+    if (raw.includes('network') || raw.includes('timeout')) {
+      return 'კავშირის შეცდომა, სცადეთ თავიდან';
+    }
 
-  // Дефолтная ошибка — вместо необработанного текста с бэкенда
-  return 'რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან';
-};
+    // Дефолтная ошибка — вместо необработанного текста с бэкенда
+    return 'რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან';
+  };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-  if (!firstName || !lastName || !email || !password || !telephone) {
-    setError('გთხოვთ შეავსოთ ყველა ველი');
-    return;
-  }
-
-  if (!isPhoneValid) {
-    setError(`ტელეფონის ნომერი უნდა შეიცავდეს +995-ს და ${PHONE_DIGITS_LENGTH} ციფრს`);
-    return;
-  }
-
-  if (password.length < 6) {
-    setError('პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს');
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const res = await createOtpRegistration({ email, password });
-
-    if (!res || res.errorCode) {
-      setError(mapErrorToGeorgian(res));
-      setLoading(false);
+    if (!firstName || !lastName || !email || !password || !telephone) {
+      setError('გთხოვთ შეავსოთ ყველა ველი');
       return;
     }
 
-    const roleId = 1;
+    if (!isPhoneValid) {
+      setError('ტელეფონის ნომერი უნდა იყოს საერთაშორისო ფორმატში, მაგალითად: +995555123456');
+      return;
+    }
 
-    setOtpEmail(email.toLowerCase());
-    setOtpPassword(password);
-    setOtpMode('register');
-    setOtpRole(roleId);
-    setOtpName(`${firstName} ${lastName}`);
-    setOtpFirstName(firstName);
-    setOtpLastName(lastName);
-    setOtpTelephone(telephone);
-    navigate('/otp');
-  } catch {
-    setError('რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან');
-  } finally {
-    setLoading(false);
-  }
-};
+    if (password.length < 6) {
+      setError('პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await createOtpRegistration({
+        email,
+        password
+      });
+
+      if (!res || res.errorCode) {
+        setError(mapErrorToGeorgian(res));
+        setLoading(false);
+        return;
+      }
+
+      const roleId = 1;
+
+      setOtpEmail(email.toLowerCase());
+      setOtpPassword(password);
+      setOtpMode('register');
+      setOtpRole(roleId);
+      setOtpName(`${firstName} ${lastName}`);
+      setOtpFirstName(firstName);
+      setOtpLastName(lastName);
+      setOtpTelephone(telephone);
+
+      navigate('/otp');
+    } catch {
+      setError('რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 flex items-center justify-center p-4">
@@ -141,7 +144,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-[440px]">
         <div className="bg-white rounded-[2.25rem] border border-slate-100/90 shadow-[0_32px_64px_-12px_rgba(30,41,59,0.14)] overflow-hidden">
-         
+
           <div className="p-8 sm:p-10">
             <div className="text-center mb-8">
               <div className="mx-auto mb-4 h-14 w-14 flex items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100">
@@ -188,17 +191,15 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <div className="relative">
                   <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
-  type="tel"
-  inputMode="numeric"
-  value={telephone}
-  onChange={handlePhoneChange}
-  onFocus={handlePhoneFocus}
-  onKeyDown={handlePhoneKeyDown}
-  placeholder="+995 5XX XX XX XX"
-  required
-  maxLength={GEORGIA_PREFIX.length + PHONE_DIGITS_LENGTH}
-  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
-/>
+                    type="tel"
+                    inputMode="numeric"
+                    value={telephone}
+                    onChange={handlePhoneChange}
+                    onFocus={handlePhoneFocus}
+                    placeholder="+995 5XX XX XX XX"
+                    required
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
+                  />
                 </div>
                 <p className="text-[10px] text-slate-400 pl-1">{phoneDigitsCount}/{PHONE_DIGITS_LENGTH} ციფრი</p>
               </div>

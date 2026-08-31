@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import { CheckCircle } from 'lucide-react';
@@ -8,7 +8,19 @@ import Navbar from '../components/Navbar';
 import BrandLogo from '../components/BrandLogo';
 import CourseDetailModal from '../components/CourseDetailModal';
 import { Course } from '../types';
+const isTokenExpired = (token: string): boolean => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
 
+        if (!payload.exp) {
+            return true;
+        }
+
+        return payload.exp * 1000 < Date.now();
+    } catch {
+        return true;
+    }
+};
 type NavTab = 'home' | 'courses' | 'about' | 'offers' | 'contact' | 'dashboard' | 'teacher-sessions';
 const PATH_TO_TAB: Record<string, NavTab> = { '/': 'home', '/courses': 'courses', '/about': 'about', '/offers': 'offers', '/contact': 'contact', '/dashboard': 'dashboard', '/teacher-sessions': 'teacher-sessions' };
 const TAB_TO_PATH: Record<NavTab, string> = { home: '/', courses: '/courses', about: '/about', offers: '/offers', contact: '/contact', dashboard: '/dashboard', 'teacher-sessions': '/teacher-sessions' };
@@ -17,9 +29,61 @@ export default function AppLayout() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    const { activeUser, lang, setLang, handleLogout, handleLoginSuccess, handleRegisterUser, handleEnrollInCourse, enrollSuccessMessage, enrollments, registeredUsers } = useApp();
+
+    const {
+        activeUser,
+        lang,
+        setLang,
+        handleLogout,
+        handleLoginSuccess,
+        handleRegisterUser,
+        handleEnrollInCourse,
+        enrollSuccessMessage,
+        enrollments,
+        registeredUsers
+    } = useApp();
+
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-    const activeTab: NavTab = PATH_TO_TAB[location.pathname] ?? 'home';
+
+    useEffect(() => {
+        const token = localStorage.getItem('academy_token');
+
+        if (!token) {
+            return;
+        }
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+
+            if (!payload.exp) {
+                return;
+            }
+
+            const expiresIn = payload.exp * 1000 - Date.now();
+
+            if (expiresIn <= 0) {
+                handleLogout();
+                localStorage.removeItem('academy_token');
+                navigate('/login', { replace: true });
+                return;
+            }
+
+            const timer = setTimeout(() => {
+                handleLogout();
+                localStorage.removeItem('academy_token');
+                navigate('/login', { replace: true });
+            }, expiresIn);
+
+            return () => clearTimeout(timer);
+        } catch {
+            handleLogout();
+            localStorage.removeItem('academy_token');
+            navigate('/login', { replace: true });
+        }
+    }, [location.pathname]);
+
+    const activeTab: NavTab =
+        PATH_TO_TAB[location.pathname] ?? 'home';
     const goToTab = (tab: NavTab) => { navigate(TAB_TO_PATH[tab]); window.scrollTo({ top: 0, behavior: 'instant' }); };
 
     return (
