@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://localhost:5188";
+const API_BASE_URL = "https://academyapi.tech-interview.com";
 export interface AddEnrollmentRequest {
   studentGuid: string;
   sessionId: number;

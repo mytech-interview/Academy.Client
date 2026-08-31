@@ -8,7 +8,7 @@ import { ActiveSession } from '../types';
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
 
-const API_BASE_URL = 'https://localhost:5188/api';
+const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
 
 // teacherPicture иногда приходит как полный URL, а иногда просто как имя файла
 // (например "abc123.png") — в этом случае URL нужно собрать самим.
@@ -83,8 +83,8 @@ export default function CourseCard({
     lang.startsWith('ru')
       ? 'ru-RU'
       : lang.startsWith('ka')
-      ? 'ka-GE'
-      : 'en-US';
+        ? 'ka-GE'
+        : 'en-US';
 
   const formatDate = (d: Date) => {
     const months = {
@@ -135,8 +135,8 @@ export default function CourseCard({
     const currentLang = lang.startsWith('ru')
       ? 'ru'
       : lang.startsWith('ka')
-      ? 'ka'
-      : 'en';
+        ? 'ka'
+        : 'en';
 
     const day = d.getDate();
     const month = months[currentLang][d.getMonth()];
@@ -158,10 +158,10 @@ export default function CourseCard({
   const status = !hasValidDates
     ? null
     : now < start
-    ? 'upcoming'
-    : now > end
-    ? 'completed'
-    : 'ongoing';
+      ? 'upcoming'
+      : now > end
+        ? 'completed'
+        : 'ongoing';
 
   const statusMeta = status && {
     upcoming: { text: t('courseCard.statusUpcoming', 'Starts Soon'), cls: 'bg-indigo-100 text-indigo-800 border-indigo-200' },

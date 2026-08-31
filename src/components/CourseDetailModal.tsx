@@ -17,7 +17,7 @@ import { getCityName } from '../lib/cityNames';
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80';
 
-const API_BASE_URL = 'https://localhost:5188/api';
+const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
 
 // picture / teacherPicture иногда приходят как полный URL, а иногда просто
 // как имя файла (например "abc123.png") — в этом случае URL нужно собрать самим.
@@ -142,7 +142,7 @@ export default function CourseDetailModal({
   const enrolledCount = details?.enrolledCount ?? course.enrolledCount;
   const maxStudents = details?.maxStudents ?? course.maxStudents;
   const picture = resolveAvatarSrc(details?.picture) || DEFAULT_COURSE_IMAGE;
-    const teacherDescription = details?.teacherDescription ?? course.teacherDescription;
+  const teacherDescription = details?.teacherDescription ?? course.teacherDescription;
 
   const showAvatarImage = !!teacherAvatarSrc && !avatarFailed;
 
@@ -264,17 +264,15 @@ export default function CourseDetailModal({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
-                  activeTab === tab.key
+                className={`px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${activeTab === tab.key
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                }`}
+                  }`}
               >
                 <span>{tab.label}</span>
                 {typeof tab.count === 'number' && (
-                  <span className={`px-2 py-0.2 rounded-full text-[10px] font-black ${
-                    activeTab === tab.key ? 'bg-indigo-800 text-white' : 'bg-indigo-50 text-indigo-700'
-                  }`}>
+                  <span className={`px-2 py-0.2 rounded-full text-[10px] font-black ${activeTab === tab.key ? 'bg-indigo-800 text-white' : 'bg-indigo-50 text-indigo-700'
+                    }`}>
                     {tab.count}
                   </span>
                 )}
@@ -483,7 +481,7 @@ export default function CourseDetailModal({
                       <h3 className="text-lg font-black text-slate-950 mt-1">{teacherName}</h3>
                     </div>
                   </div>
-                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 leading-relaxed font-medium">
                     {teacherDescription
                       ? teacherDescription
                       : 'ინფორმაცია ჯერ არ არის დამატებული'}

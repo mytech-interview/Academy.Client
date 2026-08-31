@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://localhost:5188";
+const API_BASE_URL = "https://academyapi.tech-interview.com";
 export enum LanguageType {
   Ru = 1,
   En = 2,
