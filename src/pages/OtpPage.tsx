@@ -247,36 +247,43 @@ if (hasBackendError) {
           'student';
 
         const loggedInUser: User = {
-          id:
-            auth?.userGuid ??
-            auth?.userId?.toString() ??
-            otpPendingUser?.id ??
-            `user-${Date.now()}`,
+  id:
+    auth?.userGuid ??
+    auth?.userId?.toString() ??
+    otpPendingUser?.id ??
+    `user-${Date.now()}`,
 
-          email:
-            auth?.email ??
-            otpPendingUser?.email ??
-            otpEmail,
+  email:
+    auth?.email ??
+    otpPendingUser?.email ??
+    otpEmail,
 
-          name:
-            `${auth?.firstName ?? ''} ${auth?.lastName ?? ''
-              }`.trim() ||
-            otpPendingUser?.name ||
-            otpEmail,
+  name:
+    `${auth?.firstName ?? ''} ${auth?.lastName ?? ''}`.trim() ||
+    otpPendingUser?.name ||
+    otpEmail,
 
-          role: resolvedRole,
+  role: resolvedRole,
 
-          avatar:
-            auth?.picture ??
-            otpPendingUser?.avatar,
+  avatar:
+    auth?.picture ??
+    otpPendingUser?.avatar,
 
-          headline:
-            otpPendingUser?.headline,
+  telephone:
+    auth?.telephone ??
+    otpPendingUser?.telephone,
 
-          createdAt:
-            otpPendingUser?.createdAt ??
-            new Date().toISOString(),
-        };
+  headline:
+    otpPendingUser?.headline,
+
+  description:
+    auth?.description ??
+    otpPendingUser?.description,
+
+  createdAt:
+    otpPendingUser?.createdAt ??
+    new Date().toISOString(),
+};
 
         if ((result as any)?.token) {
           localStorage.setItem(
@@ -329,37 +336,42 @@ if (hasBackendError) {
           'student';
         const isTeacher = resolvedRegisterRole === 'teacher';
 
-        const newUser: User = {
-          id:
-            auth?.userGuid ??
-            auth?.userId?.toString() ??
-            `user-${Date.now()}`,
+       const newUser: User = {
+  id:
+    auth?.userGuid ??
+    auth?.userId?.toString() ??
+    `user-${Date.now()}`,
 
-          email:
-            auth?.email ??
-            otpEmail,
+  email:
+    auth?.email ??
+    otpEmail,
 
-          name:
-            `${auth?.firstName ?? otpFirstName ?? ''} ${auth?.lastName ?? otpLastName ?? ''
-              }`.trim() ||
-            otpName ||
-            otpEmail,
+  name:
+    `${auth?.firstName ?? otpFirstName ?? ''} ${auth?.lastName ?? otpLastName ?? ''}`.trim() ||
+    otpName ||
+    otpEmail,
 
-          role: resolvedRegisterRole,
+  role: resolvedRegisterRole,
 
-          avatar:
-            auth?.picture ??
-            (isTeacher
-              ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'
-              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
+  avatar:
+    auth?.picture ??
+    (isTeacher
+      ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'
+      : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
 
-          headline: isTeacher
-            ? t('auth.newTeacherHeadline')
-            : undefined,
+  telephone:
+    auth?.telephone ??
+    otpTelephone,
 
-          createdAt:
-            new Date().toISOString(),
-        };
+  headline: isTeacher
+    ? t('auth.newTeacherHeadline')
+    : undefined,
+
+  description: auth?.description,
+
+  createdAt:
+    new Date().toISOString(),
+};
 
         handleRegisterUser({
           ...newUser,

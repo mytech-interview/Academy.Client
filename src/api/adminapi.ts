@@ -6,10 +6,10 @@ import {
   GetAllStudentsResponseDto,
   GetAllTeachersResponseDto,
 } from '../types';
+import { API_BASE_URL } from '../services/baseApi';
 
 // Same host/convention as sessions.ts — includes /api, so call sites below
 // only add the controller-relative path (e.g. "/admin/getAllTeachers").
-const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
 
 export interface BaseResponseDto {
   errorCode?: string | null;

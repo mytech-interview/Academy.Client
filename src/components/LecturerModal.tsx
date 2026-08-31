@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Key, Dice5 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Key, Dice5, Bold, Italic, Underline, List, ListOrdered } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LecturerItem } from '../types';
 
@@ -17,6 +17,7 @@ export default function LecturerModal({
   initialData,
 }: LecturerModalProps) {
   const { t } = useTranslation();
+  const descRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -26,47 +27,70 @@ export default function LecturerModal({
     role: 'Teacher / Lecturer',
     avatarBg: 'bg-purple-600',
     avatarIcon: '🎓',
-    description: '',
+    description: '', // теперь хранит HTML, а не plain text
   });
 
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        name: initialData.name || '',
-        email: initialData.email || '',
-        password: '',
-        phone: (initialData as any).phone || '+995 ',
-        role: initialData.role || 'Teacher / Lecturer',
-        avatarBg: initialData.avatarBg || 'bg-purple-600',
-        avatarIcon: initialData.avatarIcon || '🎓',
-        description: (initialData as any).description || initialData.bio || '',
-      });
-    } else {
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        phone: '+995 ',
-        role: 'Teacher / Lecturer',
-        avatarBg: 'bg-purple-600',
-        avatarIcon: '🎓',
-        description: '',
-      });
-    }
+    const nextDescription = initialData
+      ? (initialData as any).description || initialData.bio || ''
+      : '';
+
+    setFormData(
+      initialData
+        ? {
+            name: initialData.name || '',
+            email: initialData.email || '',
+            password: '',
+            phone: (initialData as any).phone || '+995 ',
+            role: initialData.role || 'Teacher / Lecturer',
+            avatarBg: initialData.avatarBg || 'bg-purple-600',
+            avatarIcon: initialData.avatarIcon || '🎓',
+            description: nextDescription,
+          }
+        : {
+            name: '',
+            email: '',
+            password: '',
+            phone: '+995 ',
+            role: 'Teacher / Lecturer',
+            avatarBg: 'bg-purple-600',
+            avatarIcon: '🎓',
+            description: '',
+          }
+    );
+
+    // Синхронизируем содержимое contentEditable-блока с состоянием
+    // (делаем это отдельно, т.к. React не контролирует innerHTML напрямую)
+    requestAnimationFrame(() => {
+      if (descRef.current) {
+        descRef.current.innerHTML = nextDescription;
+      }
+    });
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
-  // Генерация случайного 6-значного пароля
   const generatePassword = () => {
     const randomPass = Math.floor(100000 + Math.random() * 900000).toString();
     setFormData((prev) => ({ ...prev, password: randomPass }));
   };
 
-  // Модалка отдаёт "сырые" данные формы как есть — маппинг под конкретные
-  // поля API (firstName/lastName/telephone/picture/teacherId и т.д.)
-  // делает AdminDashboardPage в handleAddLecturer / handleEditLecturer,
-  // там же, где вызывается adminApi.addTeacher / editTeacher.
+  // Применяет команду форматирования к выделенному тексту в редакторе
+  const applyFormat = (command: 'bold' | 'italic' | 'underline' | 'insertUnorderedList' | 'insertOrderedList') => {
+    descRef.current?.focus();
+    document.execCommand(command, false);
+    // Синхронизируем state сразу после команды
+    if (descRef.current) {
+      setFormData((prev) => ({ ...prev, description: descRef.current!.innerHTML }));
+    }
+  };
+
+  const handleDescriptionInput = () => {
+    if (descRef.current) {
+      setFormData((prev) => ({ ...prev, description: descRef.current!.innerHTML }));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
@@ -76,7 +100,6 @@ export default function LecturerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden relative my-8 animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
         <div className="flex items-center justify-between px-8 pt-8 pb-4">
           <h2 className="text-xl font-black text-slate-800">
             {initialData ? t('lecturersModal.editTitle') : t('lecturersModal.addTitle')}
@@ -89,9 +112,7 @@ export default function LecturerModal({
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
-          {/* Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               {t('lecturersModal.fullName')}
@@ -106,7 +127,6 @@ export default function LecturerModal({
             />
           </div>
 
-          {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               {t('lecturersModal.email')}
@@ -121,7 +141,6 @@ export default function LecturerModal({
             />
           </div>
 
-          {/* Password Section */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-slate-700 flex items-center gap-1.5">
@@ -149,7 +168,6 @@ export default function LecturerModal({
             </p>
           </div>
 
-          {/* Phone */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               {t('lecturersModal.phone')}
@@ -163,21 +181,73 @@ export default function LecturerModal({
             />
           </div>
 
-          {/* Description */}
+          {/* Description — теперь с форматированием */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700">
               ბიოგრაფია
             </label>
-            <textarea
-              rows={3}
-              placeholder="ბიოგრაფია"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800 placeholder-slate-300 resize-none"
+
+            {/* Тулбар */}
+            <div className="flex items-center gap-1 p-1.5 rounded-2xl border border-slate-200 bg-slate-50/50 w-fit">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()} // не терять фокус/выделение
+                onClick={() => applyFormat('bold')}
+                className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                title="Bold"
+              >
+                <Bold className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyFormat('italic')}
+                className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                title="Italic"
+              >
+                <Italic className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyFormat('underline')}
+                className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                title="Underline"
+              >
+                <Underline className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-px h-4 bg-slate-200 mx-1" />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyFormat('insertUnorderedList')}
+                className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                title="Bullet list"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyFormat('insertOrderedList')}
+                className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                title="Numbered list"
+              >
+                <ListOrdered className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Редактируемая область */}
+            <div
+              ref={descRef}
+              contentEditable
+              onInput={handleDescriptionInput}
+              data-placeholder="ბიოგრაფია"
+              className="rich-editor w-full min-h-[100px] px-4 py-3 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-purple-500 transition text-slate-800"
+              suppressContentEditableWarning
             />
           </div>
 
-          {/* Avatar / Photo selection section */}
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-slate-700">
@@ -196,7 +266,6 @@ export default function LecturerModal({
             />
           </div>
 
-          {/* Modal Actions */}
           <div className="flex items-center justify-end gap-3 pt-4">
             <button
               type="button"

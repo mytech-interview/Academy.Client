@@ -1,4 +1,5 @@
-const API_BASE_URL = "https://academyapi.tech-interview.com";
+import { API_BASE_URL } from "../services/baseApi";
+
 export enum LanguageType {
   Ru = 1,
   En = 2,
@@ -91,7 +92,7 @@ export function createOtp(
  payload: CreateOtpRequest
 ){
  return apiFetch(
-   "/api/auth/createOtp",
+   "/auth/createOtp",
    payload
  );
 }
@@ -103,7 +104,7 @@ export function validateOtp(
  payload: ValidateOtpRequest
 ){
  return apiFetch(
-   "/api/auth/validateOtp",
+   "/auth/validateOtp",
    payload
  );
 }
@@ -123,7 +124,7 @@ export function registerUser(
  payload: RegisterUserRequest
 ){
  return apiFetch(
-   "/api/auth/registerUser",
+   "/auth/registerUser",
    payload
  );
 }

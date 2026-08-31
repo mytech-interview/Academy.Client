@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Pencil, Trash2, User as UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SystemUserItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
@@ -11,6 +11,52 @@ interface UsersTabProps {
   searchQuery: string;
   onRetry: () => void;
   onDelete: (user: SystemUserItem) => void;
+}
+
+// Возвращает прямой URL картинки, либо null если её нет / это не валидная ссылка
+function resolveDirectImageSrc(value?: string | null): string | null {
+  if (!value) return null;
+
+  const driveMatch = value.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w200`;
+  }
+
+  const driveOpenMatch = value.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (driveOpenMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveOpenMatch[1]}&sz=w200`;
+  }
+
+  if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
+    return value;
+  }
+
+  // просто имя файла без API для скачивания — картинки нет
+  return null;
+}
+
+function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
+  const [errored, setErrored] = useState(false);
+  const src = resolveDirectImageSrc(value);
+  const showImage = !!src && !errored;
+
+  return (
+    <div
+      className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center`}
+    >
+      {showImage ? (
+        <img
+          src={src as string}
+          alt="avatar"
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+          onError={() => setErrored(true)}
+        />
+      ) : (
+        <UserIcon className="w-6 h-6 text-white/90" />
+      )}
+    </div>
+  );
 }
 
 export default function UsersTab({ users, loading, error, searchQuery, onRetry, onDelete }: UsersTabProps) {
@@ -28,25 +74,6 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
         u.role.toLowerCase().includes(q)
     );
   }, [users, searchQuery]);
-
-  function isImageUrl(value: string): boolean {
-    return /^https?:\/\//.test(value) || value.startsWith('data:image');
-  }
-
-  function AvatarDisplay({ value, bgClass }: { value: string; bgClass: string }) {
-    if (value && isImageUrl(value)) {
-      return (
-        <div className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center`}>
-          <img src={value} alt="avatar" className="w-full h-full object-cover" />
-        </div>
-      );
-    }
-    return (
-      <div className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-        {value || '🎓'}
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white rounded-[2rem] p-6 border border-slate-200/80 shadow-sm space-y-6">
@@ -68,7 +95,6 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
                 <th className="py-3 px-4">{t('usersTab.colEmail')}</th>
                 <th className="py-3 px-4">{t('usersTab.colPhone')}</th>
                 <th className="py-3 px-4">{t('usersTab.colRole')}</th>
-                {/* <th className="py-3 px-4 text-center">{t('usersTab.colActions')}</th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -105,24 +131,6 @@ export default function UsersTab({ users, loading, error, searchQuery, onRetry, 
                         </span>
                       )}
                     </td>
-
-                    {/* <td className="py-4 px-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition flex items-center justify-center"
-                          title={t('usersTab.editTitle')}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(u)}
-                          className="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition flex items-center justify-center"
-                          title={t('usersTab.deleteTitle')}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td> */}
                   </tr>
                 ))
               ) : (

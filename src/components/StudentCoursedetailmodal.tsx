@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import {
   X,
   BookOpen,
@@ -128,14 +129,37 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
   const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<TabId>('syllabus');
-  const [localEnrollment, setLocalEnrollment] = useState<Enrollment>(enrollment);
+  const [localEnrollment] = useState<Enrollment>(enrollment);
 
   const lessons = course?.lessons || [];
   const completedIds = localEnrollment?.completedLessonIds || [];
   const totalLessons = lessons.length || 1;
 
+  // --- Progress based on course start/end dates ---
+  const parseDate = (dateStr?: string): Date | null => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  const computeDateBasedProgress = (): number | null => {
+    const start = parseDate(session.startDate);
+    const end = parseDate(session.endDate);
+    if (!start || !end || end.getTime() <= start.getTime()) return null;
+
+    const now = Date.now();
+    if (now <= start.getTime()) return 0;
+    if (now >= end.getTime()) return 100;
+
+    return Math.round(((now - start.getTime()) / (end.getTime() - start.getTime())) * 100);
+  };
+
+  const dateBasedProgress = computeDateBasedProgress();
+
   const computedProgress =
-    typeof localEnrollment.progress === 'number'
+    dateBasedProgress !== null
+      ? dateBasedProgress
+      : typeof localEnrollment.progress === 'number'
       ? localEnrollment.progress
       : Math.min(100, Math.round((completedIds.length / totalLessons) * 100));
 
@@ -162,15 +186,6 @@ const formatDate = (dateStr?: string) => {
   const pendingHomework = homeworks.find(
     (hw) => !homeworkSubmissions.some((s) => s.homeworkId === hw.id)
   );
-
-  const toggleLesson = (lessonId: number) => {
-    const isDone = completedIds.includes(lessonId);
-    const next = isDone ? completedIds.filter((id) => id !== lessonId) : [...completedIds, lessonId];
-    const newProgress = Math.min(100, Math.round((next.length / totalLessons) * 100));
-    const updated: Enrollment = { ...localEnrollment, completedLessonIds: next, progress: newProgress };
-    setLocalEnrollment(updated);
-    onUpdateEnrollment?.(updated);
-  };
 
   const TABS: { id: TabId; label: string; icon: React.ElementType; count?: number }[] = [
     { id: 'syllabus', label: `📖 ${t('studentModal.tabs.syllabus')}`, icon: BookOpen },
@@ -274,20 +289,12 @@ const formatDate = (dateStr?: string) => {
                       <CheckCircle className="h-4 w-4 text-emerald-600" />
                       <span>{t('studentModal.syllabus.title')}</span>
                     </h4>
-                    {/* <p className="text-xs text-slate-500">
-                      {t('studentModal.syllabus.description')}
-                    </p> */}
                   </div>
-                  <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-200">
-                    {/* {t('studentModal.syllabus.completedCount', { completed: completedIds.length, total: lessons.length || 1 })} */}
-                    {completedIds.length}/{lessons.length}
-                  </span>
                 </div>
 
                 {lessons.length > 0 ? (
                   <div className="space-y-2.5">
                     {lessons.map((les, idx) => {
-                      const isDone = completedIds.includes(les.id);
                       const lessonAtt = attendanceRecords.find(
                         (rec) => rec.lessonId === les.id || rec.lessonTitle === les.title
                       );
@@ -295,25 +302,11 @@ const formatDate = (dateStr?: string) => {
                       return (
                         <div
                           key={les.id ?? idx}
-                          className={`p-3.5 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                            isDone
-                              ? 'bg-emerald-50/70 border-emerald-200 shadow-2xs'
-                              : 'bg-white border-slate-200 hover:border-indigo-300'
-                          }`}
+                          className="p-3.5 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border-slate-200"
                         >
-                          <div
-                            className="flex items-center gap-3 cursor-pointer flex-1 "
-                            onClick={() => toggleLesson(les.id)}
-                          >
-                            {/* <div
-                              className={`h-6 w-6 rounded-lg flex items-center justify-center transition shrink-0 ${
-                                isDone ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300 bg-white'
-                              }`}
-                            >
-                              {isDone && <Check className="h-4 w-4 stroke-[3]" />}
-                            </div> */}
+                          <div className="flex items-center gap-3 flex-1">
                             <div>
-                              <p className={`text-xs font-black ${isDone ? 'text-emerald-950 line-through' : 'text-slate-900'}`}>
+                              <p className="text-xs font-black text-slate-900">
                                 {t('studentModal.syllabus.lessonNumber', { number: idx + 1, title: les.title })}
                               </p>
                               {les.content && (

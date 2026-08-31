@@ -1,6 +1,7 @@
 // src/api/teacher.ts
 
-const API_BASE_URL = "https://academyapi.tech-interview.com/api";
+import { API_BASE_URL } from "../services/baseApi";
+
 async function apiPost<TResponse>(path: string, body: unknown): Promise<TResponse> {
   const token = localStorage.getItem("academy_token");
   const res = await fetch(`${API_BASE_URL}${path}`, {

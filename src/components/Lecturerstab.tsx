@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Mail, Pencil, Plus, Power, PowerOff, Star } from 'lucide-react';
+import { Mail, Pencil, Plus, Power, PowerOff, Star, User as UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { LecturerItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 import LecturerModal from './LecturerModal';
@@ -17,36 +18,66 @@ interface LecturersTabProps {
   onTogglePin: (id: string) => void;
 }
 
-const API_BASE_URL = 'https://academyapi.tech-interview.com/api';
+const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/icons/svg?seed=teacher&icon=user';
 
-function resolveAvatarSrc(value: string): string | null {
+function resolveDirectImageSrc(value?: string | null): string | null {
   if (!value) return null;
+
+  const driveMatch = value.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w200`;
+  }
+
+  const driveOpenMatch = value.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (driveOpenMatch) {
+    return `https://drive.google.com/thumbnail?id=${driveOpenMatch[1]}&sz=w200`;
+  }
+
   if (/^https?:\/\//.test(value) || value.startsWith('data:image')) {
     return value;
   }
-  return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
+
+  return null;
 }
 
-function AvatarDisplay({ value, bgClass, dimmed }: { value: string; bgClass: string; dimmed?: boolean }) {
-  const src = resolveAvatarSrc(value);
-  if (src) {
-    return (
-      <div
-        className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${dimmed ? 'grayscale opacity-60' : ''
-          }`}
-      >
-        <img src={src} alt="avatar" className="w-full h-full object-cover" />
-      </div>
-    );
-  }
+function AvatarDisplay({
+  value,
+  name,
+  bgClass,
+  dimmed,
+}: {
+  value?: string | null;
+  name?: string;
+  bgClass: string;
+  dimmed?: boolean;
+}) {
+  const [errored, setErrored] = useState(false);
+  const src = resolveDirectImageSrc(value);
+  const showImage = !!src && !errored;
+
   return (
     <div
-      className={`w-14 h-14 rounded-2xl ${bgClass} text-white text-2xl flex items-center justify-center shrink-0 shadow-sm ${dimmed ? 'grayscale opacity-60' : ''
+      className={`w-14 h-14 rounded-2xl ${bgClass} shrink-0 shadow-sm overflow-hidden flex items-center justify-center ${dimmed ? 'grayscale opacity-60' : ''
         }`}
     >
-      {value || '🎓'}
+      {showImage ? (
+        <img
+          src={src as string}
+          alt={name || 'avatar'}
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+          onError={() => setErrored(true)}
+        />
+      ) : (
+        <UserIcon className="w-6 h-6 text-white/90" />
+      )}
     </div>
   );
+}
+
+// Убирает HTML-теги — нужно только для поиска по тексту биографии
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ');
 }
 
 export default function LecturersTab({
@@ -73,7 +104,7 @@ export default function LecturersTab({
         l.role.toLowerCase().includes(q) ||
         l.email.toLowerCase().includes(q) ||
         (l.bio || '').toLowerCase().includes(q) ||
-        ((l as any).description || '').toLowerCase().includes(q)
+        stripHtml((l as any).description || '').toLowerCase().includes(q)
     );
   }, [lecturers, searchQuery]);
 
@@ -127,17 +158,23 @@ export default function LecturersTab({
           {filtered.map((lec) => {
             // isActive может отсутствовать в типе — по умолчанию считаем активным
             const isActive = (lec as any).isActive !== false;
+            const bioHtml = (lec as any).description || lec.bio;
 
             return (
               <div
                 key={lec.id}
                 className={`bg-white rounded-[2rem] p-6 border shadow-sm flex flex-col justify-between space-y-5 transition ${isActive
-                  ? 'border-slate-200/80 hover:shadow-md'
-                  : 'border-rose-200/70 bg-rose-50/30 opacity-80'
+                    ? 'border-slate-200/80 hover:shadow-md'
+                    : 'border-rose-200/70 bg-rose-50/30 opacity-80'
                   }`}
               >
                 <div className="flex items-start gap-4">
-                  <AvatarDisplay value={lec.avatarIcon} bgClass={lec.avatarBg} dimmed={!isActive} />
+                  <AvatarDisplay
+                    value={(lec as any).picture}
+                    name={lec.name}
+                    bgClass={lec.avatarBg}
+                    dimmed={!isActive}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md uppercase">
@@ -145,17 +182,16 @@ export default function LecturersTab({
                       </span>
                       <span
                         className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${isActive
-                          ? 'text-emerald-600 bg-emerald-50'
-                          : 'text-rose-600 bg-rose-100'
+                            ? 'text-emerald-600 bg-emerald-50'
+                            : 'text-rose-600 bg-rose-100'
                           }`}
                       >
                         {isActive ? t('lecturers.active') : t('lecturers.inactive')}
                       </span>
                     </div>
-                    <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">{lec.name}</h3>
-                    <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">
-                      {(lec as any).description || lec.bio || t('lecturers.noBio')}
-                    </p>
+                    <h3 className="font-extrabold text-slate-800 text-base mt-0.5 truncate">
+                      {lec.name}
+                    </h3>
                   </div>
                 </div>
 
@@ -164,17 +200,24 @@ export default function LecturersTab({
                     <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                     <span className="truncate">{lec.email}</span>
                   </div>
-                  <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">
-                    {lec.bio || t('lecturers.noBio')}
-                  </p>
+
+                  {/* Биография — рендерится как HTML, сохраняя форматирование из редактора */}
+                  {bioHtml ? (
+                    <div
+                      className="bio-preview text-xs text-slate-500 leading-relaxed line-clamp-3"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bioHtml) }}
+                    />
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">{t('lecturers.noBio')}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2 pt-2">
                   <button
                     onClick={() => onTogglePin(lec.id)}
                     className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition border ${lec.isPinned
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                      : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                        ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                        : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
                       }`}
                   >
                     <Star className={`w-3.5 h-3.5 ${lec.isPinned ? 'fill-white' : 'fill-amber-400'}`} />
@@ -191,8 +234,8 @@ export default function LecturersTab({
                     <button
                       onClick={() => onDelete(lec)}
                       className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${isActive
-                        ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
-                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                         }`}
                       title={isActive ? t('lecturers.deactivate') : t('lecturers.activate')}
                     >

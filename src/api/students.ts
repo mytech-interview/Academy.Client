@@ -1,5 +1,6 @@
 // api/students.ts
-const API_BASE_URL = "https://academyapi.tech-interview.com";
+import { API_BASE_URL } from "../services/baseApi";
+
 interface ApiEnvelope {
   errMsg: string | null;
   errorCode: string | null;
@@ -28,7 +29,7 @@ export interface AddEnrollmentRequest {
 
 export async function addEnrollment(request: AddEnrollmentRequest) {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/enrollments/addEnrollment`, {
+  const response = await fetch(`${API_BASE_URL}/enrollments/addEnrollment`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +59,7 @@ export async function editStudent(request: EditStudentRequest) {
   const token = localStorage.getItem("academy_token");
   // ВАЖНО: бэкенд-эндпоинт называется /api/general/updateStudent (POST),
   // а не /api/students/editStudent (PUT), как было раньше.
-  const response = await fetch(`${API_BASE_URL}/api/general/updateStudent`, {
+  const response = await fetch(`${API_BASE_URL}/general/updateStudent`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Bold, Italic, Underline, List, ListOrdered } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CourseItem } from '../types';
 
@@ -16,8 +16,6 @@ export interface CourseFormValues {
   courseEntryLevelId: number;
   price: number;
   maxStudents: number;
-  startDate?: string;
-  endDate?: string;
   picture?: string;
   isActive?: boolean;
 }
@@ -29,11 +27,6 @@ interface CourseFormModalProps {
   categories: CourseCategoryOption[];
   onClose: () => void;
   onSubmit: (values: CourseFormValues) => void;
-}
-
-function toDateInputValue(iso?: string): string {
-  if (!iso) return '';
-  return iso.slice(0, 10);
 }
 
 // NOTE: `format`, `city`, `guide` fields were removed — they were never part
@@ -52,9 +45,10 @@ export default function CourseFormModal({
   onSubmit,
 }: CourseFormModalProps) {
   const { t } = useTranslation();
+  const descRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState(initial?.title ?? '');
-  const [description, setDescription] = useState(initial?.description ?? '');
+  const [description, setDescription] = useState(initial?.description ?? ''); // теперь хранит HTML
   const [category, setCategory] = useState(
     initial?.categoryId ? String(initial.categoryId) : String(categories[0]?.id ?? '')
   );
@@ -68,17 +62,43 @@ export default function CourseFormModal({
   const [maxStudents, setMaxStudents] = useState(
     initial?.maxStudents != null ? String(initial.maxStudents) : '20'
   );
-  const [startDate, setStartDate] = useState(toDateInputValue(initial?.startDate) || '2026-09-15');
-  const [endDate, setEndDate] = useState(toDateInputValue(initial?.endDate) || '2026-12-25');
   const [status, setStatus] = useState(initial?.isActive === false ? 'completed' : 'ongoing');
   const [picture, setPicture] = useState(
-    initial?.pictureUrl ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
+    initial?.picture ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
   );
+
+  // Подставляем сохранённый HTML в редактор при открытии/смене initial
+  useEffect(() => {
+    if (descRef.current) {
+      descRef.current.innerHTML = initial?.description ?? '';
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id]);
+
+  const applyFormat = (command: 'bold' | 'italic' | 'underline' | 'insertUnorderedList' | 'insertOrderedList') => {
+    descRef.current?.focus();
+    document.execCommand(command, false);
+    if (descRef.current) {
+      setDescription(descRef.current.innerHTML);
+    }
+  };
+
+  const handleDescriptionInput = () => {
+    if (descRef.current) {
+      setDescription(descRef.current.innerHTML);
+    }
+  };
+
+  // Есть ли реальный текст в HTML (а не просто пустые теги)
+  const isDescriptionEmpty = (html: string) => {
+    const text = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
+    return text.length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !description.trim()) {
+    if (!title.trim() || isDescriptionEmpty(description)) {
       alert(t('courseFormModal.validationTitleDesc'));
       return;
     }
@@ -95,15 +115,13 @@ export default function CourseFormModal({
     onSubmit({
       ...(mode === 'edit' && initial ? { courseId: initial.id } : {}),
       title: title.trim(),
-      description: description.trim(),
+      description, // HTML как есть, без .trim() — trim текстовой строки тут не нужен
       courseCategoryId: Number(category),
       courseEntryLevelId: Number(level) || 1,
       price: parsedPrice,
       maxStudents: parsedMaxStudents,
       ...(mode === 'edit'
         ? {
-            startDate,
-            endDate,
             picture: picture.trim(),
             isActive: status === 'ongoing',
           }
@@ -150,14 +168,67 @@ export default function CourseFormModal({
           </Field>
 
           <Field label={t('courseFormModal.descriptionLabel')}>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('courseFormModal.descriptionPlaceholder')}
-              rows={3}
-              className="styled-input resize-y min-h-[80px]"
-              required
-            />
+            <div className="space-y-1.5">
+              {/* Тулбар форматирования */}
+              <div className="flex items-center gap-1 p-1.5 rounded-2xl border border-slate-200 bg-slate-50/50 w-fit">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyFormat('bold')}
+                  className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                  title="Bold"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyFormat('italic')}
+                  className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                  title="Italic"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyFormat('underline')}
+                  className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                  title="Underline"
+                >
+                  <Underline className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-4 bg-slate-200 mx-1" />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyFormat('insertUnorderedList')}
+                  className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                  title="Bullet list"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyFormat('insertOrderedList')}
+                  className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-purple-600 transition"
+                  title="Numbered list"
+                >
+                  <ListOrdered className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Редактируемая область */}
+              <div
+                ref={descRef}
+                contentEditable
+                onInput={handleDescriptionInput}
+                data-placeholder={t('courseFormModal.descriptionPlaceholder')}
+                className="rich-editor styled-input resize-y min-h-[80px] block"
+                suppressContentEditableWarning
+              />
+            </div>
           </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -206,34 +277,6 @@ export default function CourseFormModal({
               />
             </Field>
           </div>
-
-          {/* Special date box in Edit mode */}
-          {mode === 'edit' && (
-            <div className="bg-purple-50/40 border border-purple-100 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-purple-700">
-                <Calendar className="w-4 h-4 text-purple-600" />
-                <span>{t('courseFormModal.dateManagementTitle')}</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label={t('courseFormModal.startDateLabel')}>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="styled-input bg-white"
-                  />
-                </Field>
-                <Field label={t('courseFormModal.endDateLabel')}>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="styled-input bg-white"
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
 
           <Field label={t('courseFormModal.statusLabel')}>
             <select value={status} onChange={(e) => setStatus(e.target.value)} className="styled-input">
@@ -287,6 +330,25 @@ export default function CourseFormModal({
         .styled-input:focus {
           border-color: #a855f7;
           box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+        }
+        .rich-editor:empty::before {
+          content: attr(data-placeholder);
+          color: #94a3b8;
+        }
+        .rich-editor ul,
+        .rich-editor ol {
+          list-style-type: revert;
+          padding-left: 1.25rem;
+          margin: 0.25rem 0;
+        }
+        .rich-editor ul {
+          list-style-type: disc;
+        }
+        .rich-editor ol {
+          list-style-type: decimal;
+        }
+        .rich-editor li {
+          display: list-item;
         }
       `}</style>
     </div>

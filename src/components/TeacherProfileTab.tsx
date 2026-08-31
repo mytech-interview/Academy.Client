@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, Upload } from 'lucide-react';
+import { CheckCircle, Upload, Bold, Italic, Underline, List, ListOrdered } from 'lucide-react';
 import { User } from '../types';
 import { updateTeacher } from '@/src/api/teacher';
 interface TeacherProfileTabProps {
@@ -57,10 +57,12 @@ function getTeacherDescription(teacher: any): string {
 export default function TeacherProfileTab({ teacher, onUpdateProfile }: TeacherProfileTabProps) {
   const { t } = useTranslation();
 console.log('teacher object:', teacher);
+  const descRef = useRef<HTMLDivElement>(null);
+
   const [profName, setProfName] = useState(teacher?.name || '');
   const [profEmail, setProfEmail] = useState(teacher?.email || '');
   const [profPhone, setProfPhone] = useState(getTeacherPhone(teacher));
-  const [profHeadline, setProfHeadline] = useState(getTeacherDescription(teacher));
+  const [profHeadline, setProfHeadline] = useState(getTeacherDescription(teacher)); // хранит HTML (bold/italic/underline/списки)
   const [profAvatar, setProfAvatar] = useState(teacher?.avatar || AVATAR_PRESETS[0]);
   const [profSuccess, setProfSuccess] = useState(false);
 
@@ -69,12 +71,39 @@ console.log('teacher object:', teacher);
 
 
   useEffect(() => {
+    const nextDescription = getTeacherDescription(teacher);
+
     setProfName(teacher?.name || '');
     setProfEmail(teacher?.email || '');
     setProfPhone(getTeacherPhone(teacher));
-    setProfHeadline(getTeacherDescription(teacher));
+    setProfHeadline(nextDescription);
     setProfAvatar(teacher?.avatar || AVATAR_PRESETS[0]);
+
+    // Синхронизируем contentEditable-блок со state
+    // (React не контролирует innerHTML напрямую)
+    requestAnimationFrame(() => {
+      if (descRef.current) {
+        descRef.current.innerHTML = nextDescription;
+      }
+    });
   }, [teacher]);
+
+  // Применяет команду форматирования к выделенному тексту в редакторе
+  const applyFormat = (
+    command: 'bold' | 'italic' | 'underline' | 'insertUnorderedList' | 'insertOrderedList'
+  ) => {
+    descRef.current?.focus();
+    document.execCommand(command, false);
+    if (descRef.current) {
+      setProfHeadline(descRef.current.innerHTML);
+    }
+  };
+
+  const handleDescriptionInput = () => {
+    if (descRef.current) {
+      setProfHeadline(descRef.current.innerHTML);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,16 +205,70 @@ console.log('teacher object:', teacher);
           />
         </div>
 
-        {/* Headline / Specialization */}
+        {/* Headline / Specialization — с форматированием (bold / italic / underline / списки) */}
         <div>
           <label className="text-xs font-extrabold text-slate-800 block mb-1.5">
             ბიოგრაფია
           </label>
-          <textarea
-            value={profHeadline}
-            onChange={(e) => setProfHeadline(e.target.value)}
-            rows={4}
-            className="w-full p-3 rounded-xl border border-slate-200 bg-[#f8fafc] text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none transition resize-none"
+
+          {/* Тулбар */}
+          <div className="flex items-center gap-1 p-1.5 rounded-2xl border border-slate-200 bg-[#f8fafc] w-fit mb-2">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()} // не терять фокус/выделение
+              onClick={() => applyFormat('bold')}
+              className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-[#5850ec] transition"
+              title="Bold"
+            >
+              <Bold className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat('italic')}
+              className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-[#5850ec] transition"
+              title="Italic"
+            >
+              <Italic className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat('underline')}
+              className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-[#5850ec] transition"
+              title="Underline"
+            >
+              <Underline className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat('insertUnorderedList')}
+              className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-[#5850ec] transition"
+              title="Bullet list"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFormat('insertOrderedList')}
+              className="p-2 rounded-xl hover:bg-white text-slate-600 hover:text-[#5850ec] transition"
+              title="Numbered list"
+            >
+              <ListOrdered className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Редактируемая область */}
+          <div
+            ref={descRef}
+            contentEditable
+            onInput={handleDescriptionInput}
+            data-placeholder="ბიოგრაფია"
+            className="rich-editor w-full min-h-[100px] p-3 rounded-xl border border-slate-200 bg-[#f8fafc] text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
+            suppressContentEditableWarning
           />
         </div>
 
@@ -195,7 +278,7 @@ console.log('teacher object:', teacher);
             <label className="text-xs font-extrabold text-slate-800 block">
               {t('teacherDashboard.profile.photoTitle')}
             </label>
-            <span className="text-[10px] font-mono font-bold text-[#5850ec]">Cyber Bot Alpha</span>
+            {/* <span className="text-[10px] font-mono font-bold text-[#5850ec]">Cyber Bot Alpha</span> */}
           </div>
 
           <div className="p-5 rounded-2xl bg-[#f8fafc] border border-slate-100 space-y-4">
@@ -225,10 +308,10 @@ console.log('teacher object:', teacher);
 
             {/* Avatar Grid Selector */}
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-slate-600">
+              {/* <p className="text-[11px] font-bold text-slate-600">
                 {t('teacherDashboard.profile.selectAbstract')}
-              </p>
-              <div className="grid grid-cols-6 gap-2">
+              </p> */}
+              {/* <div className="grid grid-cols-6 gap-2">
                 {AVATAR_PRESETS.map((preset, idx) => (
                   <button
                     key={idx}
@@ -243,16 +326,16 @@ console.log('teacher object:', teacher);
                     <img src={preset} alt="" className="h-full w-full object-cover rounded-lg" />
                   </button>
                 ))}
-              </div>
+              </div> */}
             </div>
 
             {/* Avatar URL Input */}
-            <input
+            {/* <input
               type="text"
               value={profAvatar}
               onChange={(e) => setProfAvatar(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-[11px] font-mono text-slate-500 focus:outline-none"
-            />
+            /> */}
           </div>
         </div>
 

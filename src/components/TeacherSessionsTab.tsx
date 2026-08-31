@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, Users, Plus } from 'lucide-react';
+import { BookOpen, Users, Plus, ChevronDown } from 'lucide-react';
 import {
   TeacherSessionDto,
   SessionStudentDto,
@@ -36,6 +36,13 @@ export default function TeacherSessionsTab({
   const [lessons, setLessons] = useState<SessionLessonDto[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Открытый (раскрытый) урок в аккордеоне. Только один за раз.
+  const [openLessonId, setOpenLessonId] = useState<number | null>(null);
+
+  const toggleLesson = (id: number) => {
+    setOpenLessonId((prev) => (prev === id ? null : id));
+  };
+
   useEffect(() => {
     if (!activeSession) return;
 
@@ -67,6 +74,11 @@ export default function TeacherSessionsTab({
     };
   }, [activeSession?.sessionId, teacherGuid]);
 
+  // При смене сессии закрываем ранее открытый урок, чтобы не путать разные списки.
+  useEffect(() => {
+    setOpenLessonId(null);
+  }, [activeSession?.sessionId]);
+
   return (
     <div className="space-y-6">
       {/* Session Selector Bar */}
@@ -80,11 +92,11 @@ export default function TeacherSessionsTab({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full">
           <select
             value={selectedSessionId}
             onChange={(e) => onSelectSession(Number(e.target.value))}
-            className="bg-[#f8fafc] border border-slate-200 text-slate-900 text-xs font-bold rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-100 focus:outline-none cursor-pointer"
+            className="w-[580px] max-w-full min-w-0 bg-[#f8fafc] border border-slate-200 text-slate-900 text-xs font-bold rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-100 focus:outline-none cursor-pointer truncate"
           >
             {sessions.map((s) => (
               <option key={s.sessionId} value={s.sessionId}>
@@ -95,7 +107,7 @@ export default function TeacherSessionsTab({
 
           <button
             onClick={onOpenAddHW}
-            className="flex items-center gap-2 rounded-xl bg-[#5850ec] hover:bg-[#4338ca] px-5 py-2.5 text-xs font-bold text-white transition shadow-md active:scale-95 cursor-pointer shrink-0"
+            className="flex items-center gap-2 rounded-xl bg-[#5850ec] hover:bg-[#4338ca] px-3 py-2.5 text-xs font-bold text-white transition shadow-md active:scale-95 cursor-pointer shrink-0"
           >
             <Plus className="h-4 w-4" />
             <span>{t('teacherDashboard.sessions.addHomework')}</span>
@@ -149,11 +161,23 @@ export default function TeacherSessionsTab({
             </div>
 
             {/* Syllabus / Lessons Card */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
-              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-[#4f46e5]" />
-                <span>{t('teacherDashboard.sessions.lessonsTitle')}</span>
-              </h3>
+            <div className="space-y-6">
+              <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-indigo-400" />
+                    <span>
+                      {t('teacherDashboard.sessions.lessonsTitle', {
+                        count: lessons.length,
+                        defaultValue: `გაკვეთილები (${lessons.length})`
+                      })}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {t('teacherDashboard.sessions.lessonsSubtitle', 'კურსზე დამატებული გაკვეთილების სრული სია')}
+                  </p>
+                </div>
+              </div>
 
               {loading ? (
                 <p className="text-xs text-slate-400 font-medium">…</p>
@@ -177,21 +201,45 @@ export default function TeacherSessionsTab({
                     const showSeparateDescription =
                       Boolean(lesson.title?.trim()) && Boolean(lesson.description?.trim());
 
+                    const isOpen = openLessonId === lesson.courseLessonId;
+
                     return (
                       <div
                         key={lesson.courseLessonId}
-                        className="p-4 rounded-xl bg-[#f8fafc] flex items-start justify-between gap-4"
+                        className="rounded-xl bg-white border border-slate-100 shadow-sm overflow-hidden transition"
                       >
-                        <div>
+                        <button
+                          type="button"
+                          onClick={() => showSeparateDescription && toggleLesson(lesson.courseLessonId)}
+                          className={`w-full p-4 flex items-center justify-between gap-4 text-left transition ${
+                            showSeparateDescription ? 'cursor-pointer hover:bg-slate-50' : 'cursor-default'
+                          }`}
+                        >
                           <p className="text-xs font-bold text-slate-900">
                             {idx + 1}. {heading}
                           </p>
                           {showSeparateDescription && (
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                              {lesson.description}
-                            </p>
+                            <ChevronDown
+                              className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                                isOpen ? 'rotate-180' : ''
+                              }`}
+                            />
                           )}
-                        </div>
+                        </button>
+
+                        {showSeparateDescription && (
+                          <div
+                            className={`grid transition-all duration-200 ease-in-out ${
+                              isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                            }`}
+                          >
+                            <div className="overflow-hidden">
+                              <p className="text-xs text-slate-500 leading-relaxed px-4 pb-4 whitespace-pre-line">
+                                {lesson.description}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

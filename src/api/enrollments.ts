@@ -1,4 +1,5 @@
-const API_BASE_URL = "https://academyapi.tech-interview.com";
+import { API_BASE_URL } from "../services/baseApi";
+
 export interface AddEnrollmentRequest {
   studentGuid: string;
   sessionId: number;
@@ -15,7 +16,7 @@ export async function addEnrollment(
   request: AddEnrollmentRequest
 ): Promise<AddEnrollmentResponse> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/enrollments/addEnrollment`, {
+  const response = await fetch(`${API_BASE_URL}/enrollments/addEnrollment`, {
     method: 'POST',
      headers: {
       "Content-Type": "application/json",

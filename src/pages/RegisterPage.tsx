@@ -6,7 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import { createOtpRegistration } from '../api/authApi';
 
+const GEORGIA_PREFIX = '+995';
 const PHONE_DIGITS_LENGTH = 9; // например, 5XX XXX XXX для Грузии
+const PHONE_REGEX = /^\+995\d{9}$/;
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -14,7 +16,7 @@ export default function RegisterPage() {
   const { lang, setOtpEmail, setOtpPassword, setOtpRole, setOtpName, setOtpFirstName, setOtpLastName, setOtpTelephone, setOtpMode } = useApp();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [telephone, setTelephone] = useState('');
+  const [telephone, setTelephone] = useState(GEORGIA_PREFIX);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -22,10 +24,43 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // оставляем только цифры и ограничиваем длину
-    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, PHONE_DIGITS_LENGTH);
-    setTelephone(digitsOnly);
+    const raw = e.target.value;
+
+    // оставляем только цифры
+    let digits = raw.replace(/\D/g, '');
+
+    // если пользователь вставил номер вместе с кодом страны (995...) — убираем дубль
+    if (digits.startsWith('995')) {
+      digits = digits.slice(3);
+    }
+
+    // максимум 9 цифр после +995
+    digits = digits.slice(0, PHONE_DIGITS_LENGTH);
+
+    setTelephone(GEORGIA_PREFIX + digits);
   };
+
+  const handlePhoneFocus = () => {
+    if (!telephone) setTelephone(GEORGIA_PREFIX);
+  };
+
+  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // запрещаем стирать сам префикс +995 через backspace/delete
+    const input = e.currentTarget;
+    const caret = input.selectionStart ?? 0;
+    const selectionEnd = input.selectionEnd ?? 0;
+
+    if (
+      (e.key === 'Backspace' || e.key === 'Delete') &&
+      caret <= GEORGIA_PREFIX.length &&
+      selectionEnd <= GEORGIA_PREFIX.length
+    ) {
+      e.preventDefault();
+    }
+  };
+
+  const phoneDigitsCount = telephone.replace(GEORGIA_PREFIX, '').length;
+  const isPhoneValid = PHONE_REGEX.test(telephone);
 
  // Маппинг известных ошибок бэкенда на грузинский
 const mapErrorToGeorgian = (res: any): string => {
@@ -60,8 +95,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
-  if (telephone.length !== PHONE_DIGITS_LENGTH) {
-    setError(`ტელეფონის ნომერი უნდა შეიცავდეს ${PHONE_DIGITS_LENGTH} ციფრს`);
+  if (!isPhoneValid) {
+    setError(`ტელეფონის ნომერი უნდა შეიცავდეს +995-ს და ${PHONE_DIGITS_LENGTH} ციფრს`);
     return;
   }
 
@@ -153,17 +188,19 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <div className="relative">
                   <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
-                    type="tel"
-                    inputMode="numeric"
-                    value={telephone}
-                    onChange={handlePhoneChange}
-                    placeholder="+995..."
-                    required
-                    maxLength={PHONE_DIGITS_LENGTH}
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
-                  />
+  type="tel"
+  inputMode="numeric"
+  value={telephone}
+  onChange={handlePhoneChange}
+  onFocus={handlePhoneFocus}
+  onKeyDown={handlePhoneKeyDown}
+  placeholder="+995 5XX XX XX XX"
+  required
+  maxLength={GEORGIA_PREFIX.length + PHONE_DIGITS_LENGTH}
+  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
+/>
                 </div>
-                <p className="text-[10px] text-slate-400 pl-1">{telephone.length}/{PHONE_DIGITS_LENGTH} ციფრი</p>
+                <p className="text-[10px] text-slate-400 pl-1">{phoneDigitsCount}/{PHONE_DIGITS_LENGTH} ციფრი</p>
               </div>
               {/* Password */}
               <div className="space-y-1.5">

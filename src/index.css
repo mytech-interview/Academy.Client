@@ -11,3 +11,51 @@ body {
   font-family: var(--font-sans);
   background-color: #f8fafc; /* slate-50 */
 }
+
+.bio-preview p {
+  margin: 0;
+}
+.bio-preview ul,
+.bio-preview ol {
+  padding-left: 1rem;
+  margin: 0;
+}
+.bio-preview b,
+.bio-preview strong {
+  font-weight: 700;
+  color: #475569; /* slate-600, чуть темнее фона */
+}
+
+.rich-editor ul,
+.rich-editor ol,
+.bio-preview ul,
+.bio-preview ol {
+  list-style-type: revert;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.rich-editor ul,
+.bio-preview ul {
+  list-style-type: disc;
+}
+
+.rich-editor ol,
+.bio-preview ol {
+  list-style-type: decimal;
+}
+
+.rich-editor li,
+.bio-preview li {
+  display: list-item;
+}
+
+.bio-preview {
+  white-space: pre-wrap;
+}
+
+.rich-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+}

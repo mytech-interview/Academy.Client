@@ -10,7 +10,8 @@ export interface User {
   headline?: string;
   bio?: string;
   createdAt: string;
-  description: string;
+  telephone?: string;
+  description?: string;
 }
 
 export interface Lesson {
@@ -116,6 +117,7 @@ export interface ActiveSession {
   attendanceModeName: string;
   lessonCount: number;
   teacherAvatarUrl?: string | null;
+   picture?: string | null;
 }
 export interface StudentSession {
   sessionId: number;
@@ -131,6 +133,7 @@ export interface StudentSession {
   endDate: string;
   isCompleted: boolean;
   canSubmitReview: boolean;
+   picture?: string | null;
 }
 
 export interface EditStudentRequest {
@@ -184,6 +187,7 @@ export interface CourseItem {
   statusText: string;
   instructor: string;
   rating: number;
+  picture?: string | null;
 }
 
 export interface SessionItem {
@@ -203,12 +207,14 @@ export interface SessionItem {
   weeks: number;
   startDate: string;
   endDate: string;
+  
 }
 
 export interface LecturerItem {
   id: string;
   userId: number;
   userGuid: string;
+  teacherId: number; 
   name: string;
   role: string;
   email: string;
@@ -479,6 +485,7 @@ export function mapTeacherToLecturer(dto: GetAllTeachersResponseDto): LecturerIt
     avatarIcon: dto.picture || '🎓',
     isActive: dto.isActive,
     isPinned: false,
+    teacherId: dto.teacherId,
   };
 }
 
@@ -597,5 +604,6 @@ export function mapCourseDtoToCourseItem(dto: GetAllCoursesResponseDto): CourseI
     averageReviewMark: dto.averageReviewMark,
     lessonsAmount: dto.lessonsAmount,
     enrolledStudentsAmount: dto.enrolledStudentsAmount,
+    picture: dto.picture,
   };
 }
