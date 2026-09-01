@@ -118,6 +118,7 @@ export interface ActiveSession {
   lessonCount: number;
   teacherAvatarUrl?: string | null;
    picture?: string | null;
+   lessonDaysDescription: string
 }
 export interface StudentSession {
   sessionId: number;
