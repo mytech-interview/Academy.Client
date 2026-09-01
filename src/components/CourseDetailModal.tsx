@@ -5,6 +5,7 @@ import {
   X, Clock, Award, Star, BookOpen, Users, ChevronRight, ChevronDown, ChevronUp,
   Calendar, MapPin, Loader2, AlertCircle, User as UserIcon, GraduationCap,
   Sparkles, Layers,
+  CalendarCheck,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActiveSession } from '../types';
@@ -377,7 +378,7 @@ export default function CourseDetailModal({
                   {detailsError && !detailsLoading && (
                     <div className="flex items-center gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                      <span>{detailsError}</span>
+                      <span>{detailsError}</span>s
                     </div>
                   )}
 
@@ -396,6 +397,10 @@ export default function CourseDetailModal({
                       <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
                         <UserIcon className="h-4 w-4 text-slate-500 shrink-0" />
                         <span>{details.teacherName}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
+                            <CalendarCheck  className="h-4 w-4 text-slate-500 shrink-0" />
+                        <span>{details.lessonDaysDescription}</span>
                       </div>
                     </div>
                   )}

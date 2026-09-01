@@ -53,10 +53,12 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
     (opt) => avatarUrl(opt.seed, opt.bg) === profAvatar
   ) || AVATAR_OPTIONS[0];
 
+  const [isAvatarChanged, setIsAvatarChanged] = React.useState(false);
+
   // ---- Телефон: всегда +995, максимум 9 цифр после префикса ----
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-
+setIsAvatarChanged(true);
     // оставляем только цифры
     let digits = raw.replace(/\D/g, '');
 
@@ -135,23 +137,28 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
           <label className="text-xs font-bold text-slate-700">
             {t('studentDashboard.phoneLabel', 'ტელეფონის ნომერი')}
           </label>
+
           <input
-  type="tel"
-  inputMode="numeric"
-  value={profPhone || GEORGIA_PREFIX}
-  onChange={handlePhoneChange}
-  onFocus={handlePhoneFocus}
-  onKeyDown={handlePhoneKeyDown}
-  maxLength={GEORGIA_PREFIX.length + GEORGIA_DIGITS_LEN}
-  placeholder="+995 5XX XX XX XX"
-  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition"
-  required
-/>
-{profPhone && !isPhoneValid && (
-  <p className="text-xs font-semibold text-slate-400">
-    {t('studentDashboard.phoneInvalid', 'შეიყვანეთ სრული ნომერი: +995 და 9 ციფრი')}
-  </p>
-)}
+            type="tel"
+            inputMode="numeric"
+            value={profPhone || GEORGIA_PREFIX}
+            onChange={handlePhoneChange}
+            onFocus={handlePhoneFocus}
+            onKeyDown={handlePhoneKeyDown}
+            maxLength={GEORGIA_PREFIX.length + GEORGIA_DIGITS_LEN}
+            placeholder="+995 5XX XX XX XX"
+            className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 transition"
+            required
+          />
+
+          {profPhone && !isPhoneValid && (
+            <p className="text-xs font-semibold text-slate-400">
+              {t(
+                'studentDashboard.phoneInvalid',
+                'შეიყვანეთ სრული ნომერი: +995 და 9 ციფრი'
+              )}
+            </p>
+          )}
         </div>
 
         {/* Headline / Interests */}
@@ -159,6 +166,7 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
           <label className="text-xs font-bold text-slate-700">
             {t('studentDashboard.headlineLabel', 'სათაური / ინტერესები')}
           </label>
+
           <input
             type="text"
             value={profHeadline}
@@ -171,8 +179,12 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700">
-              {t('studentDashboard.avatarSelectLabel', 'ავატარის არჩევა (18 აბსტრაქტული სტილი)')}
+              {t(
+                'studentDashboard.avatarSelectLabel',
+                'ავატარის არჩევა (18 აბსტრაქტული სტილი)'
+              )}
             </label>
+
             <span className="text-xs font-bold text-indigo-600">
               {activeAvatarOption.label}
             </span>
@@ -189,7 +201,12 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
                   <button
                     key={opt.seed}
                     type="button"
-                    onClick={() => setProfAvatar(url)}
+                    onClick={() => {
+                      if (profAvatar !== url) {
+                        setProfAvatar(url);
+                        setIsAvatarChanged(true);
+                      }
+                    }}
                     className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all p-1 flex items-center justify-center cursor-pointer ${
                       isSelected
                         ? 'border-indigo-600 ring-4 ring-indigo-500/20 scale-105 shadow-md bg-white'
@@ -219,7 +236,10 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
             <input
               type="text"
               readOnly
-              value={profAvatar || avatarUrl(activeAvatarOption.seed, activeAvatarOption.bg)}
+              value={
+                profAvatar ||
+                avatarUrl(activeAvatarOption.seed, activeAvatarOption.bg)
+              }
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono text-slate-500 selection:bg-indigo-100"
             />
           </div>
@@ -237,7 +257,10 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
         {profileSuccess && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-2.5">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-            {t('studentDashboard.profileSavedSuccess', 'პროფილი წარმატებით განახლდა')}
+            {t(
+              'studentDashboard.profileSavedSuccess',
+              'პროფილი წარმატებით განახლდა'
+            )}
           </div>
         )}
 
@@ -245,10 +268,15 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
         <div className="flex justify-end pt-4">
           <button
             type="submit"
-            disabled={profileSaving || !isPhoneValid}
+            disabled={
+              profileSaving ||
+              !isAvatarChanged 
+            }
             className="rounded-2xl bg-[#5842F8] hover:bg-[#4832E6] px-8 py-3.5 text-xs font-extrabold text-white transition duration-200 active:scale-[0.98] shadow-md shadow-indigo-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {profileSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {profileSaving && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            )}
             {t('studentDashboard.saveChangesBtn', 'შენახვა')}
           </button>
         </div>

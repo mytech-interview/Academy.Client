@@ -206,6 +206,7 @@ export async function getCourseLibrarySessionId(
 
 // --- Course details by session id (public, no login required) -------------
 export interface CourseDetailsBySessionId {
+  lessonDaysDescription: string;
   categoryName: string;
   levelName: string;
   title: string;
