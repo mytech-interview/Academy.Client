@@ -22,6 +22,14 @@ interface HomePageProps {
   onViewAllCourses: () => void;
 }
 
+// Same category set as the catalog page, kept local since the home page
+// only needs the filter buttons (no search/sort UI here).
+const backendCategories = [
+  { id: "all", numId: 0, labels: { ka: "ყველა", en: "All", ru: "Все" } },
+  { id: "1", numId: 1, labels: { ka: "პროგრამირება", en: "Programming", ru: "Программирование" } },
+  { id: "2", numId: 2, labels: { ka: "დიაინი", en: "Cybersecurity", ru: "Кибербезопасность" } },
+];
+
 export default function HomePage({
   activeUser,
   enrollments,
@@ -32,11 +40,16 @@ export default function HomePage({
   onEnroll,
   onViewAllCourses,
 }: HomePageProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [courses, setCourses] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  const getCategoryLabel = (cat: typeof backendCategories[0]) => {
+    return cat.labels[i18n.language as keyof typeof cat.labels] || cat.labels.en;
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -48,7 +61,16 @@ export default function HomePage({
 
         const categoryIds = [1, 2];
         const results = await Promise.all(
-          categoryIds.map((id) => getHomeActiveSessions(id).catch(() => []))
+          categoryIds.map((id) =>
+            getHomeActiveSessions(id)
+              .then((res: any) => {
+                const list = Array.isArray(res) ? res : res?.activeSessions || [];
+                // Tag each item with the category it came from so we can
+                // filter client-side without refetching on category change.
+                return list.map((item: any) => ({ ...item, _categoryId: id }));
+              })
+              .catch(() => [])
+          )
         );
 
         const combined = results.flat();
@@ -82,6 +104,11 @@ export default function HomePage({
     };
   }, []);
 
+  const filteredCourses =
+    selectedCategory === "all"
+      ? courses
+      : courses.filter((c: any) => String(c._categoryId) === selectedCategory);
+
   return (
     <div className="space-y-20 pb-20 animate-fade-in">
       <Hero
@@ -106,6 +133,23 @@ export default function HomePage({
           </p>
         </div>
 
+        {/* Category filter buttons */}
+        <div className="flex flex-wrap gap-2 items-center justify-center">
+          {backendCategories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`rounded-2xl px-4 py-2 text-xs font-extrabold border transition-all duration-150 cursor-pointer ${
+                selectedCategory === cat.id
+                  ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-150"
+                  : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {getCategoryLabel(cat)}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="rounded-[2.5rem] border border-slate-100 py-16 text-center space-y-3 bg-white shadow-sm flex flex-col items-center justify-center">
             <Loader2 className="h-9 w-9 text-indigo-600 animate-spin" />
@@ -117,7 +161,7 @@ export default function HomePage({
           <div className="rounded-[2.5rem] border border-red-100 bg-red-50/50 py-8 text-center">
             <p className="text-sm font-semibold text-red-600">{error}</p>
           </div>
-        ) : courses.length === 0 ? (
+        ) : filteredCourses.length === 0 ? (
           <div className="rounded-[2.5rem] border-2 border-dashed border-slate-200 py-16 text-center space-y-2 bg-white">
             <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
             <p className="text-sm font-semibold text-slate-700">
@@ -126,7 +170,7 @@ export default function HomePage({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.slice(0, 3).map((course: any) => {
+            {filteredCourses.slice(0, 6).map((course: any) => {
               const courseId = course.sessionId || course.courseId;
               const isEnrolled = activeUser
                 ? enrollments.some(

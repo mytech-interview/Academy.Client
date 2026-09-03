@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { X, FileText, Upload, Loader2, AlertCircle } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { X, FileText, Upload, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { submitHomeWork, StudentHomeWork } from '../api/homeworks';
 
 interface SubmitHomeworkModalProps {
@@ -23,6 +23,7 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
   const [fileName, setFileName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submittedSuccessfully, setSubmittedSuccessfully] = useState(false);
 
   const handlePickFile = () => fileInputRef.current?.click();
 
@@ -36,10 +37,10 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
       return;
     }
     setError(null);
-    // TODO(backend): нет эндпоинта реальной загрузки файла — пока
-    // отправляем только имя файла как filePath. Как только появится
-    // POST /api/files/upload (multipart), нужно грузить файл туда и
-    // класть в filePath вернувшийся URL, а не имя файла.
+    // TODO(backend): no real file-upload endpoint yet — for now we only
+    // send the file name as filePath. Once POST /api/files/upload
+    // (multipart) is available, upload the file there and put the
+    // returned URL in filePath instead of the file name.
     setFileName(file.name);
   };
 
@@ -56,14 +57,49 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
         studentAnswer: answerText.trim() || undefined,
         filePath: fileName.trim() || undefined,
       });
+      setSubmittedSuccessfully(true);
       onSubmitted?.();
-      onClose();
     } catch (err: any) {
       setError(err.message || 'დავალების გაგზავნა ვერ მოხერხდა');
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Auto-close the modal a couple of seconds after a successful submission
+  useEffect(() => {
+    if (!submittedSuccessfully) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [submittedSuccessfully, onClose]);
+
+  if (submittedSuccessfully) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="px-6 py-10 flex flex-col items-center gap-4 text-center">
+            <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            </div>
+            <h3 className="text-sm font-black text-slate-900">
+              დავალება წარმატებით გაიგზავნა!
+            </h3>
+            <p className="text-xs font-medium text-slate-500">
+              თქვენი პასუხი მიღებულია და მალე განიხილება.
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700 transition cursor-pointer"
+            >
+              დახურვა
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, Users, Plus, ChevronDown } from 'lucide-react';
+import { BookOpen, Users, Plus, ChevronDown, User } from 'lucide-react';
 import {
   TeacherSessionDto,
   SessionStudentDto,
@@ -275,18 +275,24 @@ export default function TeacherSessionsTab({
                       className="p-3.5 rounded-xl bg-[#f8fafc] flex items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={st.picture || FALLBACK_AVATAR}
-                          alt=""
-                          className="h-9 w-9 rounded-xl object-cover shrink-0"
-                        />
-                        <div>
-                          <p className="text-xs font-bold text-slate-900">
-                            {st.firstName} {st.lastName}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-mono">{st.email}</p>
-                        </div>
-                      </div>
+  {st.picture ? (
+    <img
+      src={st.picture}
+      alt=""
+      className="h-9 w-9 rounded-xl object-cover shrink-0"
+    />
+  ) : (
+    <div className="h-9 w-9 rounded-xl bg-slate-200 flex items-center justify-center shrink-0">
+      <User className="h-5 w-5 text-slate-400" />
+    </div>
+  )}
+  <div>
+    <p className="text-xs font-bold text-slate-900">
+      {st.firstName} {st.lastName}
+    </p>
+    <p className="text-[10px] text-slate-400 font-mono">{st.email}</p>
+  </div>
+</div>
                       <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
                     </div>
                   ))}
