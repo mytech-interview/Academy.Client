@@ -9,7 +9,7 @@ interface SubmitHomeworkModalProps {
   onSubmitted?: () => void;
 }
 
-const ACCEPTED_EXTENSIONS = ['.docx', '.doc', '.pdf'];
+const ACCEPTED_EXTENSIONS = ['.doc', '.docx', '.pdf', '.txt', '.odt', '.rtf'];
 
 export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
   homework,
@@ -33,14 +33,12 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
 
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      setError('დაშვებულია მხოლოდ .docx, .doc, .pdf ფაილები');
+      setError('დაშვებულია მხოლოდ .doc, .docx, .pdf, .txt, .odt, .rtf ფაილები');
       return;
     }
     setError(null);
-    // TODO(backend): no real file-upload endpoint yet — for now we only
-    // send the file name as filePath. Once POST /api/files/upload
-    // (multipart) is available, upload the file there and put the
-    // returned URL in filePath instead of the file name.
+    // TODO(backend): real multipart file upload is planned for later —
+    // for now we only send the file name as filePath.
     setFileName(file.name);
   };
 
@@ -138,19 +136,19 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5 text-indigo-600" />
-              Word / PDF ფაილის მიმაგრება (.docx, .doc, .pdf)
+              ფაილის მიმაგრება (.doc, .docx, .pdf, .txt, .odt, .rtf)
             </label>
 
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-6 flex flex-col items-center gap-3 text-center">
               <FileText className="h-7 w-7 text-indigo-400" />
               <p className="text-xs font-bold text-slate-500">
-                ატვირთეთ ნამუშევარი (.docx / .pdf)
+                ატვირთეთ ნამუშევარი
               </p>
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".docx,.doc,.pdf"
+                accept=".doc,.docx,.pdf,.txt,.odt,.rtf"
                 onChange={handleFileChange}
                 className="hidden"
               />
