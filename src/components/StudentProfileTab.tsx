@@ -3,6 +3,7 @@ import { CheckCircle2, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { User } from '../types';
 import { AVATAR_OPTIONS, avatarUrl } from '../lib/avatars';
+import { PHONE_REGEX, PHONE_MAX_LENGTH } from '../constants/validation';
 
 interface StudentProfileTabProps {
   student: User;
@@ -23,9 +24,6 @@ interface StudentProfileTabProps {
   profileSaving?: boolean;
   profileError?: string;
 }
-
-const GEORGIA_PREFIX = '+995';
-const GEORGIA_DIGITS_LEN = 9; // после +995: 5XX XX XX XX
 
 export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
   student,
@@ -48,7 +46,6 @@ export const StudentProfileTab: React.FC<StudentProfileTabProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Находим активный пресет или берем первый по умолчанию
   const activeAvatarOption = AVATAR_OPTIONS.find(
     (opt) => avatarUrl(opt.seed, opt.bg) === profAvatar
   ) || AVATAR_OPTIONS[0];
@@ -92,11 +89,10 @@ setIsAvatarChanged(true);
     }
   };
 
-  const isPhoneValid = /^\+995\d{9}$/.test(profPhone);
+  const isPhoneValid = PHONE_REGEX.test(profPhone);
 
   return (
     <div className="rounded-[2.5rem] border border-slate-200/80 bg-white p-6 sm:p-10 shadow-sm animate-fade-in text-left max-w-4xl mx-auto">
-      {/* Title */}
       <div className="mb-8">
         <h3 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
           {t('studentDashboard.profEditTitle', 'პირადი პროფილის პარამეტრები')}
@@ -104,7 +100,6 @@ setIsAvatarChanged(true);
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        {/* Full Name */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700">
             {t('studentDashboard.fullNameLabel', 'სახელი და გვარი')}
@@ -118,7 +113,6 @@ setIsAvatarChanged(true);
           />
         </div>
 
-        {/* Email */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700">
             {t('studentDashboard.emailLabel', 'ელ-ფოსტა')}
@@ -132,7 +126,6 @@ setIsAvatarChanged(true);
           />
         </div>
 
-        {/* Phone */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700">
             {t('studentDashboard.phoneLabel', 'ტელეფონის ნომერი')}
@@ -161,7 +154,6 @@ setIsAvatarChanged(true);
           )}
         </div>
 
-        {/* Headline / Interests */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700">
             {t('studentDashboard.headlineLabel', 'სათაური / ინტერესები')}
@@ -175,7 +167,6 @@ setIsAvatarChanged(true);
           />
         </div>
 
-        {/* Avatar Picker Section */}
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700">
@@ -190,7 +181,6 @@ setIsAvatarChanged(true);
             </span>
           </div>
 
-          {/* Grid of 18 avatars */}
           <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-5 space-y-4">
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {AVATAR_OPTIONS.map((opt) => {
@@ -219,7 +209,6 @@ setIsAvatarChanged(true);
                       className="h-full w-full object-contain rounded-xl"
                     />
 
-                    {/* Overlay check icon for selected state */}
                     {isSelected && (
                       <div className="absolute inset-0 bg-indigo-900/30 backdrop-blur-[1px] rounded-xl flex items-center justify-center">
                         <div className="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg">
@@ -232,7 +221,6 @@ setIsAvatarChanged(true);
               })}
             </div>
 
-            {/* Read-only URL input showing the generated API link */}
             <input
               type="text"
               readOnly
@@ -245,7 +233,6 @@ setIsAvatarChanged(true);
           </div>
         </div>
 
-        {/* Error Feedback */}
         {profileError && (
           <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold flex items-center gap-2.5">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
@@ -253,7 +240,6 @@ setIsAvatarChanged(true);
           </div>
         )}
 
-        {/* Success Feedback */}
         {profileSuccess && (
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-2.5">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
@@ -264,7 +250,6 @@ setIsAvatarChanged(true);
           </div>
         )}
 
-        {/* Submit Button */}
         <div className="flex justify-end pt-4">
           <button
             type="submit"

@@ -399,10 +399,11 @@ export default function CourseDetailModal({
                         <span>{details.teacherName}</span>
                       </div>
                       <div className="flex items-center gap-2.5 bg-white p-3 rounded-xl border border-indigo-100 text-xs font-bold text-slate-800">
-                            <CalendarCheck  className="h-4 w-4 text-slate-500 shrink-0" />
+                        <Calendar className="h-4 w-4 text-indigo-600 shrink-0" />
                         <span>{details.lessonDaysDescription}</span>
                       </div>
                     </div>
+                    
                   )}
                 </div>
               </div>

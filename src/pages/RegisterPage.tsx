@@ -5,10 +5,7 @@ import { Mail, Lock, Eye, EyeOff, User as UserIcon, ShieldCheck } from 'lucide-r
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import { createOtpRegistration } from '../api/authApi';
-
-const GEORGIA_PREFIX = '+995';
-const PHONE_DIGITS_LENGTH = 9; // например, 5XX XXX XXX для Грузии
-const PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
+import { PHONE_REGEX, PHONE_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../constants/validation';
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -16,7 +13,7 @@ export default function RegisterPage() {
   const { lang, setOtpEmail, setOtpPassword, setOtpRole, setOtpName, setOtpFirstName, setOtpLastName, setOtpTelephone, setOtpMode } = useApp();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [telephone, setTelephone] = useState(GEORGIA_PREFIX);
+  const [telephone, setTelephone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
@@ -24,43 +21,13 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-
-    value = value.replace(/[^\d+]/g, '');
-
-    if (value.includes('+')) {
-      value = '+' + value.replace(/\+/g, '');
-    }
-
-    // Maximum 15 digits after +
-    const digits = value.replace(/\D/g, '').slice(0, 15);
-
-    setTelephone('+' + digits);
+    // Пропускаем только разрешённые символы, остальное отсекаем на лету
+    const raw = e.target.value.replace(/[^0-9\s+-]/g, '');
+    setTelephone(raw.slice(0, PHONE_MAX_LENGTH));
   };
 
-  const handlePhoneFocus = () => {
-    if (!telephone) setTelephone(GEORGIA_PREFIX);
-  };
-
-  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // запрещаем стирать сам префикс +995 через backspace/delete
-    const input = e.currentTarget;
-    const caret = input.selectionStart ?? 0;
-    const selectionEnd = input.selectionEnd ?? 0;
-
-    if (
-      (e.key === 'Backspace' || e.key === 'Delete') &&
-      caret <= GEORGIA_PREFIX.length &&
-      selectionEnd <= GEORGIA_PREFIX.length
-    ) {
-      e.preventDefault();
-    }
-  };
-
-  const phoneDigitsCount = telephone.replace(GEORGIA_PREFIX, '').length;
   const isPhoneValid = PHONE_REGEX.test(telephone);
 
-  // Маппинг известных ошибок бэкенда на грузинский
   const mapErrorToGeorgian = (res: any): string => {
     const raw = (res?.errMsg || res?.errorCode || '').toString().toLowerCase();
 
@@ -80,7 +47,6 @@ export default function RegisterPage() {
       return 'კავშირის შეცდომა, სცადეთ თავიდან';
     }
 
-    // Дефолтная ошибка — вместо необработанного текста с бэкенда
     return 'რეგისტრაცია ვერ მოხერხდა, სცადეთ თავიდან';
   };
 
@@ -94,12 +60,12 @@ export default function RegisterPage() {
     }
 
     if (!isPhoneValid) {
-      setError('ტელეფონის ნომერი უნდა იყოს საერთაშორისო ფორმატში, მაგალითად: +995555123456');
+      setError('ტელეფონის ნომერი არასწორია');
       return;
     }
 
-    if (password.length < 6) {
-      setError('პაროლი უნდა შეიცავდეს მინიმუმ 6 სიმბოლოს');
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(`პაროლი უნდა შეიცავდეს მინიმუმ ${PASSWORD_MIN_LENGTH} სიმბოლოს`);
       return;
     }
 
@@ -161,7 +127,6 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* First Name */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">სახელი</label>
                 <div className="relative">
@@ -169,7 +134,6 @@ export default function RegisterPage() {
                   <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder='სახელი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
                 </div>
               </div>
-              {/* Last Name */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">გვარი</label>
                 <div className="relative">
@@ -177,7 +141,6 @@ export default function RegisterPage() {
                   <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder='გვარი' required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
                 </div>
               </div>
-              {/* Email */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.email')}</label>
                 <div className="relative">
@@ -185,30 +148,27 @@ export default function RegisterPage() {
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" required className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
                 </div>
               </div>
-              {/* Telephone */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">ტელეფონის ნომერი</label>
                 <div className="relative">
                   <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="tel"
-                    inputMode="numeric"
+                    inputMode="tel"
                     value={telephone}
                     onChange={handlePhoneChange}
-                    onFocus={handlePhoneFocus}
-                    placeholder="+995 5XX XX XX XX"
+                    placeholder="+995..."
+                    maxLength={PHONE_MAX_LENGTH}
                     required
                     className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400 pl-1">{phoneDigitsCount}/{PHONE_DIGITS_LENGTH} ციფრი</p>
               </div>
-              {/* Password */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">{t('auth.password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-11 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
+                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={PASSWORD_MIN_LENGTH} className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3.5 pl-11 pr-11 text-xs font-medium text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition" />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
                 </div>
               </div>
