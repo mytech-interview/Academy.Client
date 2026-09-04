@@ -2,31 +2,38 @@
 
 import { API_BASE_URL } from "../services/baseApi";
 
-async function apiPost<TResponse>(path: string, body: unknown): Promise<TResponse> {
-  const token = localStorage.getItem("academy_token");
+export async function apiPost<T>(
+  path: string,
+  body: unknown
+): Promise<T> {
+  const token = localStorage.getItem('academy_token');
+
+  const isFormData = body instanceof FormData;
+console.log('apiPost', path, body, isFormData, token);
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData
+        ? {}
+        : {
+            'Content-Type': 'application/json',
+          }),
       ...(token && {
-        Authorization: `Bearer ${token}`
-      })
+        Authorization: `Bearer ${token}`,
+      }),
     },
-    body: JSON.stringify(body),
+    body: isFormData ? body : JSON.stringify(body),
   });
 
   if (!res.ok) {
-    let message = `Request failed: ${res.status}`;
-    try {
-      const err = await res.json();
-      message = err?.message || message;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(message);
+    const data = await res.json().catch(() => null);
+
+    throw new Error(
+      data?.message || `Request failed: ${res.status}`
+    );
   }
 
-  return res.json() as Promise<TResponse>;
+  return res.json();
 }
 
 // ---------- Sessions ----------
@@ -189,7 +196,6 @@ export function getHomeWorksForTeacher(teacherGuid: string, sessionId = 0) {
     ),
   }));
 }
-
 export function addHomeWork(payload: {
   sessionId: number;
   teacherGuid: string;
@@ -197,11 +203,23 @@ export function addHomeWork(payload: {
   description: string;
   lessonDate: string;
   dueDate: string;
-  filePath?: string;
+  file?: File;
 }) {
-  return apiPost<{ homeworkId: number }>('/homeWorks/addHomeWork', payload);
-}
+  const formData = new FormData();
 
+  formData.append('sessionId', payload.sessionId.toString());
+  formData.append('teacherGuid', payload.teacherGuid);
+  formData.append('title', payload.title);
+  formData.append('description', payload.description);
+  formData.append('lessonDate', payload.lessonDate);
+  formData.append('dueDate', payload.dueDate);
+
+  if (payload.file) {
+    formData.append('file', payload.file);
+  }
+
+  return apiPost<{ homeworkId: number }>('/homeWorks/addHomeWork', formData);
+}
 // ---------- General ----------
 export function updateTeacher(payload: {
   teacherGuid: string;

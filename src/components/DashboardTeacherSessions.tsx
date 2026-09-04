@@ -63,38 +63,44 @@ export default function DashboardTeacherSessions({
     setHwFile(file);
   };
 
-  const handleAddHomeWorkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeSession || !hwTitle) return;
+ const handleAddHomeWorkSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setHwSubmitting(true);
-    setHwError(null);
+  if (!activeSession || !hwTitle) return;
 
-    try {
-      const filePath = hwFile ? URL.createObjectURL(hwFile) : '';
+  setHwSubmitting(true);
+  setHwError(null);
 
-      await addHomeWork({
-        sessionId: activeSession.sessionId,
-        teacherGuid: teacher.id,
-        title: hwTitle,
-        description: hwDesc,
-        lessonDate: new Date().toISOString(),
-        dueDate: hwDueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-        filePath,
-      });
+  try {
+    await addHomeWork({
+      sessionId: activeSession.sessionId,
+      teacherGuid: teacher.id,
+      title: hwTitle,
+      description: hwDesc,
+      lessonDate: new Date().toISOString(),
+      dueDate:
+        hwDueDate ||
+        new Date(Date.now() + 7 * 86400000)
+          .toISOString()
+          .split('T')[0],
+      file: hwFile || undefined,
+    });
 
-      setShowAddHWModal(false);
-      setHwTitle('');
-      setHwDesc('');
-      setHwDueDate('');
-      setHwFile(null);
-      onHomeworkAdded?.();
-    } catch (err: any) {
-      setHwError(err.message || 'An error occurred while adding homework.');
-    } finally {
-      setHwSubmitting(false);
-    }
-  };
+    setShowAddHWModal(false);
+    setHwTitle('');
+    setHwDesc('');
+    setHwDueDate('');
+    setHwFile(null);
+
+    onHomeworkAdded?.();
+  } catch (err: any) {
+    setHwError(
+      err.message || 'An error occurred while adding homework.'
+    );
+  } finally {
+    setHwSubmitting(false);
+  }
+};
 
   const tabs: { key: TabKey; icon: React.ReactNode; labelKey: string }[] = [
     { key: 'sessions', icon: <Calendar className="h-4 w-4" />, labelKey: 'teacherDashboard.tabs.sessions' },
