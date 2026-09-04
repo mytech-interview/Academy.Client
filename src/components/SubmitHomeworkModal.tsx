@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { X, FileText, Upload, Loader2, AlertCircle } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { X, FileText, Upload, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { submitHomeWork, StudentHomeWork } from '../api/homeworks';
 
 interface SubmitHomeworkModalProps {
@@ -9,7 +9,7 @@ interface SubmitHomeworkModalProps {
   onSubmitted?: () => void;
 }
 
-const ACCEPTED_EXTENSIONS = ['.docx', '.doc', '.pdf'];
+const ACCEPTED_EXTENSIONS = ['.doc', '.docx', '.pdf', '.txt', '.odt', '.rtf'];
 
 export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
   homework,
@@ -23,6 +23,7 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
   const [fileName, setFileName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submittedSuccessfully, setSubmittedSuccessfully] = useState(false);
 
   const handlePickFile = () => fileInputRef.current?.click();
 
@@ -32,14 +33,12 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
 
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      setError('დაშვებულია მხოლოდ .docx, .doc, .pdf ფაილები');
+      setError('დაშვებულია მხოლოდ .doc, .docx, .pdf, .txt, .odt, .rtf ფაილები');
       return;
     }
     setError(null);
-    // TODO(backend): нет эндпоинта реальной загрузки файла — пока
-    // отправляем только имя файла как filePath. Как только появится
-    // POST /api/files/upload (multipart), нужно грузить файл туда и
-    // класть в filePath вернувшийся URL, а не имя файла.
+    // TODO(backend): real multipart file upload is planned for later —
+    // for now we only send the file name as filePath.
     setFileName(file.name);
   };
 
@@ -56,14 +55,49 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
         studentAnswer: answerText.trim() || undefined,
         filePath: fileName.trim() || undefined,
       });
+      setSubmittedSuccessfully(true);
       onSubmitted?.();
-      onClose();
     } catch (err: any) {
       setError(err.message || 'დავალების გაგზავნა ვერ მოხერხდა');
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Auto-close the modal a couple of seconds after a successful submission
+  useEffect(() => {
+    if (!submittedSuccessfully) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [submittedSuccessfully, onClose]);
+
+  if (submittedSuccessfully) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden">
+          <div className="px-6 py-10 flex flex-col items-center gap-4 text-center">
+            <div className="h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            </div>
+            <h3 className="text-sm font-black text-slate-900">
+              დავალება წარმატებით გაიგზავნა!
+            </h3>
+            <p className="text-xs font-medium text-slate-500">
+              თქვენი პასუხი მიღებულია და მალე განიხილება.
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700 transition cursor-pointer"
+            >
+              დახურვა
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
@@ -102,19 +136,19 @@ export const SubmitHomeworkModal: React.FC<SubmitHomeworkModalProps> = ({
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5 text-indigo-600" />
-              Word / PDF ფაილის მიმაგრება (.docx, .doc, .pdf)
+              ფაილის მიმაგრება (.doc, .docx, .pdf, .txt, .odt, .rtf)
             </label>
 
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-6 flex flex-col items-center gap-3 text-center">
               <FileText className="h-7 w-7 text-indigo-400" />
               <p className="text-xs font-bold text-slate-500">
-                ატვირთეთ ნამუშევარი (.docx / .pdf)
+                ატვირთეთ ნამუშევარი
               </p>
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".docx,.doc,.pdf"
+                accept=".doc,.docx,.pdf,.txt,.odt,.rtf"
                 onChange={handleFileChange}
                 className="hidden"
               />

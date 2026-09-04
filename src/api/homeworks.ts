@@ -62,7 +62,7 @@ interface AddHomeWorkSubmissionResponse {
 
 export async function submitHomeWork(payload: AddHomeWorkSubmissionPayload): Promise<void> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/homeWorks/addHomeWorkSubmission`, {
+  const response = await fetch(`${API_BASE_URL}/homeworks/addHomeWorkSubmisson`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",

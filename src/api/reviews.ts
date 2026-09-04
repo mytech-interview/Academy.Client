@@ -15,7 +15,10 @@ async function parseResponse<T = ApiEnvelope>(response: Response): Promise<T> {
   if (!response.ok) {
     throw new Error(data?.errMsg || data?.message || 'Request failed.');
   }
-  if (data.err && data.err !== 0) {
+  // Признак реальной ошибки бизнес-логики — непустой errorCode.
+  // Поле `err` не 0/-2/... не означает ошибку (бэк может возвращать
+  // разные числовые коды и при успехе, например -2 при обновлении).
+  if (data.errorCode) {
     throw new Error(data.errMsg ?? 'Request failed.');
   }
   return data;
@@ -33,9 +36,9 @@ export interface ReviewUpsertResponse extends ApiEnvelope {}
 
 export async function upsertReview(request: ReviewUpsertRequest): Promise<ReviewUpsertResponse> {
   const token = localStorage.getItem("academy_token");
-  const response = await fetch(`${API_BASE_URL}/api/reviews/addReview`, {
+  const response = await fetch(`${API_BASE_URL}/reviews/addReview`, {
     method: 'POST',
- headers: {
+    headers: {
       "Content-Type": "application/json",
       ...(token && {
         Authorization: `Bearer ${token}`

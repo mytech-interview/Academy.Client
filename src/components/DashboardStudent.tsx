@@ -7,6 +7,7 @@ import { getStudentSessions, StudentSession } from '../api/sessions';
 import { editStudent } from '../api/students';
 import { AVATAR_OPTIONS, avatarUrl } from '../lib/avatars';
 import { useApp } from '../context/AppContext';
+import { PHONE_MAX_LENGTH } from '../constants/validation';
 
 import { StudentProfileTab } from './StudentProfileTab';
 import { StudentStudyTab } from './StudentStudyTab';
@@ -39,7 +40,9 @@ export default function DashboardStudent({
   const defaultAvatar = avatarUrl(AVATAR_OPTIONS[0].seed, AVATAR_OPTIONS[0].bg);
   const [profName, setProfName] = useState(student.name);
   const [profEmail, setProfEmail] = useState(student.email);
-  const [profPhone, setProfPhone] = useState((student as any).phone || '+995 555 12 34 56');
+  const [profPhone, setProfPhone] = useState(
+    ((student as any).phone || '+995555123456').slice(0, PHONE_MAX_LENGTH)
+  );
   const [profHeadline, setProfHeadline] = useState(student.headline || t('studentDashboard.defaultHeadline', 'სტუდენტი აკადემიაში'));
   const [profBio, setProfBio] = useState(student.bio || t('studentDashboard.defaultBio', 'მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.'));
   const [profAvatar, setProfAvatar] = useState(student.avatar || defaultAvatar);
