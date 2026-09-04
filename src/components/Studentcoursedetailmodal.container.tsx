@@ -9,7 +9,8 @@ import {
   CourseLibraryItem,
   StudentHomeWork,
   getStudentAttendanceForSession,
-  StudentLessonAttendance
+  StudentLessonAttendance,
+  downloadHomeworkFile
 } from '../api/sessions';
 import {
   StudentCourseDetailModal,
@@ -67,18 +68,20 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
 
   const [submittingHomework, setSubmittingHomework] = useState<StudentHomeWork | null>(null);
 
-  const loadHomeworks = useCallback(async () => {
-    const studentHomeworks = await getHomeWorksForStudent(studentGuid, sessionId);
-    setRawHomeworks(studentHomeworks);
-    setHomeworks(
-      studentHomeworks.map((hw) => ({
-        id: hw.homeWorkId,
-        title: hw.title,
-        description: hw.description,
-        dueDate: hw.dueDate,
-      }))
-    );
-  }, [studentGuid, sessionId]);
+const loadHomeworks = useCallback(async () => {
+  const studentHomeworks = await getHomeWorksForStudent(studentGuid, sessionId);
+  setRawHomeworks(studentHomeworks);
+  setHomeworks(
+    studentHomeworks.map((hw) => ({
+      id: hw.homeWorkId,
+      title: hw.title,
+      description: hw.description,
+      dueDate: hw.dueDate,
+      homeworkFileName: hw.homeworkFileName,
+      homeworkOriginalFileName: hw.homeworkOriginalFileName,
+    }))
+  );
+}, [studentGuid, sessionId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,6 +164,22 @@ setAttendanceRecords(
     }
     setSubmittingHomework(full);
   };
+  const handleDownloadHomeworkFile = async (fileName?: string, originalFileName?: string) => {
+  if (!fileName) return;
+  try {
+    const blob = await downloadHomeworkFile(fileName);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = originalFileName || fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (e: any) {
+    console.error('Ошибка скачивания файла:', e?.message);
+  }
+};
 
   if (loading) {
     return (
@@ -200,6 +219,7 @@ setAttendanceRecords(
         materials={materials}
         onClose={onClose}
         onOpenSubmitHomework={handleOpenSubmitHomework}
+        onDownloadHomeworkFile={handleDownloadHomeworkFile}
       />
 
       {submittingHomework && (

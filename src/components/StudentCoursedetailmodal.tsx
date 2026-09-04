@@ -10,8 +10,6 @@ import {
   XCircle,
   FileText,
   Clock,
-  Send,
-  Sparkles,
   Download,
   ExternalLink,
   TrendingUp,
@@ -72,6 +70,8 @@ export interface Homework {
   description?: string;
   dueDate?: string;
   lessonId?: number;
+  homeworkOriginalFileName?: string;
+  homeworkFileName?: string;
 }
 
 export interface HomeworkSubmission {
@@ -112,6 +112,7 @@ interface StudentCourseDetailModalProps {
   onClose: () => void;
   onUpdateEnrollment?: (updated: Enrollment) => void;
   onOpenSubmitHomework?: (homework: Homework) => void;
+  onDownloadHomeworkFile?: (fileName?: string, originalFileName?: string) => void;
 }
 
 type TabId = 'syllabus' | 'attendance' | 'homeworks' | 'schedule' | 'materials';
@@ -127,7 +128,8 @@ export const StudentCourseDetailModal: React.FC<StudentCourseDetailModalProps> =
   materials = [],
   onClose,
   onUpdateEnrollment,
-  onOpenSubmitHomework
+  onOpenSubmitHomework,
+  onDownloadHomeworkFile
 }) => {
   const { t } = useTranslation();
 
@@ -188,10 +190,6 @@ const formatDate = (dateStr?: string) => {
 
   return `${day} ${month}, ${year}`;
 };
-
-  const pendingHomework = homeworks.find(
-    (hw) => !homeworkSubmissions.some((s) => s.homeworkId === hw.id)
-  );
 
   const TABS: { id: TabId; label: string; icon: React.ElementType; count?: number }[] = [
     { id: 'syllabus', label: `📖 ${t('studentModal.tabs.syllabus')}`, icon: BookOpen },
@@ -461,46 +459,6 @@ const formatDate = (dateStr?: string) => {
           {/* TAB: HOMEWORKS */}
           {activeTab === 'homeworks' && (
             <div className="space-y-6">
-              {pendingHomework ? (
-                <div className="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 rounded-2xl shadow-md border border-indigo-700/50 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-amber-400 text-amber-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      ⚡ {t('studentModal.homeworks.nextTaskTag')}
-                    </span>
-                    <span className="text-xs font-bold text-amber-300 font-mono">
-                      📅 {t('studentModal.homeworks.dueDate', { date: pendingHomework.dueDate || t('studentModal.homeworks.active') })}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-black text-white">{pendingHomework.title}</h4>
-                    {pendingHomework.description && (
-                      <p className="text-xs text-indigo-100/90 leading-relaxed mt-1.5 line-clamp-3">
-                        {pendingHomework.description}
-                      </p>
-                    )}
-                  </div>
-
-                  {onOpenSubmitHomework && (
-                    <div className="pt-2 border-t border-indigo-800/80 flex justify-end">
-                      <button
-                        onClick={() => onOpenSubmitHomework(pendingHomework)}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs transition cursor-pointer shadow-md active:scale-95"
-                      >
-                        <Send className="h-4 w-4" />
-                        <span>{t('studentModal.homeworks.submitNowBtn')}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <span>{t('studentModal.homeworks.allCompleted')}</span>
-                </div>
-              )}
-
               <div className="space-y-4 pt-2">
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <FileText className="h-4 w-4 text-indigo-600" />
@@ -517,7 +475,7 @@ const formatDate = (dateStr?: string) => {
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                             <div>
                               {hw.dueDate && (
-                                <span className="text-[10px] font-bold text-slate-500 font-mono">📅 {t('studentModal.homeworks.dueDate', { date: hw.dueDate })}</span>
+                                <span className="text-[10px] font-bold text-slate-500 font-mono">📅 {t('studentModal.homeworks.dueDate', { date: formatDate(hw.dueDate) })}</span>
                               )}
                               <h5 className="text-sm font-black text-slate-900">{hw.title}</h5>
                             </div>
@@ -548,6 +506,19 @@ const formatDate = (dateStr?: string) => {
                             <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
                               {hw.description}
                             </p>
+                          )}
+
+                          {hw.homeworkFileName && (
+                            <button
+                              type="button"
+                              onClick={() => onDownloadHomeworkFile?.(hw.homeworkFileName, hw.homeworkOriginalFileName)}
+                              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition w-fit cursor-pointer"
+                            >
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate max-w-[220px]">
+                                {hw.homeworkOriginalFileName || t('studentModal.homeworks.attachedFile')}
+                              </span>
+                            </button>
                           )}
 
                           {sub && (

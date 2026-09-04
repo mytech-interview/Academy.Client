@@ -257,6 +257,7 @@ export interface HomeWorkSubmissionDto {
   // перезагрузки страницы/повторного открытия карточки он снова
   // пропадёт, т.к. бэк его не хранит в этом ответе.
   feedback?: string;
+  
 }
 
 // Реальная форма ответа бэкенда для getHomeworkSubmissionByHomework.

@@ -334,6 +334,9 @@ export interface StudentHomeWork {
   teacherGuid: string;
   teacherName: string;
    teacherAvatarUrl?: string | null;
+   homeworkOriginalFileName?: string;
+  homeworkFileName?: string;
+
 }
 
 interface GetHomeWorksForStudentResponse {
@@ -341,6 +344,9 @@ interface GetHomeWorksForStudentResponse {
   errMsg: string | null;
   errorCode: string | null;
   err: number;
+  homeworkOriginalFileName?: string;
+  homeworkFileName?: string;
+
 }
 
 export async function getHomeWorksForStudent(studentGuid: string, sessionId: number): Promise<StudentHomeWork[]> {
@@ -458,4 +464,29 @@ export async function getStudentAttendanceForSession(
   }
 
   return data.studentAttendances || [];
+}
+
+export async function downloadHomeworkFile(fileName: string): Promise<Blob> {
+  const token = localStorage.getItem("academy_token");
+  const response = await fetch(
+    `${API_BASE_URL}/IO/downloadFile?fileName=${encodeURIComponent(fileName)}`,
+    {
+      method: 'GET',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    }
+  );
+
+  if (response.status === 401) {
+    localStorage.removeItem('academy_token');
+    localStorage.removeItem('academy_active_user');
+    throw new Error('Сессия истекла, войдите заново');
+  }
+
+  if (!response.ok) {
+    throw new Error('Не удалось скачать файл');
+  }
+
+  return response.blob();
 }

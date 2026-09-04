@@ -80,6 +80,8 @@ export interface HomeWork {
   description: string;
   dueDate: string;
   assignedByTeacherId: string;
+  homeworkOriginalFileName?: string;
+  homeworkFileName?: string;
 }
 
 export interface HomeWorkSubmission {

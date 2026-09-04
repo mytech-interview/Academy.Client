@@ -7,6 +7,9 @@ export interface StudentHomeWork {
   dueDate: string;
   teacherGuid: string;
   teacherName: string;
+  homeworkOriginalFileName?: string;
+  homeworkFileName?: string;
+
 }
 
 interface GetHomeWorksForStudentResponse {
@@ -14,6 +17,9 @@ interface GetHomeWorksForStudentResponse {
   errMsg: string | null;
   errorCode: string | null;
   err: number;
+  homeworkOriginalFileName?: string;
+  homeworkFileName?: string;
+
 }
 
 export async function getHomeWorksForStudent(studentGuid: string): Promise<StudentHomeWork[]> {
