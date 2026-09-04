@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheck, CheckCircle, Calendar, BookOpen, Check, X, Loader2 } from 'lucide-react';
+import {
+  ClipboardCheck,
+  Calendar,
+  BookOpen,
+  Check,
+  X,
+  Loader2,
+  MessageSquare,
+  ChevronDown,
+  Send,
+} from 'lucide-react';
 import {
   TeacherSessionDto,
   SessionLessonDto,
@@ -43,6 +53,13 @@ export default function TeacherAttendanceTab({
   // ID студентов, у которых только что успешно сохранилось (для галочки)
   const [savedStudentIds, setSavedStudentIds] = useState<Set<string>>(new Set());
 
+  // какой студент сейчас раскрыт (показано поле сообщения)
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
+  // черновики сообщений по studentGuid, чтобы не терять ввод при ререндерах
+  const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
+  // отдельный индикатор сохранения именно сообщения (не статуса)
+  const [savingMessageIds, setSavingMessageIds] = useState<Set<string>>(new Set());
+
   // загрузка списка уроков при смене сессии
   useEffect(() => {
     if (!activeSession) return;
@@ -77,7 +94,13 @@ export default function TeacherAttendanceTab({
 
     getStudentAttendancesPerLesson(teacherGuid, activeSession.sessionId, selectedLessonId)
       .then((res) => {
-        if (!cancelled) setStudents(res.students ?? []);
+        if (cancelled) return;
+        const list = res.students ?? [];
+        setStudents(list);
+        // подтягиваем существующие сообщения в черновики
+        setMessageDrafts(
+          Object.fromEntries(list.map((s) => [s.studentGuid, s.message ?? '']))
+        );
       })
       .catch((e) => {
         console.error('[Attendance] Ошибка загрузки посещаемости:', e);
@@ -91,6 +114,8 @@ export default function TeacherAttendanceTab({
     setSavingStudentIds(new Set());
     setErrorStudentIds(new Set());
     setSavedStudentIds(new Set());
+    setExpandedStudentId(null);
+    setSavingMessageIds(new Set());
 
     return () => {
       cancelled = true;
@@ -105,6 +130,8 @@ export default function TeacherAttendanceTab({
 
     const prevStudent = students.find((s) => s.studentGuid === studentGuid);
     if (!prevStudent) return;
+
+    const currentMessage = messageDrafts[studentGuid] ?? prevStudent.message ?? '';
 
     // Оптимистично обновляем UI сразу
     setStudents((prev) =>
@@ -125,7 +152,7 @@ export default function TeacherAttendanceTab({
         sessionId: activeSession.sessionId,
         lessonId: selectedLessonId,
         wasAttended,
-        message: prevStudent.message ?? '',
+        message: currentMessage,
       });
 
       setSavedStudentIds((prev) => new Set(prev).add(studentGuid));
@@ -156,6 +183,60 @@ export default function TeacherAttendanceTab({
     }
   };
 
+  // Сохранение только сообщения (текущий статус посещения не трогаем)
+  const handleSaveMessage = async (studentGuid: string) => {
+    if (!activeSession || !selectedLessonId) return;
+
+    const student = students.find((s) => s.studentGuid === studentGuid);
+    if (!student) return;
+
+    const message = messageDrafts[studentGuid] ?? '';
+
+    setSavingMessageIds((prev) => new Set(prev).add(studentGuid));
+    setErrorStudentIds((prev) => {
+      const next = new Set(prev);
+      next.delete(studentGuid);
+      return next;
+    });
+
+    try {
+      await addStudentAttendance({
+        teacherGuid,
+        studentGuid,
+        sessionId: activeSession.sessionId,
+        lessonId: selectedLessonId,
+        wasAttended: student.wasAttended,
+        message,
+      });
+
+      setStudents((prev) =>
+        prev.map((s) => (s.studentGuid === studentGuid ? { ...s, message } : s))
+      );
+
+      setSavedStudentIds((prev) => new Set(prev).add(studentGuid));
+      setTimeout(() => {
+        setSavedStudentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(studentGuid);
+          return next;
+        });
+      }, 2000);
+    } catch (e) {
+      console.error('[Attendance] Ошибка сохранения сообщения для студента', studentGuid, e);
+      setErrorStudentIds((prev) => new Set(prev).add(studentGuid));
+    } finally {
+      setSavingMessageIds((prev) => {
+        const next = new Set(prev);
+        next.delete(studentGuid);
+        return next;
+      });
+    }
+  };
+
+  const toggleExpanded = (studentGuid: string) => {
+    setExpandedStudentId((prev) => (prev === studentGuid ? null : studentGuid));
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header & Selectors Block */}
@@ -175,7 +256,6 @@ export default function TeacherAttendanceTab({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
               {t('teacherDashboard.courseTitle')}
@@ -270,69 +350,128 @@ export default function TeacherAttendanceTab({
               const isSaving = savingStudentIds.has(st.studentGuid);
               const hasError = errorStudentIds.has(st.studentGuid);
               const justSaved = savedStudentIds.has(st.studentGuid);
+              const isExpanded = expandedStudentId === st.studentGuid;
+              const isSavingMessage = savingMessageIds.has(st.studentGuid);
+              const draft = messageDrafts[st.studentGuid] ?? '';
+              const hasMessage = (st.message ?? '').trim().length > 0;
 
               return (
                 <div
                   key={st.studentGuid}
-                  className="p-4 rounded-xl border border-slate-100 bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="rounded-xl border border-slate-100 bg-[#f8fafc] overflow-hidden"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-100/80 text-emerald-700 font-extrabold text-xs flex items-center justify-center shrink-0">
-                      {st.picture ? (
-                        <img src={st.picture} alt="" className="h-10 w-10 rounded-xl object-cover" />
-                      ) : (
-                        st.firstName ? st.firstName[0] : 'S'
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-extrabold text-slate-900">
-                        {st.firstName} {st.lastName}
-                      </p>
-                      {hasError && (
-                        <p className="text-[10px] font-bold text-rose-500 mt-0.5">
-                          {t('teacherDashboard.attendance.saveError') || 'Не удалось сохранить'}
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(st.studentGuid)}
+                      className="flex items-center gap-3 text-left cursor-pointer group"
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-emerald-100/80 text-emerald-700 font-extrabold text-xs flex items-center justify-center shrink-0">
+                        {st.picture ? (
+                          <img src={st.picture} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                        ) : (
+                          st.firstName ? st.firstName[0] : 'S'
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                          {st.firstName} {st.lastName}
+                          <ChevronDown
+                            className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+                              isExpanded ? 'rotate-180' : ''
+                            }`}
+                          />
+                          {hasMessage && !isExpanded && (
+                            <MessageSquare className="h-3 w-3 text-[#5850ec]" />
+                          )}
                         </p>
+                        {hasError && (
+                          <p className="text-[10px] font-bold text-rose-500 mt-0.5">
+                           ვერ შეინახა
+                          </p>
+                        )}
+                        {justSaved && !hasError && (
+                          <p className="text-[10px] font-bold text-emerald-600 mt-0.5">
+                            შენახულია
+                          </p>
+                        )}
+                      </div>
+                    </button>
+
+                    <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/80">
+                      {isSaving && (
+                        <Loader2 className="h-3.5 w-3.5 text-slate-400 animate-spin mx-1" />
                       )}
-                      {justSaved && !hasError && (
-                        <p className="text-[10px] font-bold text-emerald-600 mt-0.5">
-                          {t('teacherDashboard.attendance.saved')}
-                        </p>
-                      )}
+
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => handleSetStatus(st.studentGuid, true)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                          st.wasAttended
+                            ? 'bg-[#059669] text-white shadow-xs'
+                            : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>{t('teacherDashboard.attendance.present')}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => handleSetStatus(st.studentGuid, false)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                          !st.wasAttended
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        <span>{t('teacherDashboard.attendance.absent')}</span>
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200/80">
-                    {isSaving && (
-                      <Loader2 className="h-3.5 w-3.5 text-slate-400 animate-spin mx-1" />
-                    )}
-
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => handleSetStatus(st.studentGuid, true)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                        st.wasAttended
-                          ? 'bg-[#059669] text-white shadow-xs'
-                          : 'text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      <span>{t('teacherDashboard.attendance.present')}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => handleSetStatus(st.studentGuid, false)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-extrabold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                        !st.wasAttended
-                          ? 'bg-rose-600 text-white shadow-xs'
-                          : 'text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      <span>{t('teacherDashboard.attendance.absent')}</span>
-                    </button>
+                  {/* Скрытая панель с сообщением — раскрывается по клику на ученика */}
+                  <div
+                    className={`grid transition-all duration-300 ease-in-out ${
+                      isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="px-4 pb-4 pt-1 border-t border-slate-200/70 mt-1">
+                        <div className="flex items-start gap-2 mt-3">
+                          <MessageSquare className="h-3.5 w-3.5 text-slate-400 mt-2 shrink-0" />
+                          <textarea
+                            value={draft}
+                            onChange={(e) =>
+                              setMessageDrafts((prev) => ({
+                                ...prev,
+                                [st.studentGuid]: e.target.value,
+                              }))
+                            }
+                            placeholder={
+                              "კომენტარი (მიუთითეთ მიზეზი, თუ სტუდენტი არ იყო დასწრებული)"
+                            }
+                            rows={2}
+                            className="flex-1 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:outline-none resize-none"
+                          />
+                          <button
+                            type="button"
+                            disabled={isSavingMessage}
+                            onClick={() => handleSaveMessage(st.studentGuid)}
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-extrabold bg-[#5850ec] text-white hover:bg-[#4a43cc] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                          >
+                            {isSavingMessage ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Send className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
