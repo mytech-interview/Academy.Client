@@ -314,7 +314,12 @@ export async function getLessonsForSession(sessionId: number): Promise<SessionLe
     throw new Error(data.errMsg ?? '');
   }
 
-  return data.lessons || [];
+  return (data.lessons || []).map((l) => ({
+    lessonId: l.courseLessonId,
+    orderIndex: l.lessonNumber,
+    title: l.title,
+    content: l.description,
+  }));
 }
 // --- Homeworks for student -------------------------------------------
 // Mirrors Academy.CoreApi.Entities.HomeWorks.GetHomeWorksForStudentResponseList.
@@ -407,23 +412,17 @@ export async function submitHomeWork(payload: AddHomeWorkSubmissionPayload): Pro
     throw new Error(data.errMsg ?? '');
   }
 }
-
-// --- Attendance (STUB — backend response has no IsPresent / LessonDate) ---
+// --- Attendance (student, per session) ---------------------------------
 // Mirrors Academy.CoreApi.Entities.Sessions.GetStudentAttendanceResponseList
-// as it currently exists. It only returns CourseLessonId/CourseId/
-// LessonTitle/LessonNumber/Description — no present/absent flag and no
-// date. Until that's added, the frontend can't render a real attendance
-// log, so getStudentAttendanceForSession below is left unused/unwired.
-interface GetStudentAttendanceApiItem {
-  courseLessonId: number;
-  courseId: number;
+export interface StudentLessonAttendance {
   lessonTitle: string;
   lessonNumber: number;
-  description: string;
+  wasAttended: boolean;
+  message: string;
 }
 
 interface GetStudentAttendanceResponse {
-  studentAttendances: GetStudentAttendanceApiItem[];
+  studentAttendances: StudentLessonAttendance[];
   errMsg: string | null;
   errorCode: string | null;
   err: number;
@@ -432,7 +431,7 @@ interface GetStudentAttendanceResponse {
 export async function getStudentAttendanceForSession(
   studentGuid: string,
   sessionId: number
-): Promise<GetStudentAttendanceApiItem[]> {
+): Promise<StudentLessonAttendance[]> {
   const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/sessions/getStudentAttendance`, {
     method: 'POST',

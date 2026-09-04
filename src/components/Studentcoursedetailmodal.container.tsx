@@ -8,6 +8,8 @@ import {
   SessionLesson,
   CourseLibraryItem,
   StudentHomeWork,
+  getStudentAttendanceForSession,
+  StudentLessonAttendance
 } from '../api/sessions';
 import {
   StudentCourseDetailModal,
@@ -60,7 +62,7 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
   const [rawHomeworks, setRawHomeworks] = useState<StudentHomeWork[]>([]);
 
   const [enrollment] = useState<Enrollment>({ completedLessonIds: [] });
-  const [attendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [homeworkSubmissions] = useState<HomeworkSubmission[]>([]);
 
   const [submittingHomework, setSubmittingHomework] = useState<StudentHomeWork | null>(null);
@@ -85,11 +87,12 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
       setLoading(true);
       setError(null);
       try {
-        const [lessons, sessionDetails, libraryItems] = await Promise.all([
-          getLessonsForSession(sessionId),
-          getCourseSessionDetailsForStudent(sessionId, studentGuid),
-          getCourseLibrarySessionId(sessionId, studentGuid),
-        ]);
+        const [lessons, sessionDetails, libraryItems, attendance] = await Promise.all([
+  getLessonsForSession(sessionId),
+  getCourseSessionDetailsForStudent(sessionId, studentGuid),
+  getCourseLibrarySessionId(sessionId, studentGuid),
+  getStudentAttendanceForSession(studentGuid, sessionId),
+]);
 
         if (cancelled) return;
 
@@ -114,6 +117,16 @@ export const StudentCourseDetailContainer: React.FC<StudentCourseDetailContainer
           startDate: sessionDetails.startDate,
           endDate: sessionDetails.endDate,
         });
+
+
+setAttendanceRecords(
+  attendance.map((a) => ({
+    id: a.lessonNumber,
+    lessonTitle: a.lessonTitle,
+    isPresent: a.wasAttended,
+    message: a.message,
+  }))
+);
 
         setMaterials(
           (libraryItems as CourseLibraryItem[]).map((m) => ({

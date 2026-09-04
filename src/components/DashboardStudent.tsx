@@ -5,7 +5,6 @@ import { User } from '../types';
 import { Language } from '../lib/translations';
 import { getStudentSessions, StudentSession } from '../api/sessions';
 import { editStudent } from '../api/students';
-import { AVATAR_OPTIONS, avatarUrl } from '../lib/avatars';
 import { useApp } from '../context/AppContext';
 import { PHONE_MAX_LENGTH } from '../constants/validation';
 
@@ -25,19 +24,15 @@ export default function DashboardStudent({
 }: DashboardStudentProps) {
   const { t } = useTranslation();
 
-  // Tab control
   const [activeSubTab, setActiveSubTab] = useState<'study' | 'profile'>('study');
   const { user } = useApp();
 
-  // Real enrolled sessions
   const [sessions, setSessions] = useState<StudentSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState<boolean>(true);
   const [sessionsError, setSessionsError] = useState<string>('');
 
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
 
-  // Profile fields state
-  const defaultAvatar = avatarUrl(AVATAR_OPTIONS[0].seed, AVATAR_OPTIONS[0].bg);
   const [profName, setProfName] = useState(student.name);
   const [profEmail, setProfEmail] = useState(student.email);
   const [profPhone, setProfPhone] = useState(
@@ -45,7 +40,7 @@ export default function DashboardStudent({
   );
   const [profHeadline, setProfHeadline] = useState(student.headline || t('studentDashboard.defaultHeadline', 'სტუდენტი აკადემიაში'));
   const [profBio, setProfBio] = useState(student.bio || t('studentDashboard.defaultBio', 'მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.'));
-  const [profAvatar, setProfAvatar] = useState(student.avatar || defaultAvatar);
+  const [profAvatar, setProfAvatar] = useState(student.avatar || '');
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -90,8 +85,6 @@ export default function DashboardStudent({
       const [firstName, ...rest] = profName.trim().split(' ');
       const lastName = rest.join(' ');
 
-      // Real backend API call — previously the form only updated
-      // local/mock state via onUpdateProfile.
       await editStudent({
         studentGuid: student.id,
         firstName: firstName ?? '',
@@ -101,7 +94,6 @@ export default function DashboardStudent({
         picture: profAvatar,
       });
 
-      // Update local UI/context only after a successful server response
       if (onUpdateProfile) {
         onUpdateProfile({
           name: profName,
@@ -124,17 +116,21 @@ export default function DashboardStudent({
 
   return (
     <div id="student-dashboard" className="space-y-6 text-left">
-      {/* Dark Header Banner */}
       <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0A1021] px-6 py-8 sm:px-10 pb-14 shadow-2xl">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          {/* User Profile Summary */}
           <div className="flex items-center gap-5">
             <div className="relative shrink-0 rounded-[1.5rem] bg-[#5842F8]/20 p-1.5 border border-[#5842F8]/40 shadow-inner">
-              <img
-                src={profAvatar}
-                alt={profName}
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-[1.2rem] object-cover"
-              />
+              {profAvatar ? (
+                <img
+                  src={profAvatar}
+                  alt={profName}
+                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-[1.2rem] object-cover"
+                />
+              ) : (
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-[1.2rem] bg-white/10 flex items-center justify-center">
+                  <UserIcon className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300" />
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <span className="inline-block rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
@@ -147,7 +143,6 @@ export default function DashboardStudent({
             </div>
           </div>
 
-          {/* Right Stat Card (Active Courses Only) */}
           <div className="flex gap-3 shrink-0">
             <div className="rounded-2xl bg-[#131B35]/80 border border-slate-800 px-7 py-3.5 text-center min-w-[110px] backdrop-blur-md shadow-lg">
               <div className="text-2xl sm:text-3xl font-black text-[#5842F8]">{totalEnrolled}</div>
@@ -159,7 +154,6 @@ export default function DashboardStudent({
         </div>
       </div>
 
-      {/* Full Width Overlapping Tabs Bar */}
       <div className="-mt-12 relative z-20 w-full">
         <div className="flex items-center gap-2.5 rounded-[1.75rem] bg-white p-2.5 shadow-xl shadow-slate-200/60 border border-slate-100 w-full">
           <button
@@ -195,7 +189,6 @@ export default function DashboardStudent({
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="pt-2">
         {activeSubTab === 'profile' ? (
           <StudentProfileTab
