@@ -179,6 +179,8 @@ export interface TeacherHomeWorkDto {
   submittedCount: number;
   totalEnrolledStudents: number;
   submissionPercentage: number;
+  newFileName?: string;
+  originalFileName?: string;
 }
 
 export function getHomeWorksForTeacher(teacherGuid: string, sessionId = 0) {
@@ -240,34 +242,23 @@ export interface HomeWorkSubmissionDto {
   studentGuid: string;
   studentFirstName: string;
   studentLastName: string;
-  // NOTE(backend): бэк в getHomeworkSubmissionByHomework НЕ возвращает
-  // текст ответа ученика (StudentAnswer нигде не приходит в этом DTO,
-  // только FilePath). Поэтому content всегда пустой — это ограничение
-  // бэка, не баг маппинга. UI ниже это учитывает и не считает пустую
-  // строку "ученик ничего не написал".
-  content: string;
-  hasTextContent: boolean; // false = бэк не отдаёт текст, а не "ученик не писал"
-  filePath?: string;
+
+  content?: string;
+  hasTextContent?: boolean;
+
+  submissionFileName?: string;
+  submissionOriginalFileName?: string;
+
   submittedAt: string;
   grade?: string;
-  // NOTE(backend): комментарий учителя (TeacherAnswer) отправляется
-  // ЧЕРЕЗ setTeacherHomeWorkGrade, но обратно в списке submissions НЕ
-  // возвращается бэком. Поэтому после сохранения оценки мы держим
-  // feedback локально в стейте компонента (optimistic), а после
-  // перезагрузки страницы/повторного открытия карточки он снова
-  // пропадёт, т.к. бэк его не хранит в этом ответе.
   feedback?: string;
-  
 }
 
-// Реальная форма ответа бэкенда для getHomeworkSubmissionByHomework.
-// Метод называется по-другому (не getSubmissionsForHomeWork), корневое
-// поле называется "homeWorks" (а не "submissions"), Grade — number,
-// а имена студента разбиты как firstName/lastName вместо
-// studentFirstName/studentLastName.
+
 interface RawSubmissionDto {
   submissionId: number;
-  filePath?: string;
+  submissionFileName?: string;
+  submissionOriginalFileName?: string;
   submittedAt: string;
   grade?: number | null;
   studentGuid: string;
@@ -291,9 +282,10 @@ function mapRawSubmission(raw: RawSubmissionDto): HomeWorkSubmissionDto {
     studentLastName: raw.lastName,
     content: '',
     hasTextContent: false,
-    filePath: raw.filePath,
+    submissionFileName: raw.submissionFileName,
+    submissionOriginalFileName: raw.submissionOriginalFileName,
     submittedAt: raw.submittedAt,
-    grade: raw.grade != null ? String(raw.grade) : undefined,
+    grade: raw.grade ? String(raw.grade) : undefined,
     feedback: undefined,
   };
 }
@@ -307,12 +299,7 @@ export function getSubmissionsForHomeWork(teacherGuid: string, homeworkId: numbe
   }));
 }
 
-// Реальная ручка называется setTeacherHomeWorkGrade, а не
-// gradeHomeWorkSubmission, и Grade там int, а не строка вида "100/100".
-// Формат "100/100" на фронте больше не подходит под int-поле бэка —
-// приводим к числу (parseInt отрежет всё после "/", т.е. "85/100" -> 85).
-// Если нужен именно дробный вид оценки — это уже требует менять тип
-// Grade на бэке, а бэк трогать нельзя, так что пока только целое число.
+
 export function gradeHomeWorkSubmission(payload: {
   submissionId: number;
   teacherGuid: string;

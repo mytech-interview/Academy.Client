@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Users,
   UserX,
+  Download,
 } from 'lucide-react';
 import {
   TeacherHomeWorkDto,
@@ -31,6 +32,8 @@ import {
   getAllStudentsOfSpecificSession,
   getHomeWorksForTeacher,
 } from '@/src/api/teacher';
+
+import { downloadHomeworkFile } from '@/src/api/sessions';
 
 interface TeacherHomeworksTabProps {
   teacherGuid: string;
@@ -283,6 +286,26 @@ export default function TeacherHomeworksTab({
 
   const initials = (first?: string, last?: string) =>
     `${first?.[0] ?? ''}${last?.[0] ?? ''}`.toUpperCase() || 'S';
+
+  // Скачивание файла (файл ДЗ или файл ответа ученика) — единая точка входа.
+  // downloadHomeworkFile возвращает Blob, поэтому сохраняем его вручную
+  // под оригинальным именем файла через временную ссылку.
+  const handleFileDownload = async (fileName?: string, originalFileName?: string) => {
+    if (!fileName) return;
+    try {
+      const blob = await downloadHomeworkFile(fileName);
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = originalFileName || fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('handleFileDownload failed:', err);
+    }
+  };
 
   return (
     <div className="space-y-6 font-sans">
@@ -553,6 +576,18 @@ export default function TeacherHomeworksTab({
                     </p>
                   )}
 
+                  {/* Файл самого домашнего задания (то, что прикрепил учитель при создании ДЗ) */}
+                  {hw.originalFileName && (
+                    <button
+                      type="button"
+                      onClick={() => handleFileDownload(hw.newFileName, hw.originalFileName)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition w-fit cursor-pointer"
+                    >
+                      <Download className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate max-w-[220px]">{hw.originalFileName}</span>
+                    </button>
+                  )}
+
                   <div className="pt-2 flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-slate-100">
                     <div className="flex items-center gap-4 flex-1">
                       <div className="w-full max-w-xs bg-slate-100 h-2.5 rounded-full overflow-hidden">
@@ -666,7 +701,7 @@ export default function TeacherHomeworksTab({
                                       {sub.content}
                                     </p>
                                   </div>
-                                ) : !sub.filePath ? (
+                                ) : !sub.submissionFileName ? (
                                   <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200/60 text-[11px] text-slate-400 font-medium">
                                     {t(
                                       'teacherDashboard.homeworks.noTextAvailable',
@@ -675,23 +710,29 @@ export default function TeacherHomeworksTab({
                                   </div>
                                 ) : null}
 
-                                {sub.filePath && (
-                                  <div className="p-3 bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                                      <Paperclip className="h-4 w-4 text-indigo-600" />
-                                      <span>
-                                        {t('teacherDashboard.homeworks.attachedFileLabel')}
+                                {/* Файл, приложенный учеником к сдаче */}
+                                {sub.submissionFileName && (
+                                  <div className="p-3 bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700 min-w-0">
+                                      <Paperclip className="h-4 w-4 text-indigo-600 shrink-0" />
+                                      <span className="truncate">
+                                        {sub.submissionOriginalFileName ||
+                                          t('teacherDashboard.homeworks.attachedFileLabel')}
                                       </span>
                                     </div>
 
-                                    <a
-                                      href={sub.filePath}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="px-3 py-1 text-[11px] font-bold text-indigo-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleFileDownload(
+                                          sub.submissionFileName,
+                                          sub.submissionOriginalFileName
+                                        )
+                                      }
+                                      className="px-3 py-1 text-[11px] font-bold text-indigo-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shrink-0 cursor-pointer"
                                     >
                                       {t('teacherDashboard.homeworks.openFile')}
-                                    </a>
+                                    </button>
                                   </div>
                                 )}
 
