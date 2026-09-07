@@ -24,7 +24,7 @@ interface CoursesPageProps {
 const backendCategories = [
   { id: 'all', numId: 0, labels: { ka: 'ყველა', en: 'All', ru: 'Все' } },
   { id: '1', numId: 1, labels: { ka: 'პროგრამირება', en: 'Programming', ru: 'Программирование' } },
-  { id: '2', numId: 2, labels: { ka: 'დიაინი', en: 'Cybersecurity', ru: 'Кибербезопасность' } },
+  { id: '2', numId: 2, labels: { ka: 'დიზაინი', en: 'Cybersecurity', ru: 'Кибербезопасность' } },
 ];
 
 export default function CoursesPage({

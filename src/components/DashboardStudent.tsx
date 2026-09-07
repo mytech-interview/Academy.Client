@@ -36,8 +36,8 @@ export default function DashboardStudent({
   const [profName, setProfName] = useState(student.name);
   const [profEmail, setProfEmail] = useState(student.email);
   const [profPhone, setProfPhone] = useState(
-    ((student as any).phone || '+995555123456').slice(0, PHONE_MAX_LENGTH)
-  );
+  (student.telephone || '').slice(0, PHONE_MAX_LENGTH)
+);
   const [profHeadline, setProfHeadline] = useState(student.headline || t('studentDashboard.defaultHeadline', 'სტუდენტი აკადემიაში'));
   const [profBio, setProfBio] = useState(student.bio || t('studentDashboard.defaultBio', 'მიზანდასახული სტუდენტი, რომელიც ეუფლება ტექნოლოგიურ უნარებს.'));
   const [profAvatar, setProfAvatar] = useState(student.avatar || '');
