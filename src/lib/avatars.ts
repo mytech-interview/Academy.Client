@@ -1,5 +1,5 @@
 // lib/avatars.ts
-export const AVATAR_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
+export const AVATAR_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
   seed: String(i + 1),
   bg: '', 
   label: `Avatar ${i + 1}`,
