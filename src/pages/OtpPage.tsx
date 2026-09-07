@@ -352,12 +352,7 @@ if (hasBackendError) {
     otpEmail,
 
   role: resolvedRegisterRole,
-
-  avatar:
-    auth?.picture ??
-    (isTeacher
-      ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150'
-      : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
+  avatar: auth?.picture ?? '',
 
   telephone:
     auth?.telephone ??
