@@ -9,15 +9,17 @@ interface HomeActiveSessionsResponse {
 }
 
 export async function getHomeActiveSessions(
-  courseCategoryId: number
+  courseCategoryId: number,
+  userGuid: string
 ): Promise<ActiveSession[]> {
   const token = localStorage.getItem("academy_token");
   const response = await fetch(`${API_BASE_URL}/home/getHomeActiveSessions`, {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
     },
-    body: JSON.stringify({ courseCategoryId }),
+    body: JSON.stringify({ courseCategoryId, userGuid }),
   });
 
   if (!response.ok) {
@@ -35,7 +37,6 @@ export async function getHomeActiveSessions(
 
   return data.activeSessions || [];
 }
-
 // --- Student sessions ("My courses" in the student dashboard) --------------
 export interface StudentSession {
   sessionId: number;

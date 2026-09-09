@@ -5,6 +5,7 @@ import {
   GetAllSessionsResponseDto,
   GetAllStudentsResponseDto,
   GetAllTeachersResponseDto,
+  GetAdminSessionStudentsResponseDto,
 } from '../types';
 import { API_BASE_URL } from '../services/baseApi';
 
@@ -118,3 +119,16 @@ export function getAllSessions(
 
 // TODO(api): no addSession / editSession / deleteSession endpoints exist yet —
 // the sessions tab is currently read-only until those are added.
+
+export interface GetAdminSessionStudentsRequest {
+  userGuid: string;
+  sessionId: number;
+}
+
+
+
+export function getAdminSessionStudents(
+  payload: GetAdminSessionStudentsRequest
+): Promise<{ students: GetAdminSessionStudentsResponseDto[] } & BaseResponseDto> {
+  return apiFetch('/sessions/getAdminSessionStudents', payload);
+}

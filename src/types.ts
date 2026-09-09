@@ -447,6 +447,41 @@ export function mapEnrolledStudentDto(dto: GetAllStudentsOfSpecificSessionRespon
     enrolledAt: dto.enrolledAt,
   };
 }
+export interface StudentItem {
+  id: string | number;
+  firstName: string;
+  lastName: string;
+  status: 'paid' | 'not_paid';
+  pictureUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+export interface GetAdminSessionStudentsResponseDto {
+  enrollmentId: string;
+  studentGuid: string;
+  firstName: string;
+  lastName: string;
+  picture: string;
+  email: string;
+  telephone: string;
+  hasPaid: boolean;
+}
+
+export function mapToStudentItem(dto: GetAdminSessionStudentsResponseDto): StudentItem {
+  return {
+    id: dto.enrollmentId,
+    firstName: dto.firstName,
+    lastName: dto.lastName,
+    status: dto.hasPaid ? 'paid' : 'not_paid',
+    // TODO: если у вас есть отдельная логика формирования URL картинки
+    // (базовый путь, CDN, дефолтная аватарка) — подставьте её сюда
+    // вместо прямого использования dto.picture.
+    pictureUrl: dto.picture || null,
+    email: dto.email || null,
+    phone: dto.telephone || null,
+  };
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────
 // Mappers: API DTO → UI view-model

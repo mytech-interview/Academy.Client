@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Calendar,
-  CalendarClock,
+  CalendarClock, 
   CalendarRange,
   Clock,
   GraduationCap,
@@ -17,6 +17,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SessionItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
+import StudentsModal from './StudentsModal';
+import { getAdminSessionStudents, } from '@/src/api/adminapi';
+import { mapToStudentItem, StudentItem} from '@/src/types';
 
 // Убирает время из ISO-даты: "2026-10-10T00:00:00" → "2026-10-10"
 function formatDateOnly(value?: string | null): string {
@@ -35,9 +38,10 @@ interface SessionsTabProps {
   onEdit: (session: SessionItem) => void;
   onDelete: (session: SessionItem) => void | Promise<void>;
   onViewStudents?: (session: SessionItem) => void;
+  userGuid: string;
 }
 
-// Единый "чип" для строки с деталями сессии — иконка в цветном кружке + текст
+
 function DetailRow({
   icon,
   iconBg,
@@ -74,6 +78,7 @@ export default function SessionsTab({
   onEdit,
   onDelete,
   onViewStudents,
+  userGuid,
 }: SessionsTabProps) {
   const { t } = useTranslation();
   const [sessionToDelete, setSessionToDelete] = useState<SessionItem | null>(null);
@@ -101,6 +106,43 @@ export default function SessionsTab({
       setSessionToDelete(null);
     }
   };
+
+  const [sessionForStudents, setSessionForStudents] = useState<SessionItem | null>(null);
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+
+  const handleViewStudents = async (session: SessionItem) => {
+  setSessionForStudents(session);
+  setStudentsLoading(true);
+  setStudentsError(null);
+  try {
+    const sessionIdNum = Number(session.id);
+    const result = await getAdminSessionStudents({
+      userGuid,
+      sessionId: sessionIdNum,
+    });
+
+    // errorCode 2 / "Lessons not found" на этом эндпоинте прилетает и
+    // тогда, когда у сессии просто нет студентов — бэкенд не различает
+    // "ошибка" и "пусто". Считаем это ошибкой только если students
+    // реально не пришёл (null/undefined), а не когда это [] с кодом 2.
+    const students = result.students ?? [];
+    const isRealError = !!result.errorCode && result.students == null;
+
+    if (isRealError) {
+      throw new Error(result.errMsg || String(result.errorCode));
+    }
+
+    setStudents(students.map(mapToStudentItem));
+  } catch (e) {
+    setStudentsError('სტუდენტების ჩატვირთვა ვერ მოხერხდა');
+  } finally {
+    setStudentsLoading(false);
+  }
+};
+
+
 
   return (
     <div className="space-y-6">
@@ -230,11 +272,11 @@ export default function SessionsTab({
                 {/* Footer Actions */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                   <button
-                    onClick={() => onViewStudents && onViewStudents(s)}
+                   onClick={() => handleViewStudents(s)}
                     className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition"
                   >
                     <Users className="w-4 h-4" />
-                    <span>{t('sessionsTab.studentsList', { count: s.currentStudents ?? 0 })}</span>
+                    <span>სტუდენტების სია</span>
                   </button>
 
                   <div className="flex items-center gap-1.5">
@@ -304,6 +346,14 @@ export default function SessionsTab({
           </div>
         </div>
       )}
+      <StudentsModal
+  session={sessionForStudents}
+  students={students}
+  loading={studentsLoading}
+  error={studentsError}
+  onClose={() => setSessionForStudents(null)}
+  onRetry={() => sessionForStudents && handleViewStudents(sessionForStudents)}
+/>
     </div>
   );
 }

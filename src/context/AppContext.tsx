@@ -26,7 +26,7 @@ interface AppContextValue {
   handleRegisterUser: (user: User & { password?: string }) => void;
   handleUpdateProfile: (fields: Partial<User>) => void;
   handleAddCourse: (course: Course) => void;
-  handleEnrollInCourse: (courseId: string, onNeedAuth: () => void) => void;
+  handleEnrollInCourse: (courseId: string, onNeedAuth: () => void) => Promise<boolean>;
   handleUpdateEnrollment: (id: string, lessons: string[], progress: number, completed: boolean) => void;
   enrollSuccessMessage: string | null;
   // Tracks which course is currently being enrolled into (for button loading state)
@@ -103,11 +103,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { localStorage.setItem('academy_registered_users', JSON.stringify(registeredUsers)); }, [registeredUsers]);
   useEffect(() => { i18n.changeLanguage(lang); }, [lang]);
 
-  useEffect(() => {
-    getHomeActiveSessions(1)
-      .then(setActiveSessions)
-      .catch((err) => console.error('Ошибка загрузки активных сессий:', err));
-  }, []);
+ useEffect(() => {
+  getHomeActiveSessions(1, activeUser?.id ?? '')
+    .then(setActiveSessions)
+    .catch((err) => console.error('Error:', err));
+}, [activeUser]);
 
   const translatedCourses = courses.map((c) => getTranslatedCourse(c, lang));
   const setLang = (l: Language) => setLangState(l);
@@ -125,52 +125,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Real enrollment flow: calls the backend, and only touches local state
   // (enrollments / courses / success message) once the request succeeds.
-  const handleEnrollInCourse = async (courseId: string, onNeedAuth: () => void) => {
-    if (!activeUser) { onNeedAuth(); return; }
-    if (activeUser.role === 'teacher') return;
+  const handleEnrollInCourse = async (courseId: string, onNeedAuth: () => void): Promise<boolean> => {
+  if (!activeUser) { onNeedAuth(); return false; }
+  if (activeUser.role === 'teacher') return false;
+  if (enrollingCourseId === courseId) return false;
 
-    // Already enrolled locally — nothing to do.
-    if (enrollments.some((e) => e.studentId === activeUser.id && e.courseId === courseId)) return;
+  setEnrollError(null);
+  setEnrollingCourseId(courseId);
 
-    // Prevent duplicate in-flight requests for the same course.
-    if (enrollingCourseId === courseId) return;
+  try {
+    const studentGuid = activeUser.id;
+    await addEnrollmentRequest({ studentGuid, sessionId: Number(courseId) });
 
-    setEnrollError(null);
-    setEnrollingCourseId(courseId);
+    const newE: Enrollment = {
+      id: `enrollment-${Date.now()}`,
+      studentId: activeUser.id,
+      courseId,
+      progress: 0,
+      completedLessons: [],
+      isCompleted: false,
+      enrolledAt: new Date().toISOString(),
+    };
+    setEnrollments((p) => [...p, newE]);
+    setCourses((p) => p.map((c) => (c.id === courseId ? { ...c, enrolledCount: c.enrolledCount + 1 } : c)));
 
-    try {
-      // NOTE: assumes activeUser.id holds the student's GUID.
-      // If your User type stores it under a different field (e.g. `guid`),
-      // change the line below accordingly.
-      const studentGuid = activeUser.id;
+    const course = courses.find((c) => c.id === courseId);
+    setEnrollSuccessMessage(course?.title ?? '');
+    setTimeout(() => setEnrollSuccessMessage(null), 4000);
 
-      await addEnrollmentRequest({
-        studentGuid,
-        sessionId: Number(courseId),
-      });
-
-      // Only update local state after the backend confirms success.
-      const newE: Enrollment = {
-        id: `enrollment-${Date.now()}`,
-        studentId: activeUser.id,
-        courseId,
-        progress: 0,
-        completedLessons: [],
-        isCompleted: false,
-        enrolledAt: new Date().toISOString(),
-      };
-      setEnrollments((p) => [...p, newE]);
-      setCourses((p) => p.map((c) => (c.id === courseId ? { ...c, enrolledCount: c.enrolledCount + 1 } : c)));
-
-      const course = courses.find((c) => c.id === courseId);
-      setEnrollSuccessMessage(course?.title ?? '');
-      setTimeout(() => setEnrollSuccessMessage(null), 4000);
-    } catch (err: any) {
-      setEnrollError(err?.message || 'Не удалось записаться на курс. Попробуйте ещё раз.');
-    } finally {
-      setEnrollingCourseId(null);
-    }
-  };
+    return true; // <-- сигнал об успехе
+  } catch (err: any) {
+    setEnrollError(err?.message || 'Не удалось записаться на курс. Попробуйте ещё раз.');
+    return false;
+  } finally {
+    setEnrollingCourseId(null);
+  }
+};
 
   const handleUpdateEnrollment = (id: string, lessons: string[], progress: number, completed: boolean) => {
     setEnrollments((p) => p.map((e) => e.id === id ? { ...e, completedLessons: lessons, progress, isCompleted: completed, completedAt: completed ? new Date().toISOString() : e.completedAt } : e));

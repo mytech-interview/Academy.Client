@@ -1,6 +1,6 @@
 // CourseCard.tsx
 import React from 'react';
-import { Star, User as UserIcon, CheckCircle2, Loader2, Calendar, MapPin, Briefcase } from 'lucide-react';
+import { Star, User as UserIcon, CheckCircle2, Loader2, Calendar, MapPin, Briefcase, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActiveSession } from '../types';
 import DOMPurify from 'dompurify';
@@ -74,8 +74,14 @@ export default function CourseCard({
     startDate,
     endDate,
     attendanceModeName,
-
+    isPaid, // бэк отдаёт статус оплаты сессии отдельно от isEnrolled
   } = course;
+
+  // isEnrolled может прийти и как проп (из родителя, актуальный стейт записи),
+  // и как поле объекта course (снапшот с бэка) — берём то, что true хотя бы в одном месте,
+  // чтобы кнопка "активен" не мигала после локального обновления стейта.
+  const enrolled = Boolean(isEnrolled || course.isEnrolled);
+  const paid = Boolean(isPaid);
 
   // Если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
   const [avatarFailed, setAvatarFailed] = React.useState(false);
@@ -311,52 +317,63 @@ export default function CourseCard({
           </div>
         </div>
 
-        {/* Price & actions */}
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
-          <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-slate-400">
-              {t('courseCard.priceLabel', 'ფასი')}
-            </span>
-            <span className={`text-lg font-black tracking-tight ${price === 0 ? 'text-emerald-600' : 'text-slate-950'}`}>
-              {priceDisplay}
+        {/* Price & actions — если сессия уже оплачена, весь этот блок заменяется одной плашкой */}
+        {paid ? (
+          <div className="mt-4 flex items-center justify-center gap-2 border-t border-slate-100 pt-3.5">
+            <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 text-xs font-bold w-full justify-center">
+              <Lock className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span>{t('courseCard.statusPaid', 'გადახდილია')}</span>
             </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); onSelect(); }}
-              id={`btn-course-details-${sessionId}`}
-              className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all active:scale-95 cursor-pointer shadow-xs"
-            >
-              {t('courseCard.btnDetails', 'დეტალები')}
-            </button>
-
-            {isLoggedIn && userRole === 'teacher' ? (
-              <span className="inline-flex items-center rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-500 border border-slate-200/60">
-                {t('courseCard.roleAuthor', 'ავტორი')}
+        ) : (
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-extrabold tracking-widest text-slate-400">
+                {t('courseCard.priceLabel', 'ფასი')}
               </span>
-            ) : isEnrolled ? (
+              <span className={`text-lg font-black tracking-tight ${price === 0 ? 'text-emerald-600' : 'text-slate-950'}`}>
+                {priceDisplay}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); onSelect(); }}
-                id={`btn-course-active-${sessionId}`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-2 text-xs font-bold hover:bg-emerald-100 transition-all cursor-pointer active:scale-95 shadow-xs"
+                id={`btn-course-details-${sessionId}`}
+                className="rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all active:scale-95 cursor-pointer shadow-xs"
               >
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span>{t('courseCard.statusActive', 'აქტიური')}</span>
+                {t('courseCard.btnDetails', 'დეტალები')}
               </button>
-            ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEnroll(e); }}
-                disabled={isEnrolling}
-                id={`btn-course-enroll-${sessionId}`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isEnrolling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>{isEnrolling ? t('courseCard.btnEnrolling', 'ჩარიცხვა...') : t('courseCard.btnEnroll', 'ჩარიცხვა')}</span>
-              </button>
-            )}
+
+              {isLoggedIn && userRole === 'teacher' ? (
+                <span className="inline-flex items-center rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-500 border border-slate-200/60">
+                  {t('courseCard.roleAuthor', 'ავტორი')}
+                </span>
+              ) : enrolled ? (
+                // isEnrolled === true → курс уже выбран, показываем "активен", кнопка ведёт к деталям
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                  id={`btn-course-active-${sessionId}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-2 text-xs font-bold hover:bg-emerald-100 transition-all cursor-pointer active:scale-95 shadow-xs"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span>{t('courseCard.statusActive', 'აქტიური')}</span>
+                </button>
+              ) : (
+                // isEnrolled === false → курс можно выбрать (записаться)
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEnroll(e); }}
+                  disabled={isEnrolling}
+                  id={`btn-course-enroll-${sessionId}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isEnrolling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{isEnrolling ? t('courseCard.btnEnrolling', 'ჩარიცხვა...') : t('courseCard.btnEnroll', 'ჩარიცხვა')}</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </article>
   );

@@ -18,7 +18,7 @@ interface CoursesPageProps {
   selectedCategory: string;
   onSelectedCategoryChange: (value: string) => void;
   onSelectCourse: (course: any) => void;
-  onEnroll: (courseId: string | number) => void;
+  onEnroll: (courseId: string | number) => Promise<boolean>;
 }
 
 const backendCategories = [
@@ -275,13 +275,14 @@ export default function CoursesPage({
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {sortedCourses.map((course: any) => {
             const courseId = course.sessionId || course.courseId;
-            const isEnrolled = activeUser
-              ? enrollments.some(
-                  (e) =>
-                    e.studentId === activeUser.id &&
-                    String(e.courseId) === String(courseId)
-                )
-              : false;
+
+            // FIX: раньше isEnrolled высчитывался через локальный кэш `enrollments`
+            // (localStorage), который никогда не синхронизируется с бэкендом и может
+            // содержать устаревшие/чужие записи — из-за этого все карточки подряд
+            // показывались как "активные", хотя реально записана была только одна.
+            // Бэкенд уже возвращает персональный статус (`isEnrolled` / `isPaid`)
+            // для текущего пользователя в каждой сессии — используем именно его.
+            const isEnrolled = activeUser ? Boolean(course.isEnrolled) : false;
 
             return (
               <CourseCard
@@ -290,7 +291,16 @@ export default function CoursesPage({
                 isEnrolled={isEnrolled}
                 isEnrolling={String(enrollingCourseId) === String(courseId)}
                 onSelect={() => onSelectCourse(course)}
-                onEnroll={() => onEnroll(courseId)}
+                onEnroll={async () => {
+                const success = await onEnroll(courseId);
+                if (success) {
+                  setCourses((prev) =>
+                    prev.map((c: any) =>
+                      (c.sessionId || c.courseId) === courseId ? { ...c, isEnrolled: true } : c
+                    )
+                  );
+                }
+              }}
                 isLoggedIn={activeUser !== null}
                 userRole={activeUser?.role}
                 lang={lang}

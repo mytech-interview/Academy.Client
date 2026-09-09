@@ -589,6 +589,7 @@ const handleToggleLecturerActive = async (lecturer: LecturerItem) => {
               onAdd={handleOpenAddSession}
               onEdit={handleOpenEditSession}
               onDelete={handleDeleteSession}
+              userGuid={userGuid}
             />
           )}
 
