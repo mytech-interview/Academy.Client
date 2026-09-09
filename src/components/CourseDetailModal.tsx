@@ -123,13 +123,31 @@ export default function CourseDetailModal({
       .finally(() => { if (!cancelled) setLessonsLoading(false); });
 
     setReviewsLoading(true);
-    setReviewsError(null);
-    getReviewsBySession(course.sessionId)
-      .then((data) => { if (!cancelled) setReviews(data); })
-      .catch((err) => {
-        if (!cancelled) setReviewsError(err.message || t('courseDetailModal.reviewsLoadError', 'შეფასებების ჩატვირთვა ვერ მოხერხდა'));
-      })
-      .finally(() => { if (!cancelled) setReviewsLoading(false); });
+setReviewsError(null);
+getReviewsBySession(course.sessionId)
+  .then((data: any) => {
+    if (cancelled) return;
+
+    // Бэкенд при отсутствии отзывов возвращает не массив, а объект-обёртку:
+    // { reviews: null, errMsg: "Reviews by session not found", errorCode: 2, err: 0 }.
+    // errorCode: 2 здесь означает "отзывов нет", а не реальную ошибку.
+    if (Array.isArray(data)) {
+      setReviews(data);
+    } else if (data && data.errorCode === 2) {
+      setReviews([]);
+    } else if (data && Array.isArray(data.reviews)) {
+      // на случай если бэкенд всегда оборачивает успешный ответ так же
+      setReviews(data.reviews);
+    } else {
+      setReviews([]);
+    }
+  })
+  .catch((err) => {
+    if (!cancelled) {
+      setReviewsError(err.message || t('courseDetailModal.reviewsLoadError', 'შეფასებების ჩატვირთვა ვერ მოხერხდა'));
+    }
+  })
+  .finally(() => { if (!cancelled) setReviewsLoading(false); });
 
     return () => { cancelled = true; };
   }, [isOpen, course.sessionId]);

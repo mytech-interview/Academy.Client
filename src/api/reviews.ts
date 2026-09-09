@@ -65,7 +65,7 @@ export interface ReviewItem {
   lastName: string;
 }
 
-// Соответствует ReviewsBySessionResponseList
+
 export interface ReviewsBySessionResponse extends ApiEnvelope {
   reviews: ReviewItem[];
 }
@@ -82,6 +82,21 @@ export async function getReviewsBySession(sessionId: number): Promise<ReviewItem
     },
     body: JSON.stringify({ sessionId } as ReviewsBySessionRequest),
   });
-  const data = await parseResponse<ReviewsBySessionResponse>(response);
+
+  const text = await response.text();
+  const data = (text
+    ? JSON.parse(text)
+    : { errMsg: null, errorCode: null, err: 0, reviews: [] }
+  ) as ReviewsBySessionResponse;
+
+  if (!response.ok) {
+    throw new Error(data?.errMsg || 'Request failed.');
+  }
+  
+  const isNotFound = String(data.errorCode) === '2';
+  if (data.errorCode && !isNotFound) {
+    throw new Error(data.errMsg ?? 'Request failed.');
+  }
+
   return data.reviews ?? [];
 }
