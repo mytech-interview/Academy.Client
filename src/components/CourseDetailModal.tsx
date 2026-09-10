@@ -6,6 +6,7 @@ import {
   Calendar, MapPin, Loader2, AlertCircle, User as UserIcon, GraduationCap,
   Sparkles, Layers,
   CalendarCheck,
+  Undo2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ActiveSession } from '../types';
@@ -73,7 +74,7 @@ export default function CourseDetailModal({
   const { t, i18n } = useTranslation();
   const lang = i18n.language || 'en';
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'lessons' | 'instructor' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'lessons' | 'instructor' | 'reviews' | 'refund'>('overview');
   const [expandedLessonId, setExpandedLessonId] = useState<number | null>(null);
 
   const [details, setDetails] = useState<CourseDetailsBySessionId | null>(null);
@@ -214,6 +215,7 @@ getReviewsBySession(course.sessionId)
     { key: 'lessons', label: t('courseDetailModal.tabLessons', 'გაკვეთილები'), count: amountOfLessons },
     { key: 'instructor', label: t('courseDetailModal.tabInstructor', 'ლექტორი') },
     { key: 'reviews', label: t('courseDetailModal.tabReviews', 'შეფასებები'), count: reviewCount || undefined },
+    { key: 'refund', label: t('courseDetailModal.tabRefund', 'გადახდის პირობები') },
   ];
 
   return (
@@ -615,6 +617,81 @@ getReviewsBySession(course.sessionId)
                       ))}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+                        {/* ტაბი: თანხის დაბრუნების პირობები */}
+                        {/* ტაბი: გადახდის პირობები / თანხის დაბრუნების წესები */}
+            {activeTab === 'refund' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Undo2 className="h-5 w-5 text-indigo-600" />
+                    <span>{t('courseDetailModal.refundTitle', 'თანხის დაბრუნების პირობები')}</span>
+                  </h3>
+
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                      <span className="h-8 w-8 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center">
+                        1
+                      </span>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-black text-slate-900">
+                          {t('courseDetailModal.refundFullTitle', 'სრული დაბრუნება')}
+                        </p>
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                          {t(
+                            'courseDetailModal.refundFull',
+                            'თუ პირველი გაკვეთილის შემდეგ კურსი არ მოგეწონებათ, თქვენ მიიღებთ სრულ თანხის დაბრუნებას.'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                      <span className="h-8 w-8 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center">
+                        2
+                      </span>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-black text-slate-900">
+                          {t('courseDetailModal.refundHalfTitle', 'ნაწილობრივი დაბრუნება — 50%')}
+                        </p>
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                          {t(
+                            'courseDetailModal.refundHalf',
+                            'მეორე გაკვეთილიდან კურსის ნახევრამდე, თანხის დაბრუნება შესაძლებელია 50%-ის ოდენობით.'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                      <span className="h-8 w-8 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center">
+                        3
+                      </span>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-black text-slate-900">
+                          {t('courseDetailModal.refundNoneTitle', 'დაბრუნება არ ხორციელდება')}
+                        </p>
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                          {t(
+                            'courseDetailModal.refundNone',
+                            'თუ კურსის ნახევარზე მეტი უკვე გაქვთ გავლილი, თანხის დაბრუნება აღარ ხორციელდება.'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    {t('courseDetailModal.refundContactPrefix', 'დამატებითი ინფორმაციისთვის მოგვმართეთ:')}{' '}
+                    <a
+                      href="mailto:academy@geoalphasolutions.com"
+                      className="font-bold text-indigo-600 underline underline-offset-2"
+                    >
+                      academy@geoalphasolutions.com
+                    </a>
+                  </div>
                 </div>
               </div>
             )}
