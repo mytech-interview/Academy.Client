@@ -345,6 +345,7 @@ export interface GetAllSessionsResponseDto {
   cityId: number;
   attendanceModeId: number;
   lessonDaysDescription: string;
+  maxStudents: number;
 }
 
 export interface AddTeacherRequestDto {
@@ -549,7 +550,7 @@ export function mapSessionDtoToSessionItem(dto: GetAllSessionsResponseDto): Sess
     courseTitle: dto.courseTitle,
     sessionName: dto.lessonDaysDescription, // было: сюда мог попасть lessonDaysDescription
     currentStudents: 0, // TODO(api)
-    maxStudents: 0, // TODO(api)
+    maxStudents: dto.maxStudents, // TODO(api)
     instructor: `${dto.teacherFirstName} ${dto.teacherLastName}`.trim(),
     teacherId: dto.teacherId,  
     teacherGuid: dto.teacherGuid,
