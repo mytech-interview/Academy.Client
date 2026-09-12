@@ -7,6 +7,6 @@ export const AVATAR_OPTIONS = Array.from({ length: 30 }, (_, i) => ({
 
 export const avatarUrl = (seed: string, _bg?: string) => {
   const n = Number(seed);
-  const ext = n <= 12 ? 'png' : 'svg';
+  const ext = n <= 30 ? 'png' : 'svg';
   return `https://academy.tech-interview.com/images/avatars/avatar${seed}.${ext}`;
 };
