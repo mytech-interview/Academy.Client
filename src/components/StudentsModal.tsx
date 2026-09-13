@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Mail, Phone, Search, User, X } from 'lucide-react';
 import { SessionItem } from '../types';
 import { EmptyState, ErrorState, LoadingState } from './Asyncstates';
 import { StudentItem } from '../types';
-
-// Student model displayed in the modal.
-// Replace with an import from the project's shared types.ts if needed.
+import {
+  updatePaymentStatus,
+  updateEnrollmentStatus,
+} from '../api/enrollments';
 
 interface StudentsModalProps {
   session: SessionItem | null;
@@ -14,26 +15,59 @@ interface StudentsModalProps {
   error?: string | null;
   onClose: () => void;
   onRetry?: () => void;
+  // admin's own guid — required to call updatePaymentStatus / updateEnrollmentStatus
+  userGuid: string;
 }
 
 function initials(firstName: string, lastName: string) {
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase();
 }
 
-function StatusBadge({ status }: { status: StudentItem['status'] }) {
-  const isPaid = status === 'paid';
+function StatusButton({
+  isOn,
+  onLabel,
+  offLabel,
+  busy,
+  onClick,
+}: {
+  isOn: boolean;
+  onLabel: string;
+  offLabel: string;
+  busy: boolean;
+  onClick: () => void;
+}) {
   return (
-    <span
-      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 ${
-        isPaid ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition disabled:opacity-50 disabled:cursor-not-allowed ${
+        isOn
+          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          : 'bg-rose-50 text-rose-600 hover:bg-rose-100'
       }`}
+      title="დააჭირეთ სტატუსის შესაცვლელად"
     >
-      {isPaid ? 'გადახდილი' : 'არ არის გადახდილი'}
-    </span>
+      {busy ? '...' : isOn ? onLabel : offLabel}
+    </button>
   );
 }
 
-function StudentRow({ student }: { student: StudentItem }) {
+function StudentRow({
+  student,
+  onTogglePayment,
+  onToggleActive,
+  paymentBusy,
+  activeBusy,
+}: {
+  student: StudentItem;
+  onTogglePayment: (student: StudentItem) => void;
+  onToggleActive: (student: StudentItem) => void;
+  paymentBusy: boolean;
+  activeBusy: boolean;
+}) {
+  const isPaid = student.status === 'paid';
+
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50/60 transition">
       {student.pictureUrl ? (
@@ -49,11 +83,24 @@ function StudentRow({ student }: { student: StudentItem }) {
       )}
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-bold text-slate-800 truncate">
             {student.firstName} {student.lastName}
           </p>
-          <StatusBadge status={student.status} />
+          <StatusButton
+            isOn={isPaid}
+            onLabel="გადახდილი"
+            offLabel="არ არის გადახდილი"
+            busy={paymentBusy}
+            onClick={() => onTogglePayment(student)}
+          />
+          <StatusButton
+            isOn={!!student.isActive}
+            onLabel="აქტიური"
+            offLabel="არააქტიური"
+            busy={activeBusy}
+            onClick={() => onToggleActive(student)}
+          />
         </div>
 
         <div className="flex items-center gap-3 mt-1 flex-wrap">
@@ -82,22 +129,85 @@ export default function StudentsModal({
   error = null,
   onClose,
   onRetry,
+  userGuid,
 }: StudentsModalProps) {
   const [query, setQuery] = useState('');
+  const [localStudents, setLocalStudents] = useState<StudentItem[]>(students);
+  const [pendingPaymentId, setPendingPaymentId] = useState<number | string | null>(null);
+  const [pendingActiveId, setPendingActiveId] = useState<number | string | null>(null);
+
+  // keep local copy in sync whenever the parent gives us a fresh list
+  useEffect(() => {
+    setLocalStudents(students);
+  }, [students]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return students;
+    if (!query.trim()) return localStudents;
     const q = query.toLowerCase();
-    return students.filter(
+    return localStudents.filter(
       (s) =>
         s.firstName?.toLowerCase().includes(q) ||
         s.lastName?.toLowerCase().includes(q) ||
         s.email?.toLowerCase().includes(q) ||
         s.phone?.toLowerCase().includes(q)
     );
-  }, [students, query]);
+  }, [localStudents, query]);
 
   if (!session) return null;
+
+  async function handleTogglePayment(student: StudentItem) {
+    const confirmed = window.confirm(
+      'დარწმუნებული ხართ, რომ გსურთ გადახდის სტატუსის შეცვლა?'
+    );
+    if (!confirmed) return;
+
+    const nextStatus = student.status !== 'paid'; // true = should become "paid"
+
+    setPendingPaymentId(student.id);
+    try {
+      await updatePaymentStatus({
+        userGuid,
+        enrollmentId: Number(student.enrollmentId),
+        status: nextStatus,
+      });
+
+      setLocalStudents((prev) =>
+        prev.map((s) =>
+          s.id === student.id ? { ...s, status: nextStatus ? 'paid' : 'not_paid' } : s
+        )
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'გადახდის სტატუსის შეცვლა ვერ მოხერხდა.');
+    } finally {
+      setPendingPaymentId(null);
+    }
+  }
+
+  async function handleToggleActive(student: StudentItem) {
+    const confirmed = window.confirm(
+      'დარწმუნებული ხართ, რომ გსურთ აქტივობის სტატუსის შეცვლა?'
+    );
+    if (!confirmed) return;
+
+    const nextActive = !student.isActive;
+
+    setPendingActiveId(student.id);
+    try {
+      await updateEnrollmentStatus({
+        userGuid,
+        enrollmentId: Number(student.enrollmentId),
+        isActive: nextActive,
+      });
+
+      setLocalStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? { ...s, isActive: nextActive } : s))
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'აქტივობის სტატუსის შეცვლა ვერ მოხერხდა.');
+    } finally {
+      setPendingActiveId(null);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
@@ -154,7 +264,16 @@ export default function StudentsModal({
           )}
           {!loading &&
             !error &&
-            filtered.map((s) => <StudentRow key={s.id} student={s} />)}
+            filtered.map((s) => (
+              <StudentRow
+                key={s.id}
+                student={s}
+                onTogglePayment={handleTogglePayment}
+                onToggleActive={handleToggleActive}
+                paymentBusy={pendingPaymentId === s.id}
+                activeBusy={pendingActiveId === s.id}
+              />
+            ))}
         </div>
       </div>
     </div>

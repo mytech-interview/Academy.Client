@@ -346,14 +346,15 @@ export default function SessionsTab({
           </div>
         </div>
       )}
-      <StudentsModal
-  session={sessionForStudents}
-  students={students}
-  loading={studentsLoading}
-  error={studentsError}
-  onClose={() => setSessionForStudents(null)}
-  onRetry={() => sessionForStudents && handleViewStudents(sessionForStudents)}
-/>
+ <StudentsModal
+        session={sessionForStudents}
+        students={students}
+        loading={studentsLoading}
+        error={studentsError}
+        onClose={() => setSessionForStudents(null)}
+        onRetry={() => sessionForStudents && handleViewStudents(sessionForStudents)}
+        userGuid={userGuid}
+      />
     </div>
   );
 }

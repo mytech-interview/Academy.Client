@@ -120,7 +120,8 @@ export interface ActiveSession {
   lessonCount: number;
   teacherAvatarUrl?: string | null;
    picture?: string | null;
-   lessonDaysDescription: string
+   lessonDaysDescription: string;
+   description: string;
 }
 export interface StudentSession {
   sessionId: number;
@@ -456,6 +457,9 @@ export interface StudentItem {
   pictureUrl?: string | null;
   email?: string | null;
   phone?: string | null;
+  enrollmentId: string;
+  studentGuid: string;
+  isActive: boolean;
 }
 export interface GetAdminSessionStudentsResponseDto {
   enrollmentId: string;
@@ -466,6 +470,7 @@ export interface GetAdminSessionStudentsResponseDto {
   email: string;
   telephone: string;
   hasPaid: boolean;
+  isActive: boolean;
 }
 
 export function mapToStudentItem(dto: GetAdminSessionStudentsResponseDto): StudentItem {
@@ -480,6 +485,9 @@ export function mapToStudentItem(dto: GetAdminSessionStudentsResponseDto): Stude
     pictureUrl: dto.picture || null,
     email: dto.email || null,
     phone: dto.telephone || null,
+    enrollmentId: dto.enrollmentId,
+    studentGuid: dto.studentGuid,
+    isActive: dto.isActive,
   };
 }
 

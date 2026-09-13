@@ -320,6 +320,7 @@ export async function getLessonsForSession(sessionId: number): Promise<SessionLe
     orderIndex: l.lessonNumber,
     title: l.title,
     content: l.description,
+    description: l.description,
   }));
 }
 // --- Homeworks for student -------------------------------------------
