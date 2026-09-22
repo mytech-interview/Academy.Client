@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, CheckCircle, MessageSquare, Send, User, Mail } from 'lucide-react';
+import { Phone, CheckCircle, MessageSquare, Send, User, Mail, Tag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { contactUs } from '../api/generalapi';
 
@@ -11,6 +11,7 @@ export default function ConsultationForm() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [discountCode, setDiscountCode] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export default function ConsultationForm() {
         phone,
         email: email || null,
         message: message || null,
+        discountCode: discountCode || null,
       });
 
       setSubmitted(true);
@@ -35,6 +37,7 @@ export default function ConsultationForm() {
       setPhone('');
       setEmail('');
       setMessage('');
+      setDiscountCode('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('consultation.errorGeneric'));
     } finally {
@@ -141,20 +144,39 @@ export default function ConsultationForm() {
                     </div>
                   </div>
 
-                  {/* Email */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('consultation.labelEmail')}</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                        <Mail className="h-4 w-4" />
-                      </span>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="example@mail.ge"
-                        className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition bg-slate-50"
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Email */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('consultation.labelEmail')}</label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                          <Mail className="h-4 w-4" />
+                        </span>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="example@mail.ge"
+                          className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition bg-slate-50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Discount code */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">პრომოკოდი</label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                          <Tag className="h-4 w-4" />
+                        </span>
+                        <input
+                          type="text"
+                          value={discountCode}
+                          onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                          placeholder="თუ გაქვთ პრომოკოდი, შეიყვანეთ აქ"
+                          className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition bg-slate-50 uppercase"
+                        />
+                      </div>
                     </div>
                   </div>
 
