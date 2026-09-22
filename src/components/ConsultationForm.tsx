@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Phone, CheckCircle, MessageSquare, Send, User, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { contactUs } from '../api/generalapi';
 
 export default function ConsultationForm() {
   const { t } = useTranslation();
@@ -9,29 +10,36 @@ export default function ConsultationForm() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) return;
 
-    // Persist real inquiry in localStorage for offline durability
-    const savedInquiries = localStorage.getItem('academy_consultation_inquiries');
-    const list = savedInquiries ? JSON.parse(savedInquiries) : [];
-    list.push({
-      id: `inquiry-${Date.now()}`,
-      name,
-      phone,
-      email: email || t('consultation.notSpecified'),
-      date: new Date().toISOString()
-    });
-    localStorage.setItem('academy_consultation_inquiries', JSON.stringify(list));
+    setIsSubmitting(true);
+    setError(null);
 
-    setSubmitted(true);
-    // Clear inputs
-    setName('');
-    setPhone('');
-    setEmail('');
+    try {
+      await contactUs({
+        name,
+        phone,
+        email: email || null,
+        message: message || null,
+      });
+
+      setSubmitted(true);
+      setName('');
+      setPhone('');
+      setEmail('');
+      setMessage('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('consultation.errorGeneric'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -150,14 +158,31 @@ export default function ConsultationForm() {
                     </div>
                   </div>
 
+                  {/* Message / Question */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">თქვენი შეკითხვა</label>
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="გთხოვთ დაწეროთ თქვენი შეკითხვა ან კომენტარი"
+                      rows={3}
+                      className="w-full rounded-xl border border-slate-200 py-3 px-4 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-xs transition bg-slate-50 resize-none"
+                    />
+                  </div>
+
+                  {error && (
+                    <p className="text-xs font-medium text-red-600">{error}</p>
+                  )}
+
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
                     type="submit"
-                    className="w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-indigo-700 transition active:scale-[0.98] shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                    disabled={isSubmitting}
+                    className="w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-indigo-700 transition active:scale-[0.98] shadow-lg shadow-indigo-600/10 flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <Send className="h-3.5 w-3.5" />
-                    {t('consultation.btnSubmit')}
+                    {isSubmitting ? t('consultation.btnSubmitting') : t('consultation.btnSubmit')}
                   </motion.button>
                 </motion.form>
               ) : (

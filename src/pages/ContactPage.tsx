@@ -17,14 +17,14 @@ export default function ContactPage({ lang }: ContactPageProps) {
     {
       title: 'თბილისის ფილიალი',
       addr: 'რ. აგლაძის 15',
-      phone: '+995 568 80  584',
-      email: 'contact@geoalphasolutions.com',
+      phone: '+995 568 800 584',
+      email: 'academy@geoalphasolutions.com',
     },
     {
       title: 'ახალციხის ფილიალი',
       addr: 'მერაბ კოსტავას 18ბ ნომერი, ლიბრეს მეორე სართულზე',
-      phone: '+995 568 80  584',
-      email: 'contact@geoalphasolutions.com',
+      phone: '+995 568 800 584',
+      email: 'academy@geoalphasolutions.com',
     },
 
   ];
