@@ -100,6 +100,8 @@ function AppRoutes() {
     handleUpdateProfile,
     handleAddCourse,
     handleUpdateEnrollment,
+    enrollingCourseId,
+    setEnrollingCourseId,
 
     translatedCourses,
     handleEnrollInCourse,
@@ -188,6 +190,7 @@ function AppRoutes() {
                 translatedCourses={translatedCourses}
                 enrollments={enrollments}
                 activeSessions={activeSessions}
+                enrollingCourseId={enrollingCourseId}
 
                 onBrowseCourses={() =>
                   navigate('/courses')
@@ -199,12 +202,13 @@ function AppRoutes() {
 
                 onSelectCourse={setSelectedCourse}
 
-                onEnroll={(id) =>
-                  handleEnrollInCourse(
-                    id,
-                    () => navigate('/login')
-                  )
-                }
+                onEnroll={(id, voucherCode) =>
+  handleEnrollInCourse(
+    id,
+    () => navigate('/login'),
+    voucherCode
+  )
+}
 
                 onViewAllCourses={() =>
                   navigate('/courses')
@@ -224,18 +228,20 @@ function AppRoutes() {
                 activeUser={activeUser}
                 enrollments={enrollments}
                 filteredCourses={filteredCourses}
+                enrollingCourseId={enrollingCourseId}
                 searchQuery={searchQuery}
                 onSearchQueryChange={setSearchQuery}
                 selectedCategory={selectedCategory}
                 onSelectedCategoryChange={setSelectedCategory}
                 onSelectCourse={setSelectedCourse}
 
-                onEnroll={(id) =>
-                  handleEnrollInCourse(
-                    id,
-                    () => navigate('/login')
-                  )
-                }
+               onEnroll={(id, voucherCode) =>
+  handleEnrollInCourse(
+    id,
+    () => navigate('/login'),
+    voucherCode
+  )
+}
               />
             }
           />

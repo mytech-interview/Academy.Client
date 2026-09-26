@@ -48,6 +48,7 @@ export interface Enrollment {
   isCompleted: boolean;
   enrolledAt: string;
   completedAt?: string;
+  voucherCode?: string | null;
 }
 
 export interface CourseReview {

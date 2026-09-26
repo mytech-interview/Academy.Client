@@ -5,7 +5,7 @@ export interface ContactUsRequest {
   phone: string;
   email?: string | null;
   message?: string | null;
-  discountCode?: string | null;
+  
 }
 
 export interface ContactUsResponse {

@@ -18,7 +18,7 @@ interface HomePageProps {
   onBrowseCourses: () => void;
   onOpenAuth: () => void;
   onSelectCourse: (course: any) => void;
-  onEnroll: (courseId: string | number) => Promise<boolean>;
+  onEnroll: (courseId: string | number, voucherCode?: string) => Promise<void>; // было Promise<boolean>
   onViewAllCourses: () => void;
 }
 
@@ -188,16 +188,14 @@ export default function HomePage({
                   isEnrolled={isEnrolled}
                   isEnrolling={String(enrollingCourseId) === String(courseId)}
                   onSelect={() => onSelectCourse(course)}
-                  onEnroll={async () => {
-                  const success = await onEnroll(courseId);
-                  if (success) {
-                    setCourses((prev) =>
-                      prev.map((c: any) =>
-                        (c.sessionId || c.courseId) === courseId ? { ...c, isEnrolled: true } : c
-                      )
-                    );
-                  }
-                }}
+onEnroll={async (_e, voucherCode) => {
+  await onEnroll(courseId, voucherCode); // если бросит — уйдёт в CourseCard.catch, эта строка ниже не выполнится
+  setCourses((prev) =>
+    prev.map((c: any) =>
+      (c.sessionId || c.courseId) === courseId ? { ...c, isEnrolled: true } : c
+    )
+  );
+}}
                   isLoggedIn={activeUser !== null}
                   userRole={activeUser?.role}
                 />

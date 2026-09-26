@@ -26,7 +26,11 @@ interface AppContextValue {
   handleRegisterUser: (user: User & { password?: string }) => void;
   handleUpdateProfile: (fields: Partial<User>) => void;
   handleAddCourse: (course: Course) => void;
-  handleEnrollInCourse: (courseId: string, onNeedAuth: () => void) => Promise<boolean>;
+  handleEnrollInCourse: (
+    courseId: string | number,
+    onNeedAuth: () => void,
+    voucherCode?: string
+  ) => Promise<void>;
   handleUpdateEnrollment: (id: string, lessons: string[], progress: number, completed: boolean) => void;
   enrollSuccessMessage: string | null;
   // Tracks which course is currently being enrolled into (for button loading state)
@@ -125,42 +129,67 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Real enrollment flow: calls the backend, and only touches local state
   // (enrollments / courses / success message) once the request succeeds.
-  const handleEnrollInCourse = async (courseId: string, onNeedAuth: () => void): Promise<boolean> => {
-  if (!activeUser) { onNeedAuth(); return false; }
-  if (activeUser.role === 'teacher') return false;
-  if (enrollingCourseId === courseId) return false;
+  // Throws on failure (invalid voucher, network error, etc.) so the caller
+  // (CourseCard) can show the specific message inline instead of relying on
+  // a generic global `enrollError` banner.
+  const handleEnrollInCourse = async (
+    courseId: string | number,
+    onNeedAuth: () => void,
+    voucherCode?: string
+  ): Promise<void> => {
+    if (!activeUser) {
+      onNeedAuth();
+      return;
+    }
+    if (activeUser.role === 'teacher') {
+      throw new Error('Учителя не могут записываться на курсы.');
+    }
+    if (enrollingCourseId === String(courseId)) {
+      return; // запрос уже летит, повторный клик игнорируем
+    }
 
-  setEnrollError(null);
-  setEnrollingCourseId(courseId);
+    setEnrollError(null);
+    setEnrollingCourseId(String(courseId));
 
-  try {
-    const studentGuid = activeUser.id;
-    await addEnrollmentRequest({ studentGuid, sessionId: Number(courseId) });
+    try {
+      const studentGuid = activeUser.id;
+      // Явно передаём null вместо undefined, когда ваучер не введён:
+      // JSON.stringify отбрасывает ключи со значением undefined, из-за
+      // чего поле voucherCode вообще пропадало бы из тела запроса.
+      await addEnrollmentRequest({
+        studentGuid,
+        sessionId: Number(courseId),
+        voucherCode: voucherCode ? voucherCode : null,
+      });
 
-    const newE: Enrollment = {
-      id: `enrollment-${Date.now()}`,
-      studentId: activeUser.id,
-      courseId,
-      progress: 0,
-      completedLessons: [],
-      isCompleted: false,
-      enrolledAt: new Date().toISOString(),
-    };
-    setEnrollments((p) => [...p, newE]);
-    setCourses((p) => p.map((c) => (c.id === courseId ? { ...c, enrolledCount: c.enrolledCount + 1 } : c)));
+      const newE: Enrollment = {
+        id: `enrollment-${Date.now()}`,
+        studentId: activeUser.id,
+        courseId: String(courseId),
+        voucherCode: voucherCode ?? null,
+        progress: 0,
+        completedLessons: [],
+        isCompleted: false,
+        enrolledAt: new Date().toISOString(),
+      };
+      setEnrollments((p) => [...p, newE]);
+      setCourses((p) =>
+        p.map((c) =>
+          c.id === String(courseId) ? { ...c, enrolledCount: c.enrolledCount + 1 } : c
+        )
+      );
 
-    const course = courses.find((c) => c.id === courseId);
-    setEnrollSuccessMessage(course?.title ?? '');
-    setTimeout(() => setEnrollSuccessMessage(null), 4000);
-
-    return true; // <-- сигнал об успехе
-  } catch (err: any) {
-    setEnrollError(err?.message || 'Не удалось записаться на курс. Попробуйте ещё раз.');
-    return false;
-  } finally {
-    setEnrollingCourseId(null);
-  }
-};
+      const course = courses.find((c) => c.id === String(courseId));
+      setEnrollSuccessMessage(course?.title ?? '');
+      setTimeout(() => setEnrollSuccessMessage(null), 4000);
+    } catch (err: any) {
+      const message = err?.message || 'Не удалось записаться на курс. Попробуйте ещё раз.';
+      setEnrollError(message); // если где-то ещё используется глобальный баннер — оставляем
+      throw err; // ВАЖНО: пробрасываем дальше, чтобы CourseCard мог показать точную причину
+    } finally {
+      setEnrollingCourseId(null);
+    }
+  };
 
   const handleUpdateEnrollment = (id: string, lessons: string[], progress: number, completed: boolean) => {
     setEnrollments((p) => p.map((e) => e.id === id ? { ...e, completedLessons: lessons, progress, isCompleted: completed, completedAt: completed ? new Date().toISOString() : e.completedAt } : e));

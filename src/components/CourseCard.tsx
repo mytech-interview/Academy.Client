@@ -37,12 +37,13 @@ function resolveAvatarSrc(value?: string | null): string | null {
 // No exact duration-in-hours field from backend — but each lesson is a fixed
 // 2-hour session, so total hours = amountOfLessons × 2.
 const HOURS_PER_LESSON = 2;
+const VOUCHER_MAX_LENGTH = 14;
 
 interface CourseCardProps {
   course: ActiveSession;
   isEnrolled: boolean;
   onSelect: () => void;
-  onEnroll: (e?: React.MouseEvent) => void;
+  onEnroll: (e?: React.MouseEvent, voucherCode?: string) => Promise<void>;
   isLoggedIn: boolean;
   userRole: string | undefined;
   isEnrolling?: boolean;
@@ -75,16 +76,14 @@ export default function CourseCard({
     startDate,
     endDate,
     attendanceModeName,
-    isPaid, // бэк отдаёт статус оплаты сессии отдельно от isEnrolled
+    isPaid,
   } = course;
 
-  // isEnrolled может прийти и как проп (из родителя, актуальный стейт записи),
-  // и как поле объекта course (снапшот с бэка) — берём то, что true хотя бы в одном месте,
-  // чтобы кнопка "активен" не мигала после локального обновления стейта.
+
   const enrolled = Boolean(isEnrolled || course.isEnrolled);
   const paid = Boolean(isPaid);
 
-  // Если картинка не пришла или не загрузилась, откатываемся на иконку-заглушку
+
   const [avatarFailed, setAvatarFailed] = React.useState(false);
   const avatarSrc = resolveAvatarSrc(teacherPicture);
   const picture = resolveAvatarSrc(course.picture) || DEFAULT_COURSE_IMAGE;
@@ -93,12 +92,20 @@ export default function CourseCard({
   const courseImageSrc =
     picture && !courseImageFailed ? picture : DEFAULT_COURSE_IMAGE;
 
-  // Модалка подтверждения регистрации — открывается по клику на "ჩარიცხვა",
-  // сам onEnroll вызывается только после подтверждения в модалке.
-  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
 
-  // Пока нет ни одного отзыва (reviewCount === 0) — показываем дефолтный рейтинг 5.0,
-  // а не 0, чтобы новый курс без отзывов не выглядел "плохим".
+  const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const [voucherCode, setVoucherCode] = React.useState('');
+  const [voucherError, setVoucherError] = React.useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = React.useState(false);
+
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setVoucherCode('');
+    setVoucherError(null);
+    setIsConfirming(false);
+  };
+
+
   const hasReviews = !!course.reviewCount && course.reviewCount > 0;
   const ratingNum = hasReviews && averageRating ? parseFloat(String(averageRating)) : 5;
   const ratingFormatted = Number.isFinite(ratingNum) ? ratingNum.toFixed(1) : '5.0';
@@ -215,12 +222,31 @@ export default function CourseCard({
     return 'bg-slate-50 text-slate-700 border-slate-200/60';
   };
 
-  // Вызывается кнопкой "დადასტურება" в модалке — закрывает модалку и реально
-  // запускает запись на курс.
-  const handleConfirmEnroll = (e: React.MouseEvent) => {
-    setShowConfirmModal(false);
-    onEnroll(e);
+  // Вызывается кнопкой "დადასტურება" в модалке — отправляет запрос на запись.
+  // Модалка закрывается только при успехе; при ошибке (например, невалидный
+  // ваучер) остаётся открытой, чтобы пользователь мог исправить код.
+  const handleConfirmEnroll = async (e: React.MouseEvent) => {
+    const code = voucherCode.trim();
+    setVoucherError(null);
+    setIsConfirming(true);
+    try {
+      await onEnroll(e, code || undefined);
+      closeConfirmModal();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes('voucher')) {
+        setVoucherError(
+          t('courseCard.voucherInvalid', 'ვაუჩერის კოდი არასწორია ან ვადაგასულია')
+        );
+      } else {
+        setVoucherError(message);
+      }
+    } finally {
+      setIsConfirming(false);
+    }
   };
+
+  const busy = isEnrolling || isConfirming;
 
     return (
     <>
@@ -374,12 +400,12 @@ export default function CourseCard({
                 ) : (
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowConfirmModal(true); }}
-                    disabled={isEnrolling}
+                    disabled={busy}
                     id={`btn-course-enroll-${sessionId}`}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {isEnrolling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    <span>{isEnrolling ? t('courseCard.btnEnrolling', 'ჩარიცხვა...') : t('courseCard.btnEnroll', 'ჩარიცხვა')}</span>
+                    {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{busy ? t('courseCard.btnEnrolling', 'ჩარიცხვა...') : t('courseCard.btnEnroll', 'ჩარიცხვა')}</span>
                   </button>
                 )}
               </div>
@@ -394,15 +420,16 @@ export default function CourseCard({
         createPortal(
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
-            onClick={() => setShowConfirmModal(false)}
+            onClick={() => !busy && closeConfirmModal()}
           >
             <div
               className="relative w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => setShowConfirmModal(false)}
-                className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+                onClick={() => closeConfirmModal()}
+                disabled={busy}
+                className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -431,29 +458,67 @@ export default function CourseCard({
 
                 <p>
                   დამატებითი ინფორმაციისთვის მოგვმართეთ:{' '}
-                  <a
+                  
+                   <a
                     href="mailto:academy@geoalphasolutions.com"
                     className="font-bold text-indigo-600 underline underline-offset-2"
                   >
                     academy@geoalphasolutions.com
                   </a>
                 </p>
+                <div className="pt-1">
+                  <label
+                    htmlFor={`voucher-code-${sessionId}`}
+                    className="mb-1.5 block text-xs font-bold text-slate-700"
+                  >
+                    {t('courseCard.voucherLabel', 'ვაუჩერის კოდი')}{' '}
+                    <span className="font-normal text-slate-400">
+                      {t('courseCard.optional', '(არასავალდებულო)')}
+                    </span>
+                  </label>
+                  <input
+                    id={`voucher-code-${sessionId}`}
+                    type="text"
+                    value={voucherCode}
+                    onChange={(e) => {
+                      setVoucherCode(e.target.value.slice(0, VOUCHER_MAX_LENGTH));
+                      if (voucherError) setVoucherError(null);
+                    }}
+                    maxLength={VOUCHER_MAX_LENGTH}
+                    autoComplete="off"
+                    disabled={busy}
+                    placeholder={t('courseCard.voucherPlaceholder', 'შეიყვანეთ ვაუჩერის კოდი')}
+                    className={`w-full rounded-xl border bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                      voucherError
+                        ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+                        : 'border-slate-200 focus:border-indigo-400 focus:ring-indigo-100'
+                    }`}
+                  />
+                  {voucherError ? (
+                    <p className="mt-1 text-[11px] font-semibold text-red-500">{voucherError}</p>
+                  ) : (
+                    <p className="mt-1 text-right text-[10px] text-slate-400">
+                      {voucherCode.length}/{VOUCHER_MAX_LENGTH}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-2">
                 <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+                  onClick={() => closeConfirmModal()}
+                  disabled={busy}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {t('courseCard.btnCancel', 'გაუქმება')}
                 </button>
 
                 <button
                   onClick={handleConfirmEnroll}
-                  disabled={isEnrolling}
+                  disabled={busy}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isEnrolling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   <span>{t('courseCard.btnConfirm', 'დადასტურება')}</span>
                 </button>
               </div>
