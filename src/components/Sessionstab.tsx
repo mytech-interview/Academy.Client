@@ -123,10 +123,7 @@ export default function SessionsTab({
       sessionId: sessionIdNum,
     });
 
-    // errorCode 2 / "Lessons not found" на этом эндпоинте прилетает и
-    // тогда, когда у сессии просто нет студентов — бэкенд не различает
-    // "ошибка" и "пусто". Считаем это ошибкой только если students
-    // реально не пришёл (null/undefined), а не когда это [] с кодом 2.
+
     const students = result.students ?? [];
     const isRealError = !!result.errorCode && result.students == null;
 

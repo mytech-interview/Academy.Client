@@ -29,6 +29,47 @@ function toDateInputValue(iso?: string): string {
   return iso.slice(0, 10);
 }
 
+const CITIES = [
+  { id: 1, name: 'თბილისი' },
+  { id: 2, name: 'ახალციხე' },
+];
+
+type SessionLike = SessionItem & {
+  cityId?: number | null;
+  cityName?: string | null;
+  attendanceModeId?: number | null;
+  location?: string | null; 
+};
+
+
+function parseLocation(s?: SessionLike): { city: string; mode: string } {
+  const parts = (s?.location ?? '').split('·').map((p) => p.trim());
+  return { city: parts[0] ?? '', mode: parts[1] ?? '' };
+}
+
+
+function resolveCityId(s?: SessionItem): string {
+  if (!s) return '1';
+  const item = s as SessionLike;
+  if (item.cityId != null) return String(item.cityId);
+  const name = item.cityName?.trim() || parseLocation(item).city;
+  const byName = CITIES.find((c) => c.name === name);
+  return String(byName?.id ?? 1);
+}
+
+
+const ATTENDANCE_MODE_BY_NAME: Record<string, number> = {
+  'კლასში': 1,
+};
+
+function resolveAttendanceModeId(s?: SessionItem): string {
+  if (!s) return '1';
+  const item = s as SessionLike;
+  if (item.attendanceModeId != null) return String(item.attendanceModeId);
+  const byName = ATTENDANCE_MODE_BY_NAME[parseLocation(item).mode];
+  return String(byName ?? 1);
+}
+
 export default function SessionFormModal({
   mode,
   initial,
@@ -38,7 +79,7 @@ export default function SessionFormModal({
   onClose,
   onSubmit,
 }: SessionFormModalProps) {
-  // Фильтруем только активных преподавателей
+ 
   const activeLecturers = lecturers.filter((l) => l.isActive !== false);
 
   const [courseId, setCourseId] = useState<string>('');
@@ -49,37 +90,50 @@ export default function SessionFormModal({
   const [lessonDaysDescription, setLessonDaysDescription] = useState(
     initial?.lessonDaysDescription ?? ''
   );
-  const [cityId, setCityId] = useState(initial?.cityId ? String(initial.cityId) : '1');
-  const [attendanceModeId, setAttendanceModeId] = useState(
-    initial?.attendanceModeId ? String(initial.attendanceModeId) : '1'
-  );
+  const [cityId, setCityId] = useState(resolveCityId(initial));
+  const [attendanceModeId, setAttendanceModeId] = useState(resolveAttendanceModeId(initial));
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
 
-useEffect(() => {
-  if (initial?.courseId != null) {
-    setCourseId(String(initial.courseId));
-  } else if (courses.length > 0) {
-    const exists = courses.some((c) => String(c.courseId) === courseId);
-    if (!courseId || !exists) {
-      setCourseId(String(courses[0].courseId));
-    }
-  }
+ 
+  useEffect(() => {
+    if (!initial) return;
+    setWeeks(initial.weeks ? String(initial.weeks) : '8');
+    setStartDate(toDateInputValue(initial.startDate) || '2026-09-15');
+    setEndDate(toDateInputValue(initial.endDate) || '2026-11-15');
+    setLessonDaysDescription(initial.lessonDaysDescription ?? '');
+    setCityId(resolveCityId(initial));
+    setAttendanceModeId(resolveAttendanceModeId(initial));
+    setIsActive(initial.isActive ?? true);
+  }, [initial]);
 
-  if (initial?.teacherId != null) {
-    setTeacherId(String(initial.teacherId));
-  } else if (activeLecturers.length > 0) {
-    const exists = activeLecturers.some((l) => String(l.teacherId) === teacherId);
-    if (!teacherId || !exists) {
-      setTeacherId(String(activeLecturers[0].teacherId));
+
+  useEffect(() => {
+    if (initial?.courseId != null) {
+      setCourseId(String(initial.courseId));
+    } else if (courses.length > 0) {
+      const exists = courses.some((c) => String(c.courseId) === courseId);
+      if (!courseId || !exists) {
+        setCourseId(String(courses[0].courseId));
+      }
     }
-  }
-}, [initial, courses, lecturers]);
+
+    if (initial?.teacherId != null) {
+      setTeacherId(String(initial.teacherId));
+    } else if (activeLecturers.length > 0) {
+      const exists = activeLecturers.some((l) => String(l.teacherId) === teacherId);
+      if (!teacherId || !exists) {
+        setTeacherId(String(activeLecturers[0].teacherId));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial, courses, lecturers]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Вычисляем финальные ID: если state почему-то пуст, берем ID первого элемента массива
+    
     const finalCourseId = courseId || String(courses[0]?.courseId ?? '');
-const finalTeacherId = teacherId || String(activeLecturers[0]?.teacherId ?? '');
+    const finalTeacherId = teacherId || String(activeLecturers[0]?.teacherId ?? '');
 
     if (!finalCourseId || !finalTeacherId) {
       alert('აირჩიეთ კურსი და ლექტორი.');
@@ -142,17 +196,17 @@ const finalTeacherId = teacherId || String(activeLecturers[0]?.teacherId ?? '');
             {activeLecturers.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium py-2">ლექტორები არ არის ჩატვირთული</p>
             ) : (
-             <select
-  value={teacherId || String(activeLecturers[0]?.teacherId ?? '')}
-  onChange={(e) => setTeacherId(e.target.value)}
-  className="styled-input"
->
-  {activeLecturers.map((l) => (
-    <option key={l.teacherId} value={l.teacherId}>
-      {l.name}
-    </option>
-  ))}
-</select>
+              <select
+                value={teacherId || String(activeLecturers[0]?.teacherId ?? '')}
+                onChange={(e) => setTeacherId(e.target.value)}
+                className="styled-input"
+              >
+                {activeLecturers.map((l) => (
+                  <option key={l.teacherId} value={l.teacherId}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
             )}
           </Field>
 
@@ -212,8 +266,11 @@ const finalTeacherId = teacherId || String(activeLecturers[0]?.teacherId ?? '');
 
           <Field label="🏢 ქალაქი (City)">
             <select value={cityId} onChange={(e) => setCityId(e.target.value)} className="styled-input">
-              <option value="1">თბილისი</option>
-              <option value="2">ახალციხე</option>
+              {CITIES.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </Field>
 
