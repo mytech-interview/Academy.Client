@@ -460,25 +460,26 @@ getReviewsBySession(course.sessionId)
 
                 {!lessonsLoading && !lessonsError && sortedLessons.length > 0 && (
                   <div className="space-y-3">
-                    {sortedLessons.map((les) => {
-                      const isExpanded = expandedLessonId === les.courseLessonId;
-                      return (
-                        <div key={les.courseLessonId} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition hover:border-indigo-300">
-                          <div
-                            onClick={() => setExpandedLessonId(isExpanded ? null : les.courseLessonId)}
-                            className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none bg-white hover:bg-slate-50/80 transition"
-                          >
+                    {sortedLessons.map((les, idx) => {
+  const lessonKey = les.courseLessonId ?? les.id ?? les.lessonId ?? idx;
+  const isExpanded = expandedLessonId === lessonKey;
+  return (
+    <div key={lessonKey} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition hover:border-indigo-300">
+      <div
+        onClick={() => setExpandedLessonId(isExpanded ? null : lessonKey)}
+        className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none bg-white hover:bg-slate-50/80 transition"
+      >
                             <div className="flex items-center gap-3.5 min-w-0">
                               <span className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">
                                 #{les.lessonNumber}
                               </span>
                               <div className="min-w-0 space-y-1">
                                 <h4 className="text-sm font-black text-slate-900 truncate">{les.title}</h4>
-                                {les.description && (
+                                {/* {les.description && (
                                   <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
                                     {les.description}
                                   </p>
-                                )}
+                                )} */}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
