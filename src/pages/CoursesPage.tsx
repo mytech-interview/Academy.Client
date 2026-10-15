@@ -6,6 +6,7 @@ import { User, Enrollment, ActiveSession } from '../types';
 import CourseCard from '../components/CourseCard';
 import { Language } from '../lib/translations';
 import { getHomeActiveSessions } from '../api/sessions';
+import type { EnrollResult } from '../components/CourseCard';
 
 interface CoursesPageProps {
   lang: Language;
@@ -18,7 +19,7 @@ interface CoursesPageProps {
   selectedCategory: string;
   onSelectedCategoryChange: (value: string) => void;
   onSelectCourse: (course: any) => void;
-  onEnroll: (courseId: string | number, voucherCode?: string) => Promise<void>; // было Promise<boolean>
+  onEnroll: (courseId: string | number, voucherCode?: string) => Promise<EnrollResult | void>;
 }
 
 const backendCategories = [
@@ -291,13 +292,15 @@ export default function CoursesPage({
                 isEnrolled={isEnrolled}
                 isEnrolling={String(enrollingCourseId) === String(courseId)}
                 onSelect={() => onSelectCourse(course)}
-      onEnroll={async (_e, voucherCode) => {
-  await onEnroll(courseId, voucherCode); // если бросит — уйдёт в CourseCard.catch, эта строка ниже не выполнится
+                onEnroll={async (_e, voucherCode) => {
+  const res = await onEnroll(courseId, voucherCode);
+  if (!res) return; // не авторизован, записи не было
   setCourses((prev) =>
     prev.map((c: any) =>
       (c.sessionId || c.courseId) === courseId ? { ...c, isEnrolled: true } : c
     )
   );
+  return res; // без этого карточка получит undefined
 }}
                 isLoggedIn={activeUser !== null}
                 userRole={activeUser?.role}

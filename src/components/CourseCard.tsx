@@ -8,11 +8,8 @@ import { API_BASE_URL } from '../services/baseApi';
 import { createPortal } from 'react-dom';
 
 // Default thumbnail used for every course card — backend has no image field
-// TODO: заглушка. Пока бэк не отдаёт courseImage — используется одна картинка на все карточки.
 const DEFAULT_COURSE_IMAGE =
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80';
-
-
 
 function resolveAvatarSrc(value?: string | null): string | null {
   if (!value) return null;
@@ -34,16 +31,24 @@ function resolveAvatarSrc(value?: string | null): string | null {
   return `${API_BASE_URL}/Image/downloadImage?fileName=${encodeURIComponent(value)}`;
 }
 
-// No exact duration-in-hours field from backend — but each lesson is a fixed
-// 2-hour session, so total hours = amountOfLessons × 2.
+// Each lesson is a fixed 2-hour session, so total hours = amountOfLessons × 2.
 const HOURS_PER_LESSON = 2;
 const VOUCHER_MAX_LENGTH = 14;
+
+// Ответ API addEnrollment (нужен только finalPrice)
+export interface EnrollResult {
+  finalPrice?: number | null;
+  errMsg?: string | null;
+  errorCode?: string | null;
+  err?: number;
+  [key: string]: any;
+}
 
 interface CourseCardProps {
   course: ActiveSession;
   isEnrolled: boolean;
   onSelect: () => void;
-  onEnroll: (e?: React.MouseEvent, voucherCode?: string) => Promise<void>;
+  onEnroll: (e?: React.MouseEvent, voucherCode?: string) => Promise<EnrollResult | void>;
   isLoggedIn: boolean;
   userRole: string | undefined;
   isEnrolling?: boolean;
@@ -69,7 +74,7 @@ export default function CourseCard({
     levelName,
     amountOfLessons,
     teacherName,
-    teacherPicture, // бэк отдаёт аватар/картинку учителя под этим именем (было teacherAvatarUrl — не совпадало с API)
+    teacherPicture,
     averageRating,
     price,
     cityName,
@@ -79,10 +84,8 @@ export default function CourseCard({
     isPaid,
   } = course;
 
-
   const enrolled = Boolean(isEnrolled || course.isEnrolled);
   const paid = Boolean(isPaid);
-
 
   const [avatarFailed, setAvatarFailed] = React.useState(false);
   const avatarSrc = resolveAvatarSrc(teacherPicture);
@@ -92,19 +95,24 @@ export default function CourseCard({
   const courseImageSrc =
     picture && !courseImageFailed ? picture : DEFAULT_COURSE_IMAGE;
 
-
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [voucherCode, setVoucherCode] = React.useState('');
   const [voucherError, setVoucherError] = React.useState<string | null>(null);
   const [isConfirming, setIsConfirming] = React.useState(false);
+
+  // Экран успеха после записи: итоговая цена из ответа бэка + флаг ваучера
+  const [enrollSuccess, setEnrollSuccess] = React.useState<{
+    finalPrice: number;
+    discounted: boolean;
+  } | null>(null);
 
   const closeConfirmModal = () => {
     setShowConfirmModal(false);
     setVoucherCode('');
     setVoucherError(null);
     setIsConfirming(false);
+    setEnrollSuccess(null);
   };
-
 
   const hasReviews = !!course.reviewCount && course.reviewCount > 0;
   const ratingNum = hasReviews && averageRating ? parseFloat(String(averageRating)) : 5;
@@ -116,77 +124,21 @@ export default function CourseCard({
   const hasValidDates = !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime());
   const durationHours = amountOfLessons > 0 ? amountOfLessons * HOURS_PER_LESSON : 0;
 
-  const dateLocale =
-    lang.startsWith('ru')
-      ? 'ru-RU'
-      : lang.startsWith('ka')
-        ? 'ka-GE'
-        : 'en-US';
-
   const formatDate = (d: Date) => {
     const months = {
-      en: [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
-      ],
-      ru: [
-        'января',
-        'февраля',
-        'марта',
-        'апреля',
-        'мая',
-        'июня',
-        'июля',
-        'августа',
-        'сентября',
-        'октября',
-        'ноября',
-        'декабря',
-      ],
-      ka: [
-        'იან',
-        'თებ',
-        'მარ',
-        'აპრ',
-        'მაი',
-        'ივნ',
-        'ივლ',
-        'აგვ',
-        'სექ',
-        'ოქტ',
-        'ნოე',
-        'დეკ',
-      ],
+      en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+      ka: ['იან', 'თებ', 'მარ', 'აპრ', 'მაი', 'ივნ', 'ივლ', 'აგვ', 'სექ', 'ოქტ', 'ნოე', 'დეკ'],
     };
 
-    const currentLang = lang.startsWith('ru')
-      ? 'ru'
-      : lang.startsWith('ka')
-        ? 'ka'
-        : 'en';
+    const currentLang = lang.startsWith('ru') ? 'ru' : lang.startsWith('ka') ? 'ka' : 'en';
 
     const day = d.getDate();
     const month = months[currentLang][d.getMonth()];
     const year = d.getFullYear();
 
-    if (currentLang === 'ru') {
-      return `${day} ${month} ${year} г.`;
-    }
-
-    if (currentLang === 'ka') {
-      return `${day} ${month}, ${year}`;
-    }
-
+    if (currentLang === 'ru') return `${day} ${month} ${year} г.`;
+    if (currentLang === 'ka') return `${day} ${month}, ${year}`;
     return `${month} ${day}, ${year}`;
   };
 
@@ -206,8 +158,6 @@ export default function CourseCard({
     completed: { text: t('courseCard.statusCompleted', 'დასრულებული'), cls: 'bg-slate-200 text-slate-700 border-slate-300' },
   }[status];
 
-  // TODO: исправлен баг — грузинское слово для "cyber"-ветки было
-  // "დიძაინი" (design, да ещё с опечаткой) и попадало не в ту категорию.
   const getCategoryColor = (cat?: string) => {
     const lower = (cat || '').toLowerCase();
     if (lower.includes('programming') || lower.includes('პროგრამირება') || lower.includes('программирование')) {
@@ -222,16 +172,21 @@ export default function CourseCard({
     return 'bg-slate-50 text-slate-700 border-slate-200/60';
   };
 
-  // Вызывается кнопкой "დადასტურება" в модалке — отправляет запрос на запись.
-  // Модалка закрывается только при успехе; при ошибке (например, невалидный
-  // ваучер) остаётся открытой, чтобы пользователь мог исправить код.
+  // Кнопка "დადასტურება": отправляет запрос на запись.
+  // При успехе показываем экран с сообщением; при ошибке модалка остаётся
+  // открытой, чтобы пользователь мог исправить код ваучера.
   const handleConfirmEnroll = async (e: React.MouseEvent) => {
     const code = voucherCode.trim();
     setVoucherError(null);
     setIsConfirming(true);
     try {
-      await onEnroll(e, code || undefined);
-      closeConfirmModal();
+      const res = await onEnroll(e, code || undefined);
+      console.log('[card] res', res);
+      const apiPrice = res && typeof res.finalPrice === 'number' ? res.finalPrice : null;
+      setEnrollSuccess({
+        finalPrice: apiPrice ?? Number(price) ?? 0,
+        discounted: !!code, // ваучер введён → "ფასდაკლებით"
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (message.toLowerCase().includes('voucher')) {
@@ -248,7 +203,7 @@ export default function CourseCard({
 
   const busy = isEnrolling || isConfirming;
 
-    return (
+  return (
     <>
       <article
         id={`course-card-${sessionId}`}
@@ -257,7 +212,7 @@ export default function CourseCard({
         {/* Thumbnail */}
         <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-50">
           <img
-            src={picture}
+            src={courseImageSrc}
             alt={course.title}
             referrerPolicy="no-referrer"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -414,8 +369,8 @@ export default function CourseCard({
         </div>
       </article>
 
-      {/* Registration confirmation modal — рендерится порталом прямо в body,
-          чтобы transform/hover-эффекты карточки не ломали position:fixed */}
+      {/* Модалка рендерится порталом в body, чтобы transform/hover карточки
+          не ломали position:fixed */}
       {showConfirmModal &&
         createPortal(
           <div
@@ -434,99 +389,145 @@ export default function CourseCard({
                 <X className="h-4 w-4" />
               </button>
 
-              <h3 className="text-lg font-black text-slate-950 pr-6">
-                კურსზე რეგისტრაცია
-              </h3>
+              {enrollSuccess ? (
+                /* ===== Экран успешной записи ===== */
+                <>
+                  <div className="flex flex-col items-center text-center pt-2 px-4">
+                    <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+                    <h3 className="mt-3 text-lg font-black text-slate-950">
+                      თქვენ წარმატებით ჩაირიცხეთ კურსზე:
+                    </h3>
+                    <p className="mt-1 text-sm font-bold text-indigo-600">{title}</p>
+                  </div>
 
-              <p className="mt-1 text-sm font-bold text-indigo-600 line-clamp-2">
-                {title}
-              </p>
+                  <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-center">
+                    <p className="text-[10px] uppercase font-extrabold tracking-widest text-slate-400">
+                      {enrollSuccess.discounted
+                        ? 'კურსის ღირებულება ფასდაკლებით'
+                        : 'კურსის ღირებულება'}
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-slate-950">
+                      {enrollSuccess.finalPrice.toFixed(2)} ლარი
+                    </p>
+                    {enrollSuccess.discounted && enrollSuccess.finalPrice < Number(price) && (
+                      <p className="mt-0.5 text-xs text-slate-400 line-through">
+                        {Number(price).toFixed(2)} ლარი
+                      </p>
+                    )}
+                  </div>
 
-              <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-600">
-                <p>
-                  გისურვებთ წარმატებას! სანამ განაცხადს გააგზავნით, გაითვალისწინეთ შემდეგი:
-                </p>
-
-                <p>
-                  განაცხადის გაგზავნის შემდეგ, თქვენ ავტომატურად დარეგისტრირდებით კურსზე.
-                  რეგისტრაციის დასრულების შემდეგ, თქვენს ელ-ფოსტაზე მიიღებთ დადასტურების წერილს.
-                </p>
-
-                <p>
-                  საბოლოო რეგისტრაცია დასრულებულად ჩაითვლება მხოლოდ შესაბამისი თანხის გადახდის შემდეგ.
-                </p>
-
-                <p>
-                  დამატებითი ინფორმაციისთვის მოგვმართეთ:{' '}
-                  
-                   <a
-                    href="mailto:academy@geoalphasolutions.com"
-                    className="font-bold text-indigo-600 underline underline-offset-2"
-                  >
-                    academy@geoalphasolutions.com
-                  </a>
-                </p>
-                <div className="pt-1">
-                  <label
-                    htmlFor={`voucher-code-${sessionId}`}
-                    className="mb-1.5 block text-xs font-bold text-slate-700"
-                  >
-                    {t('courseCard.voucherLabel', 'ვაუჩერის კოდი')}{' '}
-                    <span className="font-normal text-slate-400">
-                      {t('courseCard.optional', '(არასავალდებულო)')}
-                    </span>
-                  </label>
-                  <input
-                    id={`voucher-code-${sessionId}`}
-                    type="text"
-                    value={voucherCode}
-                    onChange={(e) => {
-                      setVoucherCode(e.target.value.slice(0, VOUCHER_MAX_LENGTH));
-                      if (voucherError) setVoucherError(null);
-                    }}
-                    maxLength={VOUCHER_MAX_LENGTH}
-                    autoComplete="off"
-                    disabled={busy}
-                    placeholder={t('courseCard.voucherPlaceholder', 'შეიყვანეთ ვაუჩერის კოდი')}
-                    className={`w-full rounded-xl border bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed ${
-                      voucherError
-                        ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
-                        : 'border-slate-200 focus:border-indigo-400 focus:ring-indigo-100'
-                    }`}
-                  />
-                  {voucherError ? (
-                    <p className="mt-1 text-[11px] font-semibold text-red-500">{voucherError}</p>
-                  ) : (
-                    <p className="mt-1 text-right text-[10px] text-slate-400">
-                      {voucherCode.length}/{VOUCHER_MAX_LENGTH}
+                  {enrollSuccess.finalPrice > 0 && (
+                    <p className="mt-4 text-xs leading-relaxed text-slate-600 text-center">
+                      რეგისტრაციის დასასრულებლად, გთხოვთ გადარიცხოთ კურსის ღირებულება.
                     </p>
                   )}
-                </div>
-              </div>
 
-              <div className="mt-6 flex items-center justify-end gap-2">
-                <button
-                  onClick={() => closeConfirmModal()}
-                  disabled={busy}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {t('courseCard.btnCancel', 'გაუქმება')}
-                </button>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => closeConfirmModal()}
+                      className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer"
+                    >
+                      {t('courseCard.btnClose', 'დახურვა')}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* ===== Форма подтверждения ===== */
+                <>
+                  <h3 className="text-lg font-black text-slate-950 pr-6">
+                    კურსზე რეგისტრაცია
+                  </h3>
 
-                <button
-                  onClick={handleConfirmEnroll}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  <span>{t('courseCard.btnConfirm', 'დადასტურება')}</span>
-                </button>
-              </div>
+                  <p className="mt-1 text-sm font-bold text-indigo-600 line-clamp-2">
+                    {title}
+                  </p>
+
+                  <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-600">
+                    <p>
+                      გისურვებთ წარმატებას! სანამ განაცხადს გააგზავნით, გაითვალისწინეთ შემდეგი:
+                    </p>
+
+                    <p>
+                      განაცხადის გაგზავნის შემდეგ, თქვენ ავტომატურად დარეგისტრირდებით კურსზე.
+                      რეგისტრაციის დასრულების შემდეგ, თქვენს ელ-ფოსტაზე მიიღებთ დადასტურების წერილს.
+                    </p>
+
+                    <p>
+                      საბოლოო რეგისტრაცია დასრულებულად ჩაითვლება მხოლოდ შესაბამისი თანხის გადახდის შემდეგ.
+                    </p>
+
+                    <p>
+                      დამატებითი ინფორმაციისთვის მოგვმართეთ:{' '}
+                      <a
+                        href="mailto:academy@geoalphasolutions.com"
+                        className="font-bold text-indigo-600 underline underline-offset-2"
+                      >
+                        academy@geoalphasolutions.com
+                      </a>
+                    </p>
+
+                    <div className="pt-1">
+                      <label
+                        htmlFor={`voucher-code-${sessionId}`}
+                        className="mb-1.5 block text-xs font-bold text-slate-700"
+                      >
+                        {t('courseCard.voucherLabel', 'ვაუჩერის კოდი')}{' '}
+                        <span className="font-normal text-slate-400">
+                          {t('courseCard.optional', '(არასავალდებულო)')}
+                        </span>
+                      </label>
+                      <input
+                        id={`voucher-code-${sessionId}`}
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => {
+                          setVoucherCode(e.target.value.slice(0, VOUCHER_MAX_LENGTH));
+                          if (voucherError) setVoucherError(null);
+                        }}
+                        maxLength={VOUCHER_MAX_LENGTH}
+                        autoComplete="off"
+                        disabled={busy}
+                        placeholder={t('courseCard.voucherPlaceholder', 'შეიყვანეთ ვაუჩერის კოდი')}
+                        className={`w-full rounded-xl border bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                          voucherError
+                            ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+                            : 'border-slate-200 focus:border-indigo-400 focus:ring-indigo-100'
+                        }`}
+                      />
+                      {voucherError ? (
+                        <p className="mt-1 text-[11px] font-semibold text-red-500">{voucherError}</p>
+                      ) : (
+                        <p className="mt-1 text-right text-[10px] text-slate-400">
+                          {voucherCode.length}/{VOUCHER_MAX_LENGTH}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => closeConfirmModal()}
+                      disabled={busy}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {t('courseCard.btnCancel', 'გაუქმება')}
+                    </button>
+
+                    <button
+                      onClick={handleConfirmEnroll}
+                      disabled={busy}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      <span>{t('courseCard.btnConfirm', 'დადასტურება')}</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>,
           document.body
         )}
     </>
   );
-
 }

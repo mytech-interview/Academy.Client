@@ -5,6 +5,7 @@ import { mockCourses, mockTeachers, mockStudents } from '../data/mockData';
 import { getTranslatedCourse } from '../lib/courseTranslations';
 import { getHomeActiveSessions } from '../api/sessions';
 import { addEnrollment as addEnrollmentRequest } from '../api/enrollments';
+import type { EnrollResult } from '../components/CourseCard';
 import i18n from '../i18n';
 
 interface AppContextValue {
@@ -27,10 +28,10 @@ interface AppContextValue {
   handleUpdateProfile: (fields: Partial<User>) => void;
   handleAddCourse: (course: Course) => void;
   handleEnrollInCourse: (
-    courseId: string | number,
-    onNeedAuth: () => void,
-    voucherCode?: string
-  ) => Promise<void>;
+  courseId: string | number,
+  onNeedAuth: () => void,
+  voucherCode?: string
+) => Promise<EnrollResult | void>;
   handleUpdateEnrollment: (id: string, lessons: string[], progress: number, completed: boolean) => void;
   enrollSuccessMessage: string | null;
   // Tracks which course is currently being enrolled into (for button loading state)
@@ -132,11 +133,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Throws on failure (invalid voucher, network error, etc.) so the caller
   // (CourseCard) can show the specific message inline instead of relying on
   // a generic global `enrollError` banner.
-  const handleEnrollInCourse = async (
+   const handleEnrollInCourse = async (
     courseId: string | number,
     onNeedAuth: () => void,
     voucherCode?: string
-  ): Promise<void> => {
+  ): Promise<EnrollResult | void> => {
     if (!activeUser) {
       onNeedAuth();
       return;
@@ -156,7 +157,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Явно передаём null вместо undefined, когда ваучер не введён:
       // JSON.stringify отбрасывает ключи со значением undefined, из-за
       // чего поле voucherCode вообще пропадало бы из тела запроса.
-      await addEnrollmentRequest({
+      const res = await addEnrollmentRequest({
         studentGuid,
         sessionId: Number(courseId),
         voucherCode: voucherCode ? voucherCode : null,
@@ -182,6 +183,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const course = courses.find((c) => c.id === String(courseId));
       setEnrollSuccessMessage(course?.title ?? '');
       setTimeout(() => setEnrollSuccessMessage(null), 4000);
+
+      // Необязательно: подтянуть свежие флаги isEnrolled / isPaid с бэка
+      getHomeActiveSessions(1, activeUser.id)
+        .then(setActiveSessions)
+        .catch((err) => console.error('Error:', err));
+      console.log('[context] res', res);
+      return res; // ← ответ бэка (finalPrice и т.д.) уходит в CourseCard
     } catch (err: any) {
       const message = err?.message || 'Не удалось записаться на курс. Попробуйте ещё раз.';
       setEnrollError(message); // если где-то ещё используется глобальный баннер — оставляем

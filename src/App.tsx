@@ -101,7 +101,7 @@ function AppRoutes() {
     handleAddCourse,
     handleUpdateEnrollment,
     enrollingCourseId,
-    setEnrollingCourseId,
+    
 
     translatedCourses,
     handleEnrollInCourse,

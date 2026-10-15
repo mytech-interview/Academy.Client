@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Sparkles, ArrowRight, Loader2, BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { EnrollResult } from '../components/CourseCard';
 
 import { User, Enrollment, ActiveSession } from "../types";
 import Hero from "../components/Hero";
@@ -18,7 +19,7 @@ interface HomePageProps {
   onBrowseCourses: () => void;
   onOpenAuth: () => void;
   onSelectCourse: (course: any) => void;
-  onEnroll: (courseId: string | number, voucherCode?: string) => Promise<void>; // было Promise<boolean>
+  onEnroll: (courseId: string | number, voucherCode?: string) => Promise<EnrollResult | void>;
   onViewAllCourses: () => void;
 }
 
@@ -72,6 +73,7 @@ export default function HomePage({
               .catch(() => [])
           )
         );
+        
 
         const combined = results.flat();
         const uniqueMap = new Map<number | string, ActiveSession>();
@@ -189,12 +191,14 @@ export default function HomePage({
                   isEnrolling={String(enrollingCourseId) === String(courseId)}
                   onSelect={() => onSelectCourse(course)}
 onEnroll={async (_e, voucherCode) => {
-  await onEnroll(courseId, voucherCode); // если бросит — уйдёт в CourseCard.catch, эта строка ниже не выполнится
+  const res = await onEnroll(courseId, voucherCode);
+  if (!res) return; // не авторизован, записи не было
   setCourses((prev) =>
     prev.map((c: any) =>
       (c.sessionId || c.courseId) === courseId ? { ...c, isEnrolled: true } : c
     )
   );
+  return res;
 }}
                   isLoggedIn={activeUser !== null}
                   userRole={activeUser?.role}
