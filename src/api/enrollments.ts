@@ -43,8 +43,12 @@ export async function addEnrollment(
     : { errMsg: null, errorCode: null, err: 0 };
 
   if (!response.ok) {
-    throw new AddEnrollmentError(data?.errMsg || 'AddEnrollment Failed.', data?.err ?? -1, data?.errorCode ?? null);
-  }
+  throw new AddEnrollmentError(
+    data?.errMsg || data?.message || 'AddEnrollment Failed.',
+    data?.err ?? -1,
+    data?.errorCode ?? null
+  );
+}
 
   if (data.err && data.err !== 0) {
     throw new AddEnrollmentError(data.errMsg ?? 'AddEnrollment Failed.', data.err, data.errorCode ?? null);

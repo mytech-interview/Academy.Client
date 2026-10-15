@@ -187,18 +187,19 @@ export default function CourseCard({
         finalPrice: apiPrice ?? Number(price) ?? 0,
         discounted: !!code, // ваучер введён → "ფასდაკლებით"
       });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.toLowerCase().includes('voucher')) {
-        setVoucherError(
-          t('courseCard.voucherInvalid', 'ვაუჩერის კოდი არასწორია ან ვადაგასულია')
-        );
-      } else {
-        setVoucherError(message);
-      }
-    } finally {
-      setIsConfirming(false);
-    }
+    }  catch (err: any) {
+  const message = err instanceof Error ? err.message : String(err);
+  const isVoucherError =
+    err?.err === -5 || message.toLowerCase().includes('voucher');
+
+  setVoucherError(
+    isVoucherError
+      ? t('courseCard.voucherInvalid', 'ვაუჩერის კოდი არასწორია ან ვადაგასულია')
+      : message
+  );
+} finally {
+  setIsConfirming(false);
+}
   };
 
   const busy = isEnrolling || isConfirming;
